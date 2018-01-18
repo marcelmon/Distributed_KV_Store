@@ -1,0 +1,23 @@
+# This is a sample build configuration for Java (Maven).
+# Check our guides at https://confluence.atlassian.com/x/zd-5Mw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: sunithar/oracle-java8-ant
+options:
+  max-time: 1  # minutes
+
+pipelines:
+  # default - do nothing; don't want to waste CI minutes!
+  branches:
+    master:
+      - step:
+          script: 
+            - cd echoServer
+            - ant
+    develop:
+      - step:
+          script: 
+            - cd echoServer
+            - ant
+
