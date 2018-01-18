@@ -9,14 +9,15 @@ options:
 
 pipelines:
   # default - do nothing; don't want to waste CI minutes!
-  master:
-    - step:
-        script: 
-          - cd echoServer
-          - ant
-  develop:
-    - step:
-        script: 
-          - cd echoServer
-          - ant
+  branches:
+    master:
+      - step:
+          script: 
+            - cd echoServer
+            - ant
+    develop:
+      - step:
+          script: 
+            - cd echoServer
+            - ant
 
