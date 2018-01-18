@@ -32,6 +32,15 @@ public interface KVMessage {
 	 */
 	public StatusType getStatus();
 	
+	/**
+	 * @return Converts the KVMessage to a byte array encoding (i.e. marshals).
+	 */
+	public byte[] getBytes();
+	
+	/**
+	 * @param bytes Populates the KVMessage from the byte array. 
+	 */
+	public void fromBytes(byte[] bytes);
 }
 
 
