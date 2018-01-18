@@ -5,11 +5,18 @@
 # You can specify a custom docker image from Docker Hub as your build environment.
 image: sunithar/oracle-java8-ant
 options:
-  max-time: 1
+  max-time: 1  # minutes
 
 pipelines:
-  default:
+  # default - do nothing; don't want to waste CI minutes!
+  master:
     - step:
-        script: # Modify the commands below to build your repository.
+        script: 
           - cd echoServer
           - ant
+  develop:
+    - step:
+        script: 
+          - cd echoServer
+          - ant
+
