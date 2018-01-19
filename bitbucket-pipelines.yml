@@ -13,11 +13,9 @@ pipelines:
     master:
       - step:
           script: 
-            - cd echoServer
             - ant
     develop:
       - step:
           script: 
-            - cd echoServer
             - ant
 
