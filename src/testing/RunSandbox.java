@@ -10,7 +10,7 @@ import junit.framework.TestSuite;
 import logger.LogSetup;
 
 
-public class AllTests {
+public class RunSandbox {
 
 	static {
 		try {
@@ -23,11 +23,8 @@ public class AllTests {
 	
 	
 	public static Test suite() {
-		TestSuite clientSuite = new TestSuite("Basic Storage ServerTest-Suite");
-//		clientSuite.addTestSuite(ConnectionTest.class);
-//		clientSuite.addTestSuite(InteractionTest.class); 
-//		clientSuite.addTestSuite(AdditionalTest.class);
-		clientSuite.addTestSuite(TLVMessageTest.class);
+		TestSuite clientSuite = new TestSuite("Sandbox suite");
+		clientSuite.addTestSuite(Sandbox.class); 
 		return clientSuite;
 	}
 	

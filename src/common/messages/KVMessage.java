@@ -41,6 +41,11 @@ public interface KVMessage {
 	 * @param bytes Populates the KVMessage from the byte array. 
 	 */
 	public void fromBytes(byte[] bytes);
+	
+	/**
+	 * Returns true if this KVMessage is equal to another.
+	 */
+	public boolean equals(KVMessage msg);
 }
 
 

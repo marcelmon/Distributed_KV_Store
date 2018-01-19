@@ -108,12 +108,22 @@
 
   <!-- run test cases -->
   <target name="test" depends="build">
-    <junit>
+    <junit haltonfailure="no" failureproperty="test.failed">
       <classpath refid="project.classpath" />
       <formatter type="brief" usefile="false" />
       <test name="testing.AllTests" />
     </junit>
+    <fail message="Test failure detected, check test results." if="test.failed" />
   </target>
+	
+  <!-- sandbox -->
+	<target name="sandbox" depends="build">
+	    <junit>
+	      <classpath refid="project.classpath" />
+	      <formatter type="brief" usefile="false" />
+	      <test name="testing.RunSandbox" />
+	    </junit>
+	  </target>
 
   <target name="run" >
     <java classname="${main.class}" classpathref="class.path"/>

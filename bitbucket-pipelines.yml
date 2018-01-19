@@ -14,8 +14,10 @@ pipelines:
       - step:
           script: 
             - ant
+            - ant test
     develop:
       - step:
           script: 
             - ant
+            - ant test
 
