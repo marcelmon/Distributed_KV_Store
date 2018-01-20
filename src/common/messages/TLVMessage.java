@@ -1,5 +1,7 @@
 package common.messages;
 
+import java.io.*;
+
 public class TLVMessage implements KVMessage {
 	String key;
 	String value;
@@ -12,6 +14,15 @@ public class TLVMessage implements KVMessage {
 	 */
 	public TLVMessage(byte[] bytes) {
 		fromBytes(bytes);
+	}
+	
+	/**
+	 * Constructs the TLVMessage from an input stream.
+	 * @param bytes
+	 * @see fromInputStream
+	 */
+	public TLVMessage(InputStream stream) {
+		fromInputStream(stream);
 	}
 	
 	/**
@@ -173,5 +184,61 @@ public class TLVMessage implements KVMessage {
 //		System.out.println(eqValue);
 		
 		return eqStatus && eqKey && eqValue;
+	}
+
+	@Override
+	public void fromInputStream(InputStream stream) {
+		try {
+			byte[] header;
+	
+			// Read tag:
+			int tag = stream.read();
+			if (tag < 0) {
+				//TODO handle error
+			}
+			int len = stream.available() + 1;
+			
+			// Calculate remaining length:
+			System.out.println("tag:" + tag);
+			StatusType status = StatusType.values()[tag];
+			int msgLen = -1;
+			if (status == StatusType.PUT) {
+				if (len < 3) {
+					//TODO not enough for tag + 2 fields' lengths => error
+				}
+				int l0 = stream.read();
+				int l1 = stream.read();
+				if (l0 < 0 || l1 < 0) {
+					//TODO handle error
+				}
+				msgLen = l0 + l1;
+				header = new byte[3];
+				header[0] = (byte) tag;
+				header[1] = (byte) l0;
+				header[2] = (byte) l1;
+			} else {
+				if (len < 2) {
+					//TODO not enough for tag + 1 field's lengths => error
+				}
+				int l0 = stream.read();
+				if (l0 < 0) {
+					//TODO handle error
+				}
+				msgLen = l0;
+				header = new byte[2];
+				header[0] = (byte) tag;
+				header[1] = (byte) l0;
+			}
+			
+			// Read remaining message into buffer:
+			byte[] buffer = new byte[header.length + msgLen];
+			System.arraycopy(header, 0, buffer, 0, header.length);
+			stream.read(buffer, header.length, msgLen);
+			
+			// Construct from the bytes:
+			fromBytes(buffer);
+		} catch (IOException e) {
+			//TODO handle
+		}
 	}
 }

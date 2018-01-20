@@ -8,6 +8,8 @@ import common.messages.KVMessage.StatusType;
 import junit.framework.TestCase;
 import junit.runner.Version;
 
+import java.io.*;
+
 public class TLVMessageTest extends TestCase {
 	@Test
 	public void testGetRecovery() {
@@ -60,5 +62,13 @@ public class TLVMessageTest extends TestCase {
 			caught = true;
 		}
 		assertTrue(caught);
+	}
+	
+	@Test
+	public void testFromStream() {
+		TLVMessage truth = new TLVMessage(StatusType.GET, "a", null);
+		InputStream stream = new ByteArrayInputStream(truth.getBytes());
+		TLVMessage msg = new TLVMessage(stream);
+		assertTrue(msg.equals(truth));
 	}
 }

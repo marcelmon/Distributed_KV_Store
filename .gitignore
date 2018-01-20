@@ -3,3 +3,4 @@ bin/*
 .project
 *.jar
 *.MF
+archive/

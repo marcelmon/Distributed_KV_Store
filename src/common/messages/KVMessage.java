@@ -1,5 +1,7 @@
 package common.messages;
 
+import java.io.InputStream;
+
 public interface KVMessage {
 	
 	public enum StatusType {
@@ -38,9 +40,18 @@ public interface KVMessage {
 	public byte[] getBytes();
 	
 	/**
-	 * @param bytes Populates the KVMessage from the byte array. 
+	 * Populates the KVMessage from the byte array.
+	 * @param bytes 
 	 */
 	public void fromBytes(byte[] bytes);
+	
+	/**
+	 * Populates the KVMessage from the inputstream.
+	 * - Assumes the message begins at the first byte available
+	 * - Guaranteed to leave the stream at the first byte after the message
+	 * @param stream
+	 */
+	public void fromInputStream(InputStream stream);
 	
 	/**
 	 * Returns true if this KVMessage is equal to another.

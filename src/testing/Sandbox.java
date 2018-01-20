@@ -8,57 +8,174 @@ import common.messages.KVMessage.StatusType;
 import junit.framework.TestCase;
 import junit.runner.Version;
 
+import java.net.BindException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.*;
+
+import java.lang.Thread;
+
+import logger.LogSetup;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 public class Sandbox extends TestCase {
-	@Test
-	public void testGetRecovery() {
-		TLVMessage msg = new TLVMessage(KVMessage.StatusType.GET, "a", null);
-		TLVMessage recoveredMsg = new TLVMessage(msg.getBytes());
-		assertTrue(msg.equals(recoveredMsg));
-	}
+	protected static Logger logger = Logger.getRootLogger();
+	protected ArrayList<Byte> serverRx = new ArrayList<>();
+	protected ArrayList<Byte> clientRx = new ArrayList<>();
+	protected TLVMessage serverRx_msg;
+	protected TLVMessage clientRx_msg;
 	
 	@Test
-	public void testGetMarshal() {
-		TLVMessage msg = new TLVMessage(KVMessage.StatusType.GET, "ab", null);
-		byte[] bMsg = msg.getBytes();
-		byte[] truth = {0, 2, 97, 98};
+	public void testMain() {
+		try {
+			new LogSetup("logs/server.log", Level.ALL);
+		} catch (IOException e) {
+			System.out.println("Error! Unable to initialize logger!");
+			e.printStackTrace();
+			System.exit(1);
+		}
 		
-		assertTrue(Arrays.equals(bMsg,  truth));
+		final ServerSocket serverSocket;
+		int port = 10123;
+    	logger.info("Initialize server ...");
+    	try {
+            serverSocket = new ServerSocket(port);
+            logger.info("Server listening on port: " 
+            		+ serverSocket.getLocalPort());
+            
+            Thread bg = new Thread() {
+            	@Override
+            	public void run() {
+            		try {          
+	            		logger.info("Waiting for incoming connection...");
+	                    Socket client = serverSocket.accept();
+	                    
+	                    System.out.println(client.getInetAddress().getHostAddress());
+	                    System.out.println(client.getPort());
+	                    
+	        			OutputStream output = client.getOutputStream();
+	        			InputStream input = client.getInputStream();
+	        			
+	        			serverRx_msg = new TLVMessage(input);
+	        			
+	        			output.write(serverRx_msg.getBytes());
+//	        			output.write(new byte[] {0,0});
+            		} catch (IOException exc) {
+            			logger.error("IOException");
+            		} finally {
+            			logger.info("Closing server socket...");
+            			try {
+            				serverSocket.close();
+            			} catch (IOException e) {
+            				logger.error("Unable to close server");
+            			}
+            		}
+            	}
+            };
+            bg.start();
+            
+            Socket client = new Socket("localhost", port);
+            OutputStream output = client.getOutputStream();
+            InputStream input = client.getInputStream();
+            
+            TLVMessage txMsg = new TLVMessage(StatusType.GET, "a", null);
+            output.write(txMsg.getBytes());
+            
+            clientRx_msg = new TLVMessage(input);
+			
+			client.close();		
+			
+			assertTrue(serverRx_msg.equals(clientRx_msg));
+            
+        
+        } catch (IOException e) {
+        	logger.error("Error! Cannot open server socket:");
+            if(e instanceof BindException){
+            	logger.error("Port " + port + " is already bound!");
+            }
+        }
 	}
 	
 	@Test
-	public void testGetUnmarshal() {
-		byte[] bMsg = {0, 2, 97, 98};		
-		TLVMessage msg = new TLVMessage(bMsg);
-		TLVMessage truth = new TLVMessage(StatusType.GET, "ab", null); 
-		assertTrue(msg.equals(truth));
-	}
-	
-	@Test
-	public void testGetMalformed() {
-		boolean caught = false;
+	public void test2() {
 		try {
-			new TLVMessage(KVMessage.StatusType.GET, "a", "b");
-		} catch (RuntimeException e) {
-			caught = true;
+			new LogSetup("logs/server.log", Level.ALL);
+		} catch (IOException e) {
+			System.out.println("Error! Unable to initialize logger!");
+			e.printStackTrace();
+			System.exit(1);
 		}
-		assertTrue(caught);
-	}
-	
-	@Test
-	public void testPutRecovery() {
-		TLVMessage msg = new TLVMessage(KVMessage.StatusType.PUT, "a", "b");
-		TLVMessage recoveredMsg = new TLVMessage(msg.getBytes());
-		assertTrue(msg.equals(recoveredMsg));
-	}
-	
-	@Test
-	public void testPutMalformed() {
-		boolean caught = false;
-		try {
-			new TLVMessage(KVMessage.StatusType.PUT, "a", null);
-		} catch (RuntimeException e) {
-			caught = true;
-		}
-		assertTrue(caught);
+		
+		final ServerSocket serverSocket;
+		int port = 10124;
+    	logger.info("Initialize server ...");
+    	try {
+            serverSocket = new ServerSocket(port);
+            logger.info("Server listening on port: " 
+            		+ serverSocket.getLocalPort());
+            
+            Thread bg = new Thread() {
+            	@Override
+            	public void run() {
+            		try {          
+	            		logger.info("Waiting for incoming connection...");
+	                    Socket client = serverSocket.accept();
+	                    
+	                    System.out.println(client.getInetAddress().getHostAddress());
+	                    System.out.println(client.getPort());
+	                    
+	        			OutputStream output = client.getOutputStream();
+	        			InputStream input = client.getInputStream();
+	        			
+	        			int len = input.available();
+	        			byte[] buffer = new byte[len];
+	        			input.read(buffer, 0, len);
+	        			for (int i = 0; i < buffer.length; i++) {            	
+	        				serverRx.add(buffer[i]);
+	                    }
+            		} catch (IOException exc) {
+            			logger.error("IOException");
+            		} finally {
+            			logger.info("Closing server socket...");
+            			try {
+            				serverSocket.close();
+            			} catch (IOException e) {
+            				logger.error("Unable to close server");
+            			}
+            		}
+            	}
+            };
+            bg.start();
+            
+            Socket client = new Socket("localhost", port);
+            OutputStream output = client.getOutputStream();
+            InputStream input = client.getInputStream();
+            
+            String msg = "ab";
+            output.write(msg.getBytes());
+            
+            int len = input.available();
+			byte[] buffer = new byte[len];
+			input.read(buffer, 0, len);
+			for (int i = 0; i < buffer.length; i++) {            	
+				clientRx.add(buffer[i]);
+            }
+			
+			client.close();		
+			
+			assertTrue(serverRx.equals(clientRx));
+            
+        
+        } catch (IOException e) {
+        	logger.error("Error! Cannot open server socket:");
+            if(e instanceof BindException){
+            	logger.error("Port " + port + " is already bound!");
+            }
+        }
 	}
 }
