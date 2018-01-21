@@ -1,11 +1,13 @@
 package common.messages;
 
 import java.io.*;
+import common.messages.*;
 
 public class TLVMessage implements KVMessage {
 	String key;
 	String value;
 	StatusType status;
+	final long timeout = 100;
 	
 	/**
 	 * Constructs the TLVMessage from it's byte encoding.
@@ -21,7 +23,7 @@ public class TLVMessage implements KVMessage {
 	 * @param bytes
 	 * @see fromInputStream
 	 */
-	public TLVMessage(InputStream stream) {
+	public TLVMessage(InputStream stream) throws StreamTimeoutException {
 		fromInputStream(stream);
 	}
 	
@@ -187,11 +189,22 @@ public class TLVMessage implements KVMessage {
 	}
 
 	@Override
-	public void fromInputStream(InputStream stream) {
+	public void fromInputStream(InputStream stream) throws StreamTimeoutException {
 		try {
 			byte[] header;
+			
+			final long SLEEPDT = 10;
 	
 			// Read tag:
+			long t0 = System.currentTimeMillis();
+			while (stream.available() < 1) {
+				if (System.currentTimeMillis() - t0 > timeout) {
+					throw new StreamTimeoutException("Timed out waiting for first byte to appear");
+				}
+				try {
+					Thread.sleep(SLEEPDT);
+				} catch ( InterruptedException e) { }
+			}
 			int tag = stream.read();
 			if (tag < 0) {
 				//TODO handle error
@@ -199,13 +212,21 @@ public class TLVMessage implements KVMessage {
 			int len = stream.available() + 1;
 			
 			// Calculate remaining length:
-			System.out.println("tag:" + tag);
 			StatusType status = StatusType.values()[tag];
 			int msgLen = -1;
 			if (status == StatusType.PUT) {
-				if (len < 3) {
-					//TODO not enough for tag + 2 fields' lengths => error
+				// Allow TIMEOUT ms for data to become available:
+				t0 = System.currentTimeMillis();
+				while (stream.available() < 2) {
+					if (System.currentTimeMillis() - t0 > timeout) {
+						throw new StreamTimeoutException("Timed out waiting for first byte to appear");
+					}
+					try {
+						Thread.sleep(SLEEPDT);
+					} catch ( InterruptedException e) { }
 				}
+				
+				// Read data:
 				int l0 = stream.read();
 				int l1 = stream.read();
 				if (l0 < 0 || l1 < 0) {
@@ -217,9 +238,18 @@ public class TLVMessage implements KVMessage {
 				header[1] = (byte) l0;
 				header[2] = (byte) l1;
 			} else {
-				if (len < 2) {
-					//TODO not enough for tag + 1 field's lengths => error
+				// Allow TIMEOUT ms for data to become available:
+				t0 = System.currentTimeMillis();
+				while (stream.available() < 1) {
+					if (System.currentTimeMillis() - t0 > timeout) {
+						throw new StreamTimeoutException("Timed out waiting for first byte to appear");
+					}
+					try {
+						Thread.sleep(SLEEPDT);
+					} catch ( InterruptedException e) { }
 				}
+				
+				// Read data:
 				int l0 = stream.read();
 				if (l0 < 0) {
 					//TODO handle error
@@ -233,7 +263,23 @@ public class TLVMessage implements KVMessage {
 			// Read remaining message into buffer:
 			byte[] buffer = new byte[header.length + msgLen];
 			System.arraycopy(header, 0, buffer, 0, header.length);
+			
+			// Allow TIMEOUT ms for data to become available:
+			t0 = System.currentTimeMillis();
+			while (stream.available() < msgLen) {
+				if (System.currentTimeMillis() - t0 > timeout) {
+					throw new StreamTimeoutException("Timed out waiting for first byte to appear");
+				}
+				try {
+					Thread.sleep(SLEEPDT);
+				} catch ( InterruptedException e) { }
+			}
+			
+			// Read data:
 			stream.read(buffer, header.length, msgLen);
+			if (buffer.length != msgLen + header.length) {
+				throw new RuntimeException("Unexpected error occurred!");
+			}
 			
 			// Construct from the bytes:
 			fromBytes(buffer);

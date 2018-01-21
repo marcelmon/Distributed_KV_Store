@@ -3,6 +3,16 @@ package common.messages;
 import java.io.InputStream;
 
 public interface KVMessage {
+	/**
+	 * Thrown when a stream doesn't make data available quickly enough.
+	 */
+	public class StreamTimeoutException extends Exception {
+		private static final long serialVersionUID = 1L;
+
+		public StreamTimeoutException(String msg) {
+			super(msg);
+		}
+	}
 	
 	public enum StatusType {
 		GET, 			/* Get - request */
@@ -50,8 +60,9 @@ public interface KVMessage {
 	 * - Assumes the message begins at the first byte available
 	 * - Guaranteed to leave the stream at the first byte after the message
 	 * @param stream
+	 * @throws StreamTimeoutException
 	 */
-	public void fromInputStream(InputStream stream);
+	public void fromInputStream(InputStream stream) throws StreamTimeoutException;
 	
 	/**
 	 * Returns true if this KVMessage is equal to another.

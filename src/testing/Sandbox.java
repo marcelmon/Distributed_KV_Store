@@ -61,7 +61,11 @@ public class Sandbox extends TestCase {
 	        			OutputStream output = client.getOutputStream();
 	        			InputStream input = client.getInputStream();
 	        			
-	        			serverRx_msg = new TLVMessage(input);
+	        			try {
+	        				serverRx_msg = new TLVMessage(input);
+	        			} catch (KVMessage.StreamTimeoutException e) {
+	        				
+	        			}
 	        			
 	        			output.write(serverRx_msg.getBytes());
 //	        			output.write(new byte[] {0,0});
@@ -86,7 +90,11 @@ public class Sandbox extends TestCase {
             TLVMessage txMsg = new TLVMessage(StatusType.GET, "a", null);
             output.write(txMsg.getBytes());
             
-            clientRx_msg = new TLVMessage(input);
+            try {
+            	clientRx_msg = new TLVMessage(input);
+            } catch (KVMessage.StreamTimeoutException e) {
+            	
+            }
 			
 			client.close();		
 			

@@ -6,7 +6,6 @@ import org.junit.Test;
 import common.messages.*;
 import common.messages.KVMessage.StatusType;
 import junit.framework.TestCase;
-import junit.runner.Version;
 
 import java.io.*;
 
@@ -66,9 +65,46 @@ public class TLVMessageTest extends TestCase {
 	
 	@Test
 	public void testFromStream() {
-		TLVMessage truth = new TLVMessage(StatusType.GET, "a", null);
+		TLVMessage truth = new TLVMessage(StatusType.PUT, "b", "c");
 		InputStream stream = new ByteArrayInputStream(truth.getBytes());
-		TLVMessage msg = new TLVMessage(stream);
-		assertTrue(msg.equals(truth));
+		try {
+			TLVMessage msg = new TLVMessage(stream);
+			assertTrue(msg.equals(truth));
+		} catch (KVMessage.StreamTimeoutException e) {
+			fail("Truncated stream");
+		}
 	}
+	
+	@Test
+	public void testFromTruncatedStream() {
+		TLVMessage truth = new TLVMessage(StatusType.PUT, "b", "c");
+		byte[] bytes = truth.getBytes();
+		byte[] truncated = new byte[bytes.length-1];
+		System.arraycopy(bytes, 0, truncated, 0, bytes.length-1);
+		InputStream stream = new ByteArrayInputStream(truncated);
+		boolean caught = false;
+		try {
+			new TLVMessage(stream);
+		} catch (KVMessage.StreamTimeoutException e) {
+			caught = true;
+		}
+		assertTrue(caught);
+	}
+	
+	@Test
+	public void testFromEmptyStream() {
+		InputStream stream = new ByteArrayInputStream(new byte[0]);
+		boolean caught = false;
+		try {
+			new TLVMessage(stream);
+		} catch (KVMessage.StreamTimeoutException e) {
+			caught = true;
+		}
+		assertTrue(caught);
+	}
+	
+//	@Test
+//	public void testFromCorruptStream() {
+//		
+//	}
 }
