@@ -162,6 +162,8 @@ public class SocketTest extends TestCase {
 			client.close();		        
         } catch (IOException e) {
         	fail("Cannot open server socket");
+        } catch (FormatException e) {
+        	fail("TLVMessage malformed");
         }
 	}
 }
