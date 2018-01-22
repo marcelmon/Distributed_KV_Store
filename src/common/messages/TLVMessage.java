@@ -190,6 +190,11 @@ public class TLVMessage implements KVMessage {
 
 	@Override
 	public void fromInputStream(InputStream stream) throws StreamTimeoutException {
+		//FIXME if we have a timeout, we should reset the stream to the initial state
+//		if (!stream.markSupported() ) {
+//			throw new RuntimeException("Marks not supported in streams. There is a risk of data loss.");
+//		}
+		
 		try {
 			byte[] header;
 			

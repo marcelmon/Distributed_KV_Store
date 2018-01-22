@@ -3,6 +3,13 @@ package common.comms;
 import common.messages.*;
 
 public interface ICommMod {
+	// Server
+	public void StartServer(int port) throws Exception;
+	public void StopServer() throws Exception;
 	public void SetListener(ICommListener listener);
-	public boolean SendMessage(KVMessage msg);
+	
+	// Client
+	public void Connect(String ip, int port) throws Exception;
+	public void Disconnect();	
+	public void SendMessage(KVMessage msg) throws Exception;
 }
