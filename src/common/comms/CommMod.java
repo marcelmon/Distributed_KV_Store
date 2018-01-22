@@ -1,5 +1,6 @@
 package common.comms;
 
+import java.io.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,17 +40,17 @@ public class CommMod implements ICommMod {
         		try {          
                     Socket client = serverSocket.accept();
         			InputStream input = client.getInputStream();
+        			BufferedInputStream bufInput = new BufferedInputStream(input);
         			
         			while (!interrupted()) {
-        				while (input.available() > 0) {
+        				if (input.available() > 0) {
         					try {
-        						TLVMessage msg = new TLVMessage(input);
+        						TLVMessage msg = new TLVMessage(bufInput);
         						if (listener != null) {
         							listener.OnMsgRcd(msg);
         						}
         					} catch (KVMessage.StreamTimeoutException e) {
-        						throw new RuntimeException("Warning! Stream timeout");
-        						//TODO this should be handled better
+        						// we don't care about timeouts here - just keep retrying forever
         					}
         				} 
         				try {
@@ -59,12 +60,12 @@ public class CommMod implements ICommMod {
         				}
         			}
         		} catch (IOException exc) {
-        			//TODO handle
+        			throw new RuntimeException("Server failure");
         		} finally {
         			try {
         				serverSocket.close();
         			} catch (IOException e) {
-        				//TODO handle
+        				throw new RuntimeException("Server failure");
         			}
         		}
         	}
@@ -103,8 +104,7 @@ public class CommMod implements ICommMod {
 			try {
 				clientSocket.close();
 			} catch (IOException e) {
-				throw new RuntimeException("couldn't close socket");
-				//TODO handle
+				//TODO log as a warning
 			}
 		}
 		

@@ -23,7 +23,7 @@ public class TLVMessage implements KVMessage {
 	 * @param bytes
 	 * @see fromInputStream
 	 */
-	public TLVMessage(InputStream stream) throws StreamTimeoutException {
+	public TLVMessage(BufferedInputStream stream) throws StreamTimeoutException {
 		fromInputStream(stream);
 	}
 	
@@ -33,23 +33,17 @@ public class TLVMessage implements KVMessage {
 	 * @param key
 	 * @param value
 	 */
-	public TLVMessage(StatusType status, String key, String value) {		
+	public TLVMessage(StatusType status, String key, String value) throws FormatException {		
 		this.key = key;
 		this.value = value;
 		this.status = status;
 		
 		// Format checks:
 		if (status != StatusType.PUT && value != null) {
-			throw new RuntimeException("Value on non-PUT TLVMessage");
-			
-//			System.out.println("WARNING! Dropping value on non-PUT TLVMessage");
-//			this.value = null;
+			throw new FormatException("Value on non-PUT TLVMessage");
 		}
 		if (status == StatusType.PUT && value == null) {
-			throw new RuntimeException("No value on PUT TLVMessage");
-			
-//			System.out.println("WARNING! null->empty value conversion on PUT TLVMessage");
-//			this.value = "";
+			throw new FormatException("No value on PUT TLVMessage");
 		}
 	}
 	
@@ -189,11 +183,12 @@ public class TLVMessage implements KVMessage {
 	}
 
 	@Override
-	public void fromInputStream(InputStream stream) throws StreamTimeoutException {
-		//FIXME if we have a timeout, we should reset the stream to the initial state
-//		if (!stream.markSupported() ) {
-//			throw new RuntimeException("Marks not supported in streams. There is a risk of data loss.");
-//		}
+	public void fromInputStream(BufferedInputStream stream) throws StreamTimeoutException {
+		// If we have a timeout, we should reset the stream to the initial state
+		if (!stream.markSupported() ) {
+			throw new RuntimeException("Marks not supported in streams. There is a risk of data loss.");
+		}
+		stream.mark(1024);
 		
 		try {
 			byte[] header;
@@ -204,6 +199,7 @@ public class TLVMessage implements KVMessage {
 			long t0 = System.currentTimeMillis();
 			while (stream.available() < 1) {
 				if (System.currentTimeMillis() - t0 > timeout) {
+					stream.reset();
 					throw new StreamTimeoutException("Timed out waiting for first byte to appear");
 				}
 				try {
@@ -224,6 +220,7 @@ public class TLVMessage implements KVMessage {
 				t0 = System.currentTimeMillis();
 				while (stream.available() < 2) {
 					if (System.currentTimeMillis() - t0 > timeout) {
+						stream.reset();
 						throw new StreamTimeoutException("Timed out waiting for first byte to appear");
 					}
 					try {
@@ -247,6 +244,7 @@ public class TLVMessage implements KVMessage {
 				t0 = System.currentTimeMillis();
 				while (stream.available() < 1) {
 					if (System.currentTimeMillis() - t0 > timeout) {
+						stream.reset();
 						throw new StreamTimeoutException("Timed out waiting for first byte to appear");
 					}
 					try {
@@ -273,6 +271,7 @@ public class TLVMessage implements KVMessage {
 			t0 = System.currentTimeMillis();
 			while (stream.available() < msgLen) {
 				if (System.currentTimeMillis() - t0 > timeout) {
+					stream.reset();
 					throw new StreamTimeoutException("Timed out waiting for first byte to appear");
 				}
 				try {

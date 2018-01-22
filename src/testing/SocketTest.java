@@ -6,6 +6,7 @@ import common.messages.KVMessage.*;
 import junit.framework.TestCase;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -151,7 +152,7 @@ public class SocketTest extends TestCase {
             
             // Receive the response:
             try {
-	            TLVMessage rxMsg = new TLVMessage(input);
+	            TLVMessage rxMsg = new TLVMessage(new BufferedInputStream(input));
 	            assertTrue(rxMsg.equals(txMsg));
 	            assertTrue(input.available() == 0);
             } catch (KVMessage.StreamTimeoutException e) {

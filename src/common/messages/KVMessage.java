@@ -1,6 +1,6 @@
 package common.messages;
 
-import java.io.InputStream;
+import java.io.*;
 
 public interface KVMessage {
 	/**
@@ -10,6 +10,14 @@ public interface KVMessage {
 		private static final long serialVersionUID = 1L;
 
 		public StreamTimeoutException(String msg) {
+			super(msg);
+		}
+	}
+	
+	public class FormatException extends Exception {
+		private static final long serialVersionUID = 1L;
+
+		public FormatException(String msg) {
 			super(msg);
 		}
 	}
@@ -58,11 +66,13 @@ public interface KVMessage {
 	/**
 	 * Populates the KVMessage from the inputstream.
 	 * - Assumes the message begins at the first byte available
-	 * - Guaranteed to leave the stream at the first byte after the message
+	 * - Guaranteed to leave the stream: 
+	 *   - if successful, at the first byte after the message
+	 *   - if StreamTimeoutException, at the initial state of the stream
 	 * @param stream
 	 * @throws StreamTimeoutException
 	 */
-	public void fromInputStream(InputStream stream) throws StreamTimeoutException;
+	public void fromInputStream(BufferedInputStream stream) throws StreamTimeoutException;
 	
 	/**
 	 * Returns true if this KVMessage is equal to another.
