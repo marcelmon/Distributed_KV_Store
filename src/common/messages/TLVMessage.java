@@ -1,9 +1,13 @@
 package common.messages;
 
+import java.io.*;
+import common.messages.*;
+
 public class TLVMessage implements KVMessage {
 	String key;
 	String value;
 	StatusType status;
+	final long timeout = 100;
 	
 	/**
 	 * Constructs the TLVMessage from it's byte encoding.
@@ -15,28 +19,31 @@ public class TLVMessage implements KVMessage {
 	}
 	
 	/**
+	 * Constructs the TLVMessage from an input stream.
+	 * @param bytes
+	 * @see fromInputStream
+	 */
+	public TLVMessage(BufferedInputStream stream) throws StreamTimeoutException {
+		fromInputStream(stream);
+	}
+	
+	/**
 	 * Constructs the TLVMessage from raw contents.
 	 * @param status
 	 * @param key
 	 * @param value
 	 */
-	public TLVMessage(StatusType status, String key, String value) {		
+	public TLVMessage(StatusType status, String key, String value) throws FormatException {		
 		this.key = key;
 		this.value = value;
 		this.status = status;
 		
 		// Format checks:
 		if (status != StatusType.PUT && value != null) {
-			throw new RuntimeException("Value on non-PUT TLVMessage");
-			
-//			System.out.println("WARNING! Dropping value on non-PUT TLVMessage");
-//			this.value = null;
+			throw new FormatException("Value on non-PUT TLVMessage");
 		}
 		if (status == StatusType.PUT && value == null) {
-			throw new RuntimeException("No value on PUT TLVMessage");
-			
-//			System.out.println("WARNING! null->empty value conversion on PUT TLVMessage");
-//			this.value = "";
+			throw new FormatException("No value on PUT TLVMessage");
 		}
 	}
 	
@@ -173,5 +180,115 @@ public class TLVMessage implements KVMessage {
 //		System.out.println(eqValue);
 		
 		return eqStatus && eqKey && eqValue;
+	}
+
+	@Override
+	public void fromInputStream(BufferedInputStream stream) throws StreamTimeoutException {
+		// If we have a timeout, we should reset the stream to the initial state
+		if (!stream.markSupported() ) {
+			throw new RuntimeException("Marks not supported in streams. There is a risk of data loss.");
+		}
+		stream.mark(1024);
+		
+		try {
+			byte[] header;
+			
+			final long SLEEPDT = 10;
+	
+			// Read tag:
+			long t0 = System.currentTimeMillis();
+			while (stream.available() < 1) {
+				if (System.currentTimeMillis() - t0 > timeout) {
+					stream.reset();
+					throw new StreamTimeoutException("Timed out waiting for first byte to appear");
+				}
+				try {
+					Thread.sleep(SLEEPDT);
+				} catch ( InterruptedException e) { }
+			}
+			int tag = stream.read();
+			if (tag < 0) {
+				//TODO handle error
+			}
+			int len = stream.available() + 1;
+			
+			// Calculate remaining length:
+			StatusType status = StatusType.values()[tag];
+			int msgLen = -1;
+			if (status == StatusType.PUT) {
+				// Allow TIMEOUT ms for data to become available:
+				t0 = System.currentTimeMillis();
+				while (stream.available() < 2) {
+					if (System.currentTimeMillis() - t0 > timeout) {
+						stream.reset();
+						throw new StreamTimeoutException("Timed out waiting for first byte to appear");
+					}
+					try {
+						Thread.sleep(SLEEPDT);
+					} catch ( InterruptedException e) { }
+				}
+				
+				// Read data:
+				int l0 = stream.read();
+				int l1 = stream.read();
+				if (l0 < 0 || l1 < 0) {
+					//TODO handle error
+				}
+				msgLen = l0 + l1;
+				header = new byte[3];
+				header[0] = (byte) tag;
+				header[1] = (byte) l0;
+				header[2] = (byte) l1;
+			} else {
+				// Allow TIMEOUT ms for data to become available:
+				t0 = System.currentTimeMillis();
+				while (stream.available() < 1) {
+					if (System.currentTimeMillis() - t0 > timeout) {
+						stream.reset();
+						throw new StreamTimeoutException("Timed out waiting for first byte to appear");
+					}
+					try {
+						Thread.sleep(SLEEPDT);
+					} catch ( InterruptedException e) { }
+				}
+				
+				// Read data:
+				int l0 = stream.read();
+				if (l0 < 0) {
+					//TODO handle error
+				}
+				msgLen = l0;
+				header = new byte[2];
+				header[0] = (byte) tag;
+				header[1] = (byte) l0;
+			}
+			
+			// Read remaining message into buffer:
+			byte[] buffer = new byte[header.length + msgLen];
+			System.arraycopy(header, 0, buffer, 0, header.length);
+			
+			// Allow TIMEOUT ms for data to become available:
+			t0 = System.currentTimeMillis();
+			while (stream.available() < msgLen) {
+				if (System.currentTimeMillis() - t0 > timeout) {
+					stream.reset();
+					throw new StreamTimeoutException("Timed out waiting for first byte to appear");
+				}
+				try {
+					Thread.sleep(SLEEPDT);
+				} catch ( InterruptedException e) { }
+			}
+			
+			// Read data:
+			stream.read(buffer, header.length, msgLen);
+			if (buffer.length != msgLen + header.length) {
+				throw new RuntimeException("Unexpected error occurred!");
+			}
+			
+			// Construct from the bytes:
+			fromBytes(buffer);
+		} catch (IOException e) {
+			//TODO handle
+		}
 	}
 }

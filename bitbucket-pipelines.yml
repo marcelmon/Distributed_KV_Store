@@ -21,3 +21,7 @@ pipelines:
             - ant
             - ant test
 
+    sandbox:
+      - step:
+          script:
+            - ant test

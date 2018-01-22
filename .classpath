@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="archive/echoClient/echoClient/src"/>
+	<classpathentry kind="src" path="archive/echoClient/src"/>
+	<classpathentry kind="src" path="archive/echoServer/src"/>
+	<classpathentry kind="src" path="archive/m1-stub/src"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="archive/echoClient/echoClient.jar"/>
+	<classpathentry kind="lib" path="archive/echoClient/echoClient/libs/junit-4.10.jar"/>
+	<classpathentry kind="lib" path="archive/echoClient/echoClient/libs/log4j-1.2.17.jar"/>
+	<classpathentry kind="lib" path="archive/echoClient/libs/junit-4.10.jar"/>
+	<classpathentry kind="lib" path="archive/echoClient/libs/log4j-1.2.17.jar"/>
+	<classpathentry kind="lib" path="archive/echoServer/echoServer.jar"/>
+	<classpathentry kind="lib" path="archive/echoServer/libs/junit-4.10.jar"/>
+	<classpathentry kind="lib" path="archive/echoServer/libs/log4j-1.2.17.jar"/>
+	<classpathentry kind="lib" path="archive/m1-stub/libs/junit-4.10.jar"/>
+	<classpathentry kind="lib" path="archive/m1-stub/libs/log4j-1.2.17.jar"/>
+	<classpathentry kind="lib" path="libs/junit-4.10.jar"/>
+	<classpathentry kind="lib" path="libs/log4j-1.2.17.jar"/>
+	<classpathentry kind="lib" path="m1-client.jar"/>
+	<classpathentry kind="lib" path="m1-server.jar"/>
+	<classpathentry kind="output" path="archive/echoClient/bin"/>
+</classpath>
