@@ -31,7 +31,7 @@ public interface KVMessage {
 		PUT_UPDATE, 	/* Put - request successful, i.e. value updated */
 		PUT_ERROR, 		/* Put - request not successful */
 		DELETE_SUCCESS, /* Delete - request successful */
-		DELETE_ERROR 	/* Delete - request successful */
+		DELETE_ERROR 	/* Delete - request not successful */
 	}
 
 	/**
@@ -64,10 +64,10 @@ public interface KVMessage {
 	public void fromBytes(byte[] bytes);
 	
 	/**
-	 * Populates the KVMessage from the inputstream.
+	 * Populates the KVMessage from the InputStream.
 	 * - Assumes the message begins at the first byte available
 	 * - Guaranteed to leave the stream: 
-	 *   - if successful, at the first byte after the message
+	 *   - if successful, at the first byte after the message (first byte of subsequent message)
 	 *   - if StreamTimeoutException, at the initial state of the stream
 	 * @param stream
 	 * @throws StreamTimeoutException
