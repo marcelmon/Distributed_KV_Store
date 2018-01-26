@@ -1,9 +1,21 @@
 package app_kvServer;
 
+import java.util.Iterator;
+import java.util.AbstractMap.*;
+
 public interface ICache {
+	/**
+	 * Thrown if a key is expected to exist in the db but doesn't.
+	 */
+	public class KeyDoesntExistException extends Exception {
+		private static final long serialVersionUID = 1L;
+		public KeyDoesntExistException(String msg) {
+			super(msg);
+		}
+	}
 
     /**
-     * Get the cache size
+     * Get the (maximum) cache size
      * @return  cache size
      */
     public int getCacheSize();
@@ -25,23 +37,25 @@ public interface ICache {
 
     /**
      * Get the value associated with the key
-     * @return  value associated with key
-     * @throws Exception
-     *      when key not in the key range of the server
      */
-    public String getKV(String key) throws Exception;
+    public String get(String key) throws KeyDoesntExistException;
 
     /**
      * Put the key-value pair into storage
-     * @throws Exception
-     *      when key not in the key range of the server
+     * @return true if new tuple inserted, false if tuple updated
+     * @throws Exception if the key was not able to be inserted for an undetermined reason
      */
-    public void putKV(String key, String value) throws Exception;
+    public boolean put(String key, String value) throws Exception;
+    
+    /**
+     * Delete the key-value pair from storage.
+     */
+    public void delete(String key) throws KeyDoesntExistException;
 
     /**
-     * Called to load the data into the cache from KVDB.cacheLoader()
+     * Called to load the data into the cache from IKVDB.iterator()
     */
-    public void loadData(Iterator<String, String> keyValueIterator);
+    public void loadData(Iterator<SimpleEntry<String, String>> iterator);
 
     /**
      * Clear the local cache of the server
@@ -50,8 +64,7 @@ public interface ICache {
 
     /**
      * Clear the storage of the server
-     * Interact with IKVDB (perhaps the KVServer should interact directly with IKVDB)
      */
-    public void clearStorage();
+    public void clearPersistentStorage();
 
 }

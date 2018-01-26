@@ -1,36 +1,49 @@
 package app_kvServer;
 
+import java.time.Duration;
+
 public interface ILockManager {
+	/**
+	 * Thrown if a lock is released which is not held
+	 */
+	public class LockNotHeldException extends Exception {
+		private static final long serialVersionUID = 1L;
 
-    public enum ResourceType {
-        None,
-        KEY,
-        FILESYSTEM
-    };
+		public LockNotHeldException(String msg) {
+			super(msg);
+		}
+	}
+	
+	/**
+	 * Thrown if a lock is requested but is already held by the caller.
+	 */
+	public class LockAlreadyHeldException extends Exception {
+		private static final long serialVersionUID = 1L;
 
+		public LockAlreadyHeldException(String msg) {
+			super(msg);
+		}		
+	}
+	
     /**
-     * Get a lock for a resource
-     * resources are : KEY, FILESYSTEM
-     * If a clockValue is given, check that this lock can be aquired based on this value.
-     * The implementation should expect either entries of logical, time based, or vector locks.
-     * The case of vector clocks needs to be better researched to determine the expected type. 
+     * Get a lock on a key. Blocks until lock is acquired or timeout occurs. Notably, key needn't
+     * already exist (as would be the case with a new key).
      *
-     * Consider making a ClockValue object to pass.********
-     *
-     * @return an integer representing the aquired lock, -1 if fail
+     * @param timeout The amount of time to wait for the lock to be acquired, after which the 
+     * method returns without the lock (returning false). If (timeout.isZero() == true) blocks
+     * indefinitely or until the lock is acquired. Behavior undefined for (timeout.isNegative() == true). 
+     * @return true if lock is acquired, or false if timed out
      */
-    public int getLock(String resource, int resourceType, ClockValue clockValue);
+    public boolean getLock(String key, Duration timeout) throws LockAlreadyHeldException;
 
     /**
-     * Release a previously aquired lock
-     * @return true if lock released, false on error
+     * Release a previously acquired lock.
      */
-    public boolean releaseLock(int lockId);
+    public void releaseLock(String key) throws LockNotHeldException;
 
     /**
-     * release all locks
-     * @return true if all locks released, false on error
+     * Release all locks.
      */
-    public boolean flushLocks();
+    public void flushLocks();
 
 }
