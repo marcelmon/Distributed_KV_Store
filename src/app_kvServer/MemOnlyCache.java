@@ -27,14 +27,14 @@ public class MemOnlyCache implements ICache {
 	}
 
 	@Override
-	public boolean inCache(String key) {
+	public synchronized boolean inCache(String key) {
 		return map.containsKey(key);
 	}
 
 	@Override
-	public String get(String key) throws KeyDoesntExistException {
+	public synchronized String get(String key) throws KeyDoesntExistException {
 		if (map.containsKey(key)) {
-			return map.get(key);
+			return map.get(key);			
 		} else {
 			throw new KeyDoesntExistException("Key \"" + key + "\" doesn't exist");
 		}
@@ -46,19 +46,19 @@ public class MemOnlyCache implements ICache {
      * @throws Exception if the key was not able to be inserted for an undetermined reason
      */
 	@Override
-	public boolean put(String key, String value) throws Exception {
+	public synchronized boolean put(String key, String value) throws Exception {
 		return map.put(key, value) == null; // map.put returns null if no previous mapping
 	}
 
 	@Override
-	public void delete(String key) throws KeyDoesntExistException {
+	public synchronized void delete(String key) throws KeyDoesntExistException {
 		if (map.remove(key) == null) {
 			throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");
 		}
 	}
 
 	@Override
-	public void loadData(Iterator<SimpleEntry<String, String>> iterator) {
+	public synchronized void loadData(Iterator<SimpleEntry<String, String>> iterator) {
 		map.clear(); // just in case
 		while (iterator.hasNext()) {
 			SimpleEntry<String, String> kv = iterator.next();
@@ -67,12 +67,12 @@ public class MemOnlyCache implements ICache {
 	}
 
 	@Override
-	public void clearCache() {
+	public synchronized void clearCache() {
 		map.clear();
 	}
 
 	@Override
-	public void clearPersistentStorage() {
+	public synchronized void clearPersistentStorage() {
 		// no persistent storage => do nothing
 	}
 
