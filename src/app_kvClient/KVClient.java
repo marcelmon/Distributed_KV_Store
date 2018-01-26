@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 import logger.LogSetup;
 
 import client.KVCommInterface;
+import client.KVStore;
 import common.comms.ICommMod;
 import common.comms.CommMod;
 import common.messages.KVMessage;
@@ -22,7 +23,8 @@ public class KVClient implements IKVClient {
 	private static Logger logger = Logger.getRootLogger();
 	private static final String PROMPT = "KVClient> ";
 	private BufferedReader stdin;
-	private ICommMod client = null;
+	// private ICommMod client = null;
+	private KVCommInterface client = null;
 	private boolean stop = false;
 	
 	private String serverAddress;
@@ -57,15 +59,15 @@ public class KVClient implements IKVClient {
 					serverAddress = tokens[1];
 					serverPort = Integer.parseInt(tokens[2]);
 					newConnection(serverAddress, serverPort);
-				// } catch(NumberFormatException nfe) {
-				// 	printError("No valid address. Port must be a number!");
-				// 	logger.info("Unable to parse argument <port>", nfe);
-				// } catch (UnknownHostException e) {
-				// 	printError("Unknown Host!");
-				// 	logger.info("Unknown Host!", e);
-				// } catch (IOException e) {
-				// 	printError("Could not establish connection!");
-				// 	logger.warn("Could not establish connection!", e);
+				} catch(NumberFormatException nfe) {
+					printError("No valid address. Port must be a number!");
+					logger.info("Unable to parse argument <port>", nfe);
+				} catch (UnknownHostException e) {
+					printError("Unknown Host!");
+					logger.info("Unknown Host!", e);
+				} catch (IOException e) {
+					printError("Could not establish connection!");
+					logger.warn("Could not establish connection!", e);
 				} catch (Exception e) {
                     e.getMessage();
                 }
@@ -104,14 +106,14 @@ public class KVClient implements IKVClient {
 								msg.append(" ");
 							}
 						}
-						StatusType statusType = StatusType.PUT;
-						KVMessage kvmsg = new TLVMessage(statusType,key,msg.toString());
-						client.SendMessage(kvmsg);
+						KVMessage kvmsg = client.put(key, msg.toString());
+						StatusType statusType = kvmsg.getStatus();
 
 // after send message, it stopped.
 
 						if(statusType == StatusType.PUT_SUCCESS) {
 							System.out.println(PROMPT + "Put " + key + " succeeded.");
+							System.out.println(PROMPT + "Value: " + msg.toString());
 						} else if(statusType == StatusType.PUT_ERROR) {
 							printError("Put failed.");
 						} else if(statusType == StatusType.PUT_UPDATE) {
@@ -121,7 +123,7 @@ public class KVClient implements IKVClient {
 						} else if(statusType == StatusType.DELETE_ERROR) {
 							printError("Delete failed.");
 						} else {
-							System.out.println(PROMPT + "Nothing happened.");
+							printError("Nothing happened.");
 						}
 					} catch (Exception e) {
 						e.getMessage();
@@ -132,7 +134,32 @@ public class KVClient implements IKVClient {
 			} else {
 				printError("Invalid number of parameters!");
 			}
-		} else {
+		} else if(tokens[0].equals("get")) {
+			if(tokens.length == 2) {
+				if(client != null){
+					try {
+						String key = tokens[1];
+						KVMessage kvmsg = client.get(key);
+						StatusType statusType = kvmsg.getStatus();
+
+						if(statusType == StatusType.GET_SUCCESS) {
+							System.out.println(PROMPT + "Get " + key + " succeeded.");
+							System.out.println(PROMPT + "Value: " + kvmsg.getValue());
+						} else if(statusType == StatusType.GET_ERROR) {
+							printError("Get failed.");
+						} else {
+							printError("Nothing happened.");
+						}
+					} catch (Exception e) {
+						e.getMessage();
+					}
+				} else {
+					printError("Not connected!");
+				}
+			} else {
+				printError("Invalid number of parameters!");
+			}
+		}else {
 			printError("Unknown command");
 			printHelp();
 		}
@@ -204,7 +231,7 @@ public class KVClient implements IKVClient {
 	
 	private void disconnect() {
 		if(client != null) {
-			client.Disconnect();
+			client.disconnect();
 			client = null;
 		}
 	}
@@ -212,14 +239,16 @@ public class KVClient implements IKVClient {
     @Override
     public void newConnection(String hostname, int port) throws Exception{
         // TODO Auto-generated method stub
-        client = new CommMod();
-        client.Connect(hostname, port);
+		// client = new CommMod();
+        // client.Connect(hostname, port);
+		client = new KVStore(hostname, port);
+		client.connect();
     }
 
     @Override
     public KVCommInterface getStore(){
         // TODO Auto-generated method stub
-        return null;
+        return client;
     }
 
     public static void main(String[] args) {

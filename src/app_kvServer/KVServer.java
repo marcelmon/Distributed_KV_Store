@@ -10,15 +10,21 @@ import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import common.comms.CommListener;
 import common.comms.CommMod;
+import common.comms.ICommListener;
 
 public class KVServer implements IKVServer {
 
 	private static Logger logger = Logger.getRootLogger();
 	
 	private int port;
- 	private CommMod server = null;
+	private String hostname;
+	private CacheStrategy cacheStrategy;
+	private CommMod server = null;
 	private boolean running;
+	private ICache cache = null;
+	private ICommListener listener = null;
 	
 	public KVServer(int port){
 		this.port = port;
@@ -26,6 +32,7 @@ public class KVServer implements IKVServer {
 	
 	public void run() {
 		
+		// cache = new ICache();
 		running = initializeServer();
 
 		// logger.info("Server stopped.");
@@ -50,7 +57,9 @@ public class KVServer implements IKVServer {
    	logger.info("Initialize server ...");
    	try {
 		server = new CommMod();
-        server.StartServer(port);
+		listener = new CommListener();
+		server.SetListener(listener);
+		server.StartServer(port);
         logger.info("Server listening on port: " 
     	   		+ port);    
         return true;
@@ -80,68 +89,73 @@ public class KVServer implements IKVServer {
 	@Override
 	public int getPort(){
 		// TODO Auto-generated method stub
-		return -1;
+		return port;
 	}
 
 	@Override
     public String getHostname(){
 		// TODO Auto-generated method stub
-		return null;
+		return hostname;
 	}
 
 	@Override
     public CacheStrategy getCacheStrategy(){
 		// TODO Auto-generated method stub
-		return IKVServer.CacheStrategy.None;
+		return cacheStrategy;
 	}
 
 	@Override
     public int getCacheSize(){
 		// TODO Auto-generated method stub
-		return -1;
+		return cache.getCacheSize();
 	}
 
 	@Override
     public boolean inStorage(String key){
 		// TODO Auto-generated method stub
-		return false;
+		return cache.inStorage(key);
 	}
 
 	@Override
     public boolean inCache(String key){
 		// TODO Auto-generated method stub
-		return false;
+		return cache.inCache(key);
 	}
 
 	@Override
     public String getKV(String key) throws Exception{
 		// TODO Auto-generated method stub
-		return "";
+		return cache.get(key);
 	}
 
 	@Override
     public void putKV(String key, String value) throws Exception{
 		// TODO Auto-generated method stub
+		cache.put(key, value);
 	}
 
 	@Override
     public void clearCache(){
 		// TODO Auto-generated method stub
+		cache.clearCache();
 	}
 
 	@Override
     public void clearStorage(){
 		// TODO Auto-generated method stub
+		// cache.clearStorage();
 	}
 
 	@Override
     public void kill(){
 		// TODO Auto-generated method stub
+		cache = null;
 	}
 
 	@Override
     public void close(){
 		// TODO Auto-generated method stub
+		cache = null;
 	}
 
 	public static void main (String[] args) {
