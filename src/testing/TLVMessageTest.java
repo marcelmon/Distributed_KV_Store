@@ -171,6 +171,17 @@ public class TLVMessageTest extends TestCase {
 		}
 	}
 	
+	@Test
+	public void testGetSuccess() {
+		try {
+			TLVMessage msg = new TLVMessage(StatusType.GET_SUCCESS, "a", "b");
+			TLVMessage recovered = new TLVMessage(msg.getBytes());
+			assertTrue(msg.equals(recovered));
+		} catch (KVMessage.FormatException e) {
+			fail("Unexpected format exception");
+		}
+	}
+	
 //	@Test
 //	public void testFromCorruptStream() {
 //		

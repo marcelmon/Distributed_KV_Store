@@ -1,7 +1,7 @@
 package app_kvServer;
 
 import java.net.BindException;
-import java.io.IOException;
+import java.io.*;
 
 import logger.LogSetup;
 
@@ -9,7 +9,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import common.comms.*;
-import common.messages.KVMessage;
+import common.messages.*;
+import common.messages.KVMessage.StatusType;
 
 public class KVServer implements IKVServer, ICommListener {
 	protected static Logger logger = Logger.getRootLogger();
@@ -62,7 +63,6 @@ public class KVServer implements IKVServer, ICommListener {
 	 *           and "LFU".
 	 */
 	public KVServer(int port, int cacheSize, String strategy) {
-		// TODO Auto-generated method stub
 		this.port = port;
 		if(strategy == "LRU") this.cacheStrategy = CacheStrategy.LRU;
 		else if(strategy == "LFU") this.cacheStrategy = CacheStrategy.LFU;
@@ -164,23 +164,45 @@ public class KVServer implements IKVServer, ICommListener {
 	}
 
 	@Override
-	public synchronized void OnMsgRcd(KVMessage msg) {
+	public synchronized void OnMsgRcd(KVMessage msg, OutputStream client) {
 		// TODO The server has received a request from the client - do something with it
 		switch (msg.getStatus()) {
 		case GET:
-			//TODO implement
 			try {
-				getKV(msg.getKey());
+				try {
+					System.out.println("Get");
+					String value = cache.get(msg.getKey());
+					System.out.println(value);
+					KVMessage resp = new TLVMessage(StatusType.GET_SUCCESS, msg.getKey(), value);
+					server.SendMessage(resp, client);
+				} catch (ICache.KeyDoesntExistException e) {
+					System.out.println("Key doesn't exist");
+					KVMessage resp = new TLVMessage(StatusType.GET_ERROR, msg.getKey(), "");
+					server.SendMessage(resp, client);
+				}
+			} catch (KVMessage.FormatException e) {
+				//TODO log - this is unexpected!
 			} catch (Exception e) {
-				logger.error("Error! " + "Key does not exist.");
+				//TODO log - this is serious
 			}
 			break;
 		case PUT:
-			//TODO implement
 			try {
-				putKV(msg.getKey(), msg.getValue());
+				System.out.println("Put " + msg.getKey() + " -> " + msg.getValue());
+				boolean insert = cache.put(msg.getKey(), msg.getValue());
+				KVMessage resp = null;
+				if (insert) {
+					resp = new TLVMessage(StatusType.PUT_SUCCESS, msg.getKey(), null);
+				} else {
+					resp = new TLVMessage(StatusType.PUT_UPDATE, msg.getKey(), null);
+				}
+				server.SendMessage(resp, client);
+			} catch (KVMessage.FormatException e) {
+				//TODO log - this is unexpected!
+				System.out.println("Format exception");
 			} catch (Exception e) {
-				e.getMessage();
+				//TODO log - this is serious
+				System.out.println("Serious exception");
 			}
 			break;
 		default:
