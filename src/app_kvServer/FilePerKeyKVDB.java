@@ -10,6 +10,7 @@ import java.io.*;
 import java.util.Arrays;
 
 import java.util.Objects;
+import java.nio.charset.StandardCharsets;
 public class FilePerKeyKVDB implements IKVDB {
 
 
@@ -47,10 +48,11 @@ public class FilePerKeyKVDB implements IKVDB {
         	File keyValueFile = keyValueFileList[currentIndex];
         	if(keyValueFile.isFile()){
         		try{
-        			byte[] valueBytes = Files.readAllBytes(Paths.get(keyValueFile.getAbsolutePath()));
+        			String allValue = new String(Files.readAllBytes(Paths.get(keyValueFile.getAbsolutePath())));
         			this.currentIndex++;
 		        	// keyValueFile.getName() == keyName,  Arrays.toString(valueBytes) == value
-		        	return new SimpleEntry<String, String>(keyValueFile.getName(),  Arrays.toString(valueBytes));
+		        	return new SimpleEntry<String, String>(keyValueFile.getName(),  allValue);
+
         		}
         		catch(IOException e){
         			return null;
@@ -73,13 +75,16 @@ public class FilePerKeyKVDB implements IKVDB {
 
 
 
-	public FilePerKeyKVDB(String dataDir) throws InvalidPathException{
+	public FilePerKeyKVDB(String dataDir) {
 		
 		File f = new File(dataDir);
 
+        if(!f.exists()){
+            f.mkdir();
+        }
 		if (!f.exists() || !f.isDirectory()) {
 			// throw new InvalidPathException("KVDB data directory path \"" + dataDir + "\" invalid.");
-            return null;
+            return;
 		}
 
 		this.dataDir = dataDir + "/"; // make sure has the trailing slash
@@ -109,8 +114,10 @@ public class FilePerKeyKVDB implements IKVDB {
     	if(f.exists()){
     		if(f.isFile()){
                 try{
-                    byte[] valueBytes = Files.readAllBytes(Paths.get(this.dataDir + key));
-                    return Arrays.toString(valueBytes);
+                    String allValue = new String(Files.readAllBytes(Paths.get(this.dataDir + key)));
+                    return allValue;
+                    // byte[] valueBytes = Files.readAllBytes(Paths.get(this.dataDir + key));
+                    // return Arrays.toString(valueBytes);
                 }
                 catch(IOException e){
 
