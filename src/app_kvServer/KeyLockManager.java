@@ -25,20 +25,23 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 
-public class SynchronizedLockManager implements ILockManager {
-
-	// HashMap<Key, SimpleEntry<KeyLock, LinkedList<ThreadIds in queue>> // maybe have some time info for forced timeouts/ garbage collection
-	protected HashMap<String, SimpleEntry<ReentrantLock, LinkedList<Long>>> keyLocks;
+public class KeyLockManager implements ILockManager {
 
 
-	protected ReentrantLock tableLock = new ReentrantLock();
+	protected HashMap<String, SimpleEntry<ReentrantLock, Integer>> keyLocks;
+
+
+	protected ReentrantLock tableLock;
 
 	private int activeKeyLocks;
 
 
-	public SynchronizedLockManager() {
+	public KeyLockManager() {
 		
 		activeKeyLocks = 0;
+		tableLock = new ReentrantLock();
+
+		keyLocks = new HashMap<String, SimpleEntry<ReentrantLock, Integer>>();
 		
 	}
 
@@ -60,91 +63,80 @@ public class SynchronizedLockManager implements ILockManager {
 
 	/*
 	 * To get a lock, first get lock on table (all lock updates), see if already has the lock, 
-	 * see if there is no one else locking, otherwise add the thread id to the queue and trylock() with timeout.
-	 * 
-	 * Unlock the table lock : either after creating a new key lock (and locking it)
-	 *						 or when found out that this thread already has the key lock
-	 *						Or after adding the thread id to the queue.
+	 * see if there is no one else locking, otherwise add the thread to the queue and trylock() with timeout.
 	 *
-	 *	If the thread id was added to the queue then it will be popped off when the lock is aquired.
 	 */
 
 	@Override
 	public boolean getLock(String key, Duration timeout) throws LockAlreadyHeldException {
-		Long startTimestampMilis = new Date().getTime();
 		if(!getTableLock(timeout)){
-			return false; // timeout reached but this shouldn't happen
-		}
-		else{
-
-			SimpleEntry<ReentrantLock, LinkedList<Long>> keyLockRow = keyLocks.get(key);
-			if(keyLockRow == null){
-				// want to put a new key lock in the table, get that lock, and release the table lock, also initialize the linked list for subsequent threads requesting the key lock
-				
-				ReentrantLock keyLock = new ReentrantLock();
-				keyLock.lock();
-				LinkedList<Long> threadIdQueue = new LinkedList<Long>();
-
-				keyLockRow = new SimpleEntry<ReentrantLock, LinkedList<Long>>(keyLock, threadIdQueue);
-				
-
-				keyLocks.put(key, keyLockRow);
-				activeKeyLocks++;
-				tableLock.unlock();
-				return true;
-			}
-
-			// keyLockRow is Simple Entry, the key is the lock, the value is the linked list queue
-			if(keyLockRow.getKey().isHeldByCurrentThread()){
-				tableLock.unlock();
-				throw new LockAlreadyHeldException("Already have lock " + key);
-			}
-
-			// do this so that when the key lock is released it will not remove the HashMap entry
-			// the releasing thread will have to wait for table lock to be released
-			keyLockRow.getValue().add(Thread.currentThread().getId());
-
-			tableLock.unlock();
-
-			try{
-				// aquire the key lock and move the thread id from the queue
-				boolean hasKeyLock = keyLockRow.getKey().tryLock(timeout.toMillis(), TimeUnit.MILLISECONDS);
-				if(hasKeyLock){
-					keyLockRow.getValue().remove(Thread.currentThread().getId());
-					return true;
-				}
-			}
-			catch(InterruptedException e){
-
-			}
-			
-			keyLockRow.getValue().remove(Thread.currentThread().getId());
 			return false;
 		}
+
+		SimpleEntry<ReentrantLock, Integer> keyLockRow = keyLocks.get(key);
+		if(keyLockRow == null){ // no current lock on this key
+
+			ReentrantLock keyLock = new ReentrantLock(); // Build a new lock for this key
+			keyLock.lock(); // aquire the lock immediately
+			keyLocks.put(key, new SimpleEntry<ReentrantLock, Integer>(keyLock, 1)); // set intial count to 1
+			tableLock.unlock();
+			return true;
+		}
+
+		if(keyLockRow.getKey().isHeldByCurrentThread()){
+			tableLock.unlock();
+			throw new LockAlreadyHeldException("Already have lock " + key);
+		}
+
+		// There is already a lock, increment the counter and call trylock()
+		keyLockRow = new SimpleEntry<ReentrantLock, Integer>(keyLockRow.getKey(), keyLockRow.getValue() + 1);
+		keyLocks.put(key, keyLockRow);
+		tableLock.unlock();
+
+		try{
+			boolean hasKeyLock = keyLockRow.getKey().tryLock(timeout.toMillis(), TimeUnit.MILLISECONDS);
+			if(hasKeyLock){
+				return true; // This is the starting time for the process after aquiring the lock
+			}
+		}
+		catch(InterruptedException e){
+
+		} 
+		// the timeout occured. decrement the counter and see wether to delete from the hash map
+		getTableLock(timeout);
+		
+		if(keyLockRow.getValue() <= 1){ // number of threads alive (including the caller of this function)
+			keyLocks.remove(key);
+			tableLock.unlock();
+			return false;
+		}
+		keyLockRow = new SimpleEntry<ReentrantLock, Integer>(keyLockRow.getKey(), keyLockRow.getValue() - 1);
+		keyLocks.put(key, keyLockRow);
+		tableLock.unlock();
+		return false;
 	}
+	
 
     @Override
     public void releaseLock(String key) throws LockNotHeldException {
-
+    	
     	// no need to lock for checking that this thread is the owner. if it is then it can aquire the table lock after,
-    	ReentrantLock keyLock = keyLocks.get(key).getKey();
-    	if(keyLock == null || !keyLock.isHeldByCurrentThread()){
+    	SimpleEntry<ReentrantLock, Integer> keyLockRow = keyLocks.get(key);
+
+    	if(keyLockRow == null || !keyLockRow.getKey().isHeldByCurrentThread()){
 			throw new LockNotHeldException("Do not have lock " + key);
 		}
-    	if(!getTableLock(Duration.ofSeconds(2))){
-			// return false; // timeout reached but this shouldn't happen
+    	getTableLock(Duration.ofSeconds(2));
+
+		if(keyLocks.get(key).getValue() <= 1){
+			keyLockRow.getKey().unlock();
+			keyLocks.remove(key);
+			tableLock.unlock();
+			return;
 		}
 
-		if(keyLocks.get(key).getValue().size() == 0){
-			// can remove this entry from keyLocks entirely
-			keyLocks.get(key).getKey().unlock();
-			keyLocks.remove(key);
-			activeKeyLocks--;
-		}
-		else{
-			// when the lock is unlocked, some other waiting process will now have it
-			keyLocks.get(key).getKey().unlock();
-		}
+		keyLocks.get(key).setValue(keyLocks.get(key).getValue() - 1);
+		keyLockRow.getKey().unlock();
 		tableLock.unlock();
     }
 
