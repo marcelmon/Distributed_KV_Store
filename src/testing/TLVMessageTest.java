@@ -182,6 +182,25 @@ public class TLVMessageTest extends TestCase {
 		}
 	}
 	
+	@Test
+	public void testUnevenLengths() {
+		try {
+			TLVMessage msg = new TLVMessage(StatusType.PUT, "abc", "defghi");
+			TLVMessage recovered = new TLVMessage(msg.getBytes());
+			assertTrue(msg.equals(recovered));
+		} catch (KVMessage.FormatException e) {
+			fail("Unexpected format exception");
+		}
+		
+		try {
+			TLVMessage msg = new TLVMessage(StatusType.PUT, "abcdef", "bcd");
+			TLVMessage recovered = new TLVMessage(msg.getBytes());
+			assertTrue(msg.equals(recovered));
+		} catch (KVMessage.FormatException e) {
+			fail("Unexpected format exception");
+		}
+	}
+	
 //	@Test
 //	public void testFromCorruptStream() {
 //		
