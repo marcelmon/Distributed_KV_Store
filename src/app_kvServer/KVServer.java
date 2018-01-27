@@ -1,8 +1,6 @@
 package app_kvServer;
 
 import java.net.BindException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.io.IOException;
 
 import logger.LogSetup;
@@ -10,36 +8,36 @@ import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import common.comms.CommListener;
-import common.comms.CommMod;
-import common.comms.ICommListener;
+import common.comms.*;
+import common.messages.KVMessage;
 
-public class KVServer implements IKVServer {
-
-	private static Logger logger = Logger.getRootLogger();
+public class KVServer implements IKVServer, ICommListener {
+	protected static Logger logger = Logger.getRootLogger();
+	protected final int port;
+	protected final CacheStrategy cacheStrategy;
+	protected CommMod server;
+	protected boolean running;
+	protected ICache cache;
 	
-	private int port;
-	private String hostname;
-	private CacheStrategy cacheStrategy;
-	private CommMod server = null;
-	private boolean running;
-	private ICache cache = null;
-	private ICommListener listener = null;
-	
-	public KVServer(int port){
-		this.port = port;
-	}
-	
-	public void run() {
-		
-		// cache = new ICache();
-		running = initializeServer();
-
-		// logger.info("Server stopped.");
+	public void run() throws BindException, Exception {
+		logger.info("Initialize server ...");
+	   	try {
+			server = new CommMod();
+			server.SetListener(this);
+			server.StartServer(port);
+	        logger.info("Server listening on port: " 
+	    	   		+ port);    
+	    } catch (Exception e) {
+	       	logger.error("Error! Cannot open server socket:");
+	        if(e instanceof BindException){
+	           	logger.error("Port " + port + " is already bound!");
+	        }
+	        throw e;
+	    }
 	}
 
 	private boolean isRunning() {
-		return this.running;
+		return running;
 	}
 
 	public void stopServer(){
@@ -53,25 +51,6 @@ public class KVServer implements IKVServer {
 		}
     }
 
-  private boolean initializeServer() {
-   	logger.info("Initialize server ...");
-   	try {
-		server = new CommMod();
-		listener = new CommListener();
-		server.SetListener(listener);
-		server.StartServer(port);
-        logger.info("Server listening on port: " 
-    	   		+ port);    
-        return true;
-    } catch (Exception e) {
-       	logger.error("Error! Cannot open server socket:");
-        if(e instanceof BindException){
-           	logger.error("Port " + port + " is already bound!");
-        }
-        return false;
-    }
-  }
-
 	/**
 	 * Start KV Server at given port
 	 * @param port given port for storage server to operate
@@ -83,78 +62,73 @@ public class KVServer implements IKVServer {
 	 *           and "LFU".
 	 */
 	public KVServer(int port, int cacheSize, String strategy) {
-		// TODO Auto-generated method stub
+		this.port = port;
+		this.cacheStrategy = CacheStrategy.None;
+		cache = new MemOnlyCache(cacheSize);
+		//TODO have a switch statement on "strategy"; throw an exception if not implemented
+		//TODO in the switch, instantiate the cache and set the cachestrategy field
 	}
 
 	@Override
 	public int getPort(){
-		// TODO Auto-generated method stub
 		return port;
 	}
 
 	@Override
     public String getHostname(){
-		// TODO Auto-generated method stub
-		return hostname;
+		//TODO what is the hostname supposed to be?
+		return null;
 	}
 
 	@Override
     public CacheStrategy getCacheStrategy(){
-		// TODO Auto-generated method stub
 		return cacheStrategy;
 	}
 
 	@Override
     public int getCacheSize(){
-		// TODO Auto-generated method stub
 		return cache.getCacheSize();
 	}
 
 	@Override
     public boolean inStorage(String key){
-		// TODO Auto-generated method stub
 		return cache.inStorage(key);
 	}
 
 	@Override
     public boolean inCache(String key){
-		// TODO Auto-generated method stub
 		return cache.inCache(key);
 	}
 
 	@Override
-    public String getKV(String key) throws Exception{
-		// TODO Auto-generated method stub
+    public String getKV(String key) throws ICache.KeyDoesntExistException {
 		return cache.get(key);
 	}
 
 	@Override
     public void putKV(String key, String value) throws Exception{
-		// TODO Auto-generated method stub
 		cache.put(key, value);
 	}
 
 	@Override
-    public void clearCache(){
-		// TODO Auto-generated method stub
+    public void clearCache() {
 		cache.clearCache();
 	}
 
 	@Override
     public void clearStorage(){
-		// TODO Auto-generated method stub
-		// cache.clearStorage();
+		cache.clearPersistentStorage();
 	}
 
 	@Override
     public void kill(){
-		// TODO Auto-generated method stub
+		//TODO verify functionality - this is supposed to kill the server without time to save.
 		cache = null;
 	}
 
 	@Override
     public void close(){
-		// TODO Auto-generated method stub
+		//TODO verify functionality - we want the cache to save to storage before killing it
 		cache = null;
 	}
 
@@ -166,7 +140,7 @@ public class KVServer implements IKVServer {
 				System.out.println("Usage: Server <port>!");
 			} else {
 				int port = Integer.parseInt(args[0]);
-				new KVServer(port).run();
+				new KVServer(port, 10, "").run();  //TODO intelligently set the cache size and cache strategy
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");
@@ -176,6 +150,23 @@ public class KVServer implements IKVServer {
 			System.out.println("Error! Invalid argument <port>! Not a number!");
 			System.out.println("Usage: Server <port>!");
 			System.exit(1);
+		}
+	}
+
+	@Override
+	public synchronized void OnMsgRcd(KVMessage msg) {
+		// TODO The server has received a request from the client - do something with it
+		switch (msg.getStatus()) {
+		case GET:
+			//TODO implement
+			break;
+		case PUT:
+			//TODO implement
+			break;
+		default:
+			//TODO log error
+			// This is either an invalid status, or a SUCCESS/FAIL (which a client shouldn't be sending us)
+			break;
 		}
 	}
 
