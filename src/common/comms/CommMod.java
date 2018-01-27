@@ -47,7 +47,7 @@ public class CommMod implements ICommMod {
         					try {
         						TLVMessage msg = new TLVMessage(bufInput);
         						if (listener != null) {
-        							listener.OnMsgRcd(msg);
+        							listener.OnMsgRcd(msg, client.getOutputStream());
         						}
         					} catch (KVMessage.StreamTimeoutException e) {
         						// we don't care about timeouts here - just keep retrying forever
@@ -109,13 +109,22 @@ public class CommMod implements ICommMod {
 		}
 		
 	}
+	
 	@Override
-	public void SendMessage(KVMessage msg) throws Exception {
+	public void SendMessage(KVMessage msg, OutputStream client) throws Exception {
+        client.write(msg.getBytes());
+	}
+	
+	@Override
+	public KVMessage SendMessage(KVMessage msg) throws KVMessage.StreamTimeoutException, Exception {
 		if (clientSocket == null) {
 			throw new Exception("Not yet connceted to server");
 		}
 		OutputStream output = clientSocket.getOutputStream();
         output.write(msg.getBytes());
+        BufferedInputStream input = new BufferedInputStream(clientSocket.getInputStream());
+        KVMessage response = new TLVMessage(input);
+        return response;
 	}
 	
 	
