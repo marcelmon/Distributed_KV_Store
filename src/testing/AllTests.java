@@ -31,6 +31,7 @@ public class AllTests {
 		clientSuite.addTestSuite(TLVMessageTest.class);
 		clientSuite.addTestSuite(SocketTest.class);
 		clientSuite.addTestSuite(CommModTest.class);
+		clientSuite.addTestSuite(CacheTests.class);
 		return clientSuite;
 	}
 	
