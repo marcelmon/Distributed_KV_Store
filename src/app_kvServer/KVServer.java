@@ -169,13 +169,24 @@ public class KVServer implements IKVServer, ICommListener {
 		switch (msg.getStatus()) {
 		case GET:
 			//TODO implement
+			try {
+				getKV(msg.getKey());
+			} catch (Exception e) {
+				logger.error("Error! " + "Key does not exist.");
+			}
 			break;
 		case PUT:
 			//TODO implement
+			try {
+				putKV(msg.getKey(), msg.getValue());
+			} catch (Exception e) {
+				e.getMessage();
+			}
 			break;
 		default:
 			//TODO log error
 			// This is either an invalid status, or a SUCCESS/FAIL (which a client shouldn't be sending us)
+			logger.error("Error! " + "Invalid status");
 			break;
 		}
 	}
