@@ -19,6 +19,7 @@ public class KVServer implements IKVServer {
 	private static Logger logger = Logger.getRootLogger();
 	
 	private int port;
+	private int cacheSize;
 	private String hostname;
 	private CacheStrategy cacheStrategy;
 	private CommMod server = null;
@@ -28,6 +29,7 @@ public class KVServer implements IKVServer {
 	
 	public KVServer(int port){
 		this.port = port;
+		this.cacheStrategy = CacheStrategy.None;
 	}
 	
 	public void run() {
@@ -84,6 +86,12 @@ public class KVServer implements IKVServer {
 	 */
 	public KVServer(int port, int cacheSize, String strategy) {
 		// TODO Auto-generated method stub
+		this.port = port;
+		this.cacheSize = cacheSize;
+		if(strategy == "None") this.cacheStrategy = CacheStrategy.None;
+		else if(strategy == "LRU") this.cacheStrategy = CacheStrategy.LRU;
+		else if(strategy == "LFU") this.cacheStrategy = CacheStrategy.LFU;
+		else if(strategy == "FIFO") this.cacheStrategy = CacheStrategy.FIFO;
 	}
 
 	@Override
@@ -161,12 +169,18 @@ public class KVServer implements IKVServer {
 	public static void main (String[] args) {
 		try {
 			new LogSetup("logs/server/server.log", Level.ALL);
-			if(args.length != 1) {
-				System.out.println("Error! Invalid number of arguments!");
-				System.out.println("Usage: Server <port>!");
-			} else {
+			if(args.length == 1) {
 				int port = Integer.parseInt(args[0]);
 				new KVServer(port).run();
+			} else if(args.length == 3){
+				int port = Integer.parseInt(args[0]);
+				int cacheSize = Integer.parseInt(args[1]);
+				String strategy = args[2];
+				new KVServer(port, cacheSize, strategy).run();
+			}else {
+				System.out.println("Error! Invalid number of arguments!");
+				System.out.println("Usage: Server <port>!");
+				System.out.println("Usage: Server <port> <cache size> <cache strategy(None,LRU,LFU,FIFO)>!");
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");

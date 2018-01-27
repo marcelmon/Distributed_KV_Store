@@ -233,6 +233,9 @@ public class KVClient implements IKVClient {
 		if(client != null) {
 			client.disconnect();
 			client = null;
+			System.out.println(PROMPT + "You have disconnected from " + this.serverAddress);
+		} else if(!stop) {
+			printError("Not connected!");
 		}
 	}
 	    
