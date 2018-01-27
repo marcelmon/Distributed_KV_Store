@@ -12,10 +12,7 @@ import logger.LogSetup;
 
 import client.KVCommInterface;
 import client.KVStore;
-import common.comms.ICommMod;
-import common.comms.CommMod;
 import common.messages.KVMessage;
-import common.messages.TLVMessage;
 import common.messages.KVMessage.StatusType;
 
 public class KVClient implements IKVClient {
@@ -23,7 +20,6 @@ public class KVClient implements IKVClient {
 	private static Logger logger = Logger.getRootLogger();
 	private static final String PROMPT = "KVClient> ";
 	private BufferedReader stdin;
-	// private ICommMod client = null;
 	private KVCommInterface client = null;
 	private boolean stop = false;
 	
@@ -241,16 +237,12 @@ public class KVClient implements IKVClient {
 	    
     @Override
     public void newConnection(String hostname, int port) throws Exception{
-        // TODO Auto-generated method stub
-		// client = new CommMod();
-        // client.Connect(hostname, port);
 		client = new KVStore(hostname, port);
 		client.connect();
     }
 
     @Override
     public KVCommInterface getStore(){
-        // TODO Auto-generated method stub
         return client;
     }
 

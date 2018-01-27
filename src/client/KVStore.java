@@ -7,7 +7,7 @@ import common.messages.KVMessage.StatusType;
 public class KVStore implements KVCommInterface {
 	private String address;
 	private int port;
-	private ICommMod commMode = null;
+	private ICommMod client = null;
 
 	/**
 	 * Initialize KVStore with address and port of KVServer
@@ -17,33 +17,43 @@ public class KVStore implements KVCommInterface {
 	public KVStore(String address, int port) {
 		this.address = address;
 		this.port = port;
-		commMode = new CommMod();
+		client = new CommMod();
 	}
 
 	@Override
 	public void connect() throws Exception {
-		commMode.Connect(this.address,this.port);
+		client.Connect(address, port);
 	}
 
 	@Override
 	public void disconnect() {
-		commMode.Disconnect();
-		commMode = null;
+		client.Disconnect();
+		client = null;
 	}
 
 	@Override
 	public KVMessage put(String key, String value) throws Exception {
 		StatusType statusType = StatusType.PUT;
-		KVMessage kvmsg = new TLVMessage(statusType,key,value);
-		commMode.SendMessage(kvmsg);
-		return kvmsg;
+		KVMessage tx_msg = new TLVMessage(statusType,key,value);
+		KVMessage rx_msg = null;
+		try {
+			rx_msg = client.SendMessage(tx_msg);
+		} catch (KVMessage.StreamTimeoutException e) {
+			//TODO log error
+		}
+		return rx_msg;
 	}
 
 	@Override
 	public KVMessage get(String key) throws Exception {
 		StatusType statusType = StatusType.GET;
-		KVMessage kvmsg = new TLVMessage(statusType,key,null);
-		commMode.SendMessage(kvmsg);
-		return kvmsg;
+		KVMessage tx_msg = new TLVMessage(statusType,key,null);
+		KVMessage rx_msg = null;
+		try {
+			client.SendMessage(tx_msg);
+		} catch (KVMessage.StreamTimeoutException e) {
+			//TODO log error
+		}
+		return rx_msg;
 	}
 }
