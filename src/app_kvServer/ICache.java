@@ -41,14 +41,14 @@ public interface ICache {
     public String get(String key) throws KeyDoesntExistException;
 
     /**
-     * Put the key-value pair into storage
+     * Insert/update the key-value pair.
      * @return true if new tuple inserted, false if tuple updated
      * @throws Exception if the key was not able to be inserted for an undetermined reason
      */
     public boolean put(String key, String value) throws Exception;
     
     /**
-     * Delete the key-value pair from storage.
+     * Delete the key-value pair.
      */
     public void delete(String key) throws KeyDoesntExistException;
 
