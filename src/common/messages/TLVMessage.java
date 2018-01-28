@@ -39,11 +39,11 @@ public class TLVMessage implements KVMessage {
 		this.status = status;
 		
 		// Format checks:
-		if (status != StatusType.PUT && value != null) {
-			throw new FormatException("Value on non-PUT TLVMessage");
+		if (status != StatusType.PUT && status != StatusType.GET_SUCCESS && value != null) {
+			throw new FormatException("Value on non-PUT, non-GET_SUCCESS TLVMessage");
 		}
-		if (status == StatusType.PUT && value == null) {
-			throw new FormatException("No value on PUT TLVMessage");
+		if ((status == StatusType.PUT || status == StatusType.GET_SUCCESS) && value == null) {
+			throw new FormatException("No value on PUT or GET_SUCCESS TLVMessage");
 		}
 	}
 	
@@ -97,7 +97,7 @@ public class TLVMessage implements KVMessage {
 				f1.getBytes(),  			//src buffer
 				0,							//start pos in src buffer 
 				output, 					//dst buffer
-				1+numFields+f1.length(),    //start pos in dst buffer
+				1+numFields+f0.length(),    //start pos in dst buffer
 				f1.length());				//write len
 		return output;
 	}
@@ -147,7 +147,7 @@ public class TLVMessage implements KVMessage {
 		byte[] output = null;
 		byte tag = (byte) status.ordinal();
 		
-		if (status == StatusType.PUT) {
+		if (status == StatusType.PUT || status == StatusType.GET_SUCCESS) {
 			output = toTLV2Field(tag, key, value);
 		} else {
 			output = toTLV1Field(tag, key);
@@ -162,7 +162,7 @@ public class TLVMessage implements KVMessage {
 		
 		status = StatusType.values()[bytes[0]];
 		
-		if (status == StatusType.PUT) {
+		if (status == StatusType.PUT || status == StatusType.GET_SUCCESS) {
 			fromTLV2Field(status, bytes);
 		} else {
 			fromTLV1Field(status, bytes);
@@ -215,7 +215,7 @@ public class TLVMessage implements KVMessage {
 			// Calculate remaining length:
 			StatusType status = StatusType.values()[tag];
 			int msgLen = -1;
-			if (status == StatusType.PUT) {
+			if (status == StatusType.PUT || status == StatusType.GET_SUCCESS) {
 				// Allow TIMEOUT ms for data to become available:
 				t0 = System.currentTimeMillis();
 				while (stream.available() < 2) {
