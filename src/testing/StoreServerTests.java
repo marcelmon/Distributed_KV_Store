@@ -185,7 +185,7 @@ public class StoreServerTests extends TestCase {
 		KVMessage resp = store1.get("A");
 		store1.disconnect();
 		
-		// We should have lost the value:
+		// We should *NOT* have lost the value:
 		assertFalse(resp == null);
 		KVMessage exp = new TLVMessage(StatusType.GET_SUCCESS, "A", "B");
 		assertTrue(resp.equals(exp));
