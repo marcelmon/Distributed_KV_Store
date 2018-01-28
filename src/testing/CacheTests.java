@@ -1,6 +1,8 @@
 package testing;
 
 import java.util.Iterator;
+import java.util.Map;
+import java.lang.reflect.Constructor;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 
@@ -240,7 +242,7 @@ public class CacheTests extends TestCase {
 	@Test
 	public void testLoadCache() throws Exception {
 		// Contents to load:
-		ArrayList<SimpleEntry<String, String>> list = new ArrayList<>();
+		ArrayList<Map.Entry<String, String>> list = new ArrayList<>();
 		String[] keys = {"a", "b", "c"};
 		String[] values = {"1", "2", "3"};
 		assertTrue(keys.length == values.length);
@@ -314,6 +316,56 @@ public class CacheTests extends TestCase {
 				} else {
 					assertTrue(cache.inCache(Integer.toString(i)));
 				}
+			}
+		}
+	}
+	
+	@Test
+	public void testWriteThrough() throws Exception {
+		final int N = 10;
+		for (ICache cache : caches ) {
+			if (cache.getClass().equals(MemOnlyCache.class)) {
+//				System.out.println("Skipping " + MemOnlyCache.class.getSimpleName());
+				// Skip MemOnlyCache because it doesn't maintain capacity
+				break;
+			}
+			
+			// Clear the cache and storage for good measure:
+			cache.clearCache();
+			cache.clearPersistentStorage();
+			
+			// Make sure we know the capacity of the cache. If not, this test might fail or pass
+			// incorrectly as we need to *know* when the cache will start evicting.
+			assertTrue(cache.getCacheSize() == N);
+			
+			// Write some data into the cache:
+			cache.put("0", "100");
+			cache.put("1", "101");
+			
+			// Ensure it's not in storage:
+			assertFalse(cache.inStorage("a"));
+			assertFalse(cache.inStorage("c"));
+			
+			// Write enough data that the cache overflows:
+			for (int i = 2; i < N+1; i++ ) {
+				cache.put(Integer.toString(i), Integer.toString(i+100));
+			}
+			
+			// We expect the last item to be evicted and placed in storage:
+			assertFalse(cache.inCache("9"));
+			assertTrue(cache.inStorage("9"));
+			
+			// Write through to storage:
+			cache.writeThrough();
+			
+			// Ensure everything is in storage:
+			for (int i = 0; i < N+1; i++) {
+				assertTrue(cache.inStorage(Integer.toString(i)));
+			}
+			
+			// Ensure we can retrieve everything:
+			for (int i = 0; i < N+1; i++) {
+				assertTrue(cache.get(Integer.toString(i)).equals(Integer.toString(i+100)));
 			}
 		}
 	}
