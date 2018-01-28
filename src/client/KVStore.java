@@ -22,7 +22,11 @@ public class KVStore implements KVCommInterface {
 
 	@Override
 	public void connect() throws Exception {
-		client.Connect(address, port);
+		try {
+			client.Connect(address, port);
+		} catch (Exception e) {
+			throw new Exception(e.getMessage());
+		}
 	}
 
 	@Override
@@ -38,7 +42,7 @@ public class KVStore implements KVCommInterface {
 		KVMessage rx_msg = null;
 		try {
 			rx_msg = client.SendMessage(tx_msg);
-			System.out.println(rx_msg.getStatus());
+			// System.out.println(rx_msg.getStatus());
 		} catch (KVMessage.StreamTimeoutException e) {
 			//TODO log error
 		}
@@ -52,7 +56,7 @@ public class KVStore implements KVCommInterface {
 		KVMessage rx_msg = null;
 		try {
 			rx_msg = client.SendMessage(tx_msg);
-			System.out.println(rx_msg.getStatus());
+			// System.out.println(rx_msg.getStatus());
 		} catch (KVMessage.StreamTimeoutException e) {
 			//TODO log error
 		}

@@ -65,7 +65,8 @@ public class KVClient implements IKVClient {
 					printError("Could not establish connection!");
 					logger.warn("Could not establish connection!", e);
 				} catch (Exception e) {
-                    e.getMessage();
+                    // e.getMessage();
+					printError(e.getMessage());
                 }
 			} else {
 				printError("Invalid number of parameters!");
@@ -114,6 +115,7 @@ public class KVClient implements IKVClient {
 							printError("Put failed.");
 						} else if(statusType == StatusType.PUT_UPDATE) {
 							System.out.println(PROMPT + "Update " + key + " succeeded.");
+							System.out.println(PROMPT + "Value: " + msg.toString());
 						} else if(statusType == StatusType.DELETE_SUCCESS) {
 							System.out.println(PROMPT + "Delete " + key + " succeeded.");
 						} else if(statusType == StatusType.DELETE_ERROR) {
@@ -122,7 +124,7 @@ public class KVClient implements IKVClient {
 							printError("Nothing happened.");
 						}
 					} catch (Exception e) {
-						e.getMessage();
+						printError(e.getMessage());
 					}
 				} else {
 					printError("Not connected!");
@@ -147,7 +149,8 @@ public class KVClient implements IKVClient {
 							printError("Nothing happened.");
 						}
 					} catch (Exception e) {
-						e.getMessage();
+							printError("Get failed.");
+							// printError(e.getMessage());
 					}
 				} else {
 					printError("Not connected!");
@@ -229,7 +232,7 @@ public class KVClient implements IKVClient {
 		if(client != null) {
 			client.disconnect();
 			client = null;
-			System.out.println(PROMPT + "You have disconnected from " + this.serverAddress);
+			System.out.println(PROMPT + "You have disconnected from " + this.serverAddress + " on port " + this.serverPort);
 		} else if(!stop) {
 			printError("Not connected!");
 		}
@@ -237,8 +240,14 @@ public class KVClient implements IKVClient {
 	    
     @Override
     public void newConnection(String hostname, int port) throws Exception{
-		client = new KVStore(hostname, port);
-		client.connect();
+		try {
+			client = new KVStore(hostname, port);
+			client.connect();
+			System.out.println(PROMPT + "Connection established to " + this.serverAddress + " on port " + this.serverPort);
+		} catch (Exception e) {
+			client = null;
+			throw new Exception(e.getMessage());
+		}
     }
 
     @Override

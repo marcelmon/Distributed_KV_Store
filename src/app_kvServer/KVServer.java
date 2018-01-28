@@ -146,7 +146,8 @@ public class KVServer implements IKVServer, ICommListener {
 					String strategy = args[2];
 					new KVServer(port, cacheSize, strategy).run();
 				} catch (Exception e) {
-					e.getMessage();
+					logger.error("Error! " +
+					e.getMessage());
 				}
 			}else {
 				System.out.println("Error! Invalid number of arguments!");
@@ -182,8 +183,12 @@ public class KVServer implements IKVServer, ICommListener {
 				}
 			} catch (KVMessage.FormatException e) {
 				//TODO log - this is unexpected!
+				logger.error("Error! " +
+				e.getMessage());
 			} catch (Exception e) {
 				//TODO log - this is serious
+				logger.error("Error! " +
+				e.getMessage());
 			}
 			break;
 		case PUT:
