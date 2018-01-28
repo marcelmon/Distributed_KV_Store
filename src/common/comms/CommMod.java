@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 
 import org.apache.log4j.Level;
 
@@ -72,6 +74,7 @@ public class CommMod implements ICommMod {
 		tx_port = port;
 		try {
 			serverSocket = new ServerSocket(port);
+			serverSocket.setSoTimeout(50);
 		} catch (IOException exc) {
 			throw new Exception(exc.getMessage());
 		}
@@ -81,19 +84,26 @@ public class CommMod implements ICommMod {
         	@Override
         	public void run() {
         		try {    
-        			while (!interrupted()) {
-        				System.out.println("Server listening on port: " + tx_port);    
-	                    Socket client = serverSocket.accept();
-	                    new ClientThread(client).start();
-        			}        			
+        			while (!interrupted() && !serverSocket.isClosed()) {
+//        				System.out.println("Server listening on port: " + tx_port);
+        				try {
+		                    Socket client = serverSocket.accept();
+		                    new ClientThread(client).start();
+        				} catch (SocketException e) {
+        					if (serverSocket.isClosed()) {
+        						// dont care - we're just closing
+        					} else {
+	        					e.printStackTrace();
+	        					throw new RuntimeException("Unexpected error occurred");
+        					}
+        				} catch (SocketTimeoutException e) {
+        					// do nothing
+        				}
+        			}    
+//        			System.out.println("Server thread exiting");
         		} catch (IOException exc) {
+        			exc.printStackTrace();
         			throw new RuntimeException("Server failure");
-        		} finally {
-        			try {
-        				serverSocket.close();
-        			} catch (IOException e) {
-        				throw new RuntimeException("Server failure");
-        			}
         		}
         	}
         };
@@ -103,6 +113,12 @@ public class CommMod implements ICommMod {
 	public void StopServer() {
 		if (serverThread != null) {
 			serverThread.interrupt();
+			try {
+				serverSocket.close();
+			} catch (IOException e) {
+				System.out.println("Failed to close server socket!");
+				e.printStackTrace();
+			}
 			try {
 				serverThread.join(1000);
 			} catch (InterruptedException e) {
@@ -140,7 +156,7 @@ public class CommMod implements ICommMod {
 	
 	@Override
 	public void SendMessage(KVMessage msg, OutputStream client) throws Exception {
-        client.write(msg.getBytes());
+		client.write(msg.getBytes());
 	}
 	
 	@Override

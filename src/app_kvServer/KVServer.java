@@ -27,7 +27,7 @@ public class KVServer implements IKVServer, ICommListener {
 			server.SetListener(this);
 			server.StartServer(port);
 	    } catch (Exception e) {
-	       	logger.error("Error! Cannot open server socket:");
+	       	logger.error("Error! Cannot open server socket: " + port);
 	        if(e instanceof BindException){
 	           	logger.error("Port " + port + " is already bound!");
 	        }
@@ -38,17 +38,6 @@ public class KVServer implements IKVServer, ICommListener {
 	private boolean isRunning() {
 		return running;
 	}
-
-	public void stopServer(){
-        running = false;
-        try {
-			server.StopServer();
-			server = null;
-		} catch (Exception e) {
-			logger.error("Error! " +
-			"Unable to close socket on port: " + port, e);
-		}
-    }
 
 	/**
 	 * Start KV Server at given port
@@ -141,10 +130,12 @@ public class KVServer implements IKVServer, ICommListener {
     public void close(){
 		try {
 			cache.writeThrough();
-			server.Disconnect();
+			server.StopServer();
+			running = false;
 		} catch (Exception e) {
 			//TODO do something with this
 			System.out.println("Failed to close cache cleanly");
+			e.printStackTrace();
 		}
 		cache = null;
 	}
@@ -181,7 +172,6 @@ public class KVServer implements IKVServer, ICommListener {
 		// TODO The server has received a request from the client - do something with it
 		switch (msg.getStatus()) {
 		case GET:
-//			System.out.println("GET");
 			try {
 				try {
 					String value = cache.get(msg.getKey());
@@ -190,13 +180,14 @@ public class KVServer implements IKVServer, ICommListener {
 					server.SendMessage(resp, client);
 				} catch (ICache.KeyDoesntExistException e) {
 //					System.out.println("Key doesn't exist: " + msg.getKey());
-					KVMessage resp = new TLVMessage(StatusType.GET_ERROR, msg.getKey(), "");
+					KVMessage resp = new TLVMessage(StatusType.GET_ERROR, msg.getKey(), null);
 					server.SendMessage(resp, client);
 				}
 			} catch (KVMessage.FormatException e) {
+				e.printStackTrace();
 				//TODO log - this is unexpected!
 			} catch (Exception e) {
-				//TODO log - this is serious
+				throw new RuntimeException(e.getMessage());
 			}
 			break;
 		case PUT:

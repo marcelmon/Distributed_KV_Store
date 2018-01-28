@@ -18,9 +18,10 @@ import common.messages.TLVMessage;
 
 public class StoreServerTests extends TestCase {
 	@Override
-	public void setUp() {
+	public void setUp() throws Exception {
 		// Make sure to clear the physical storage:
 		KVServer serv = new KVServer(3000, 10, "LFU");
+		serv.run();
 		serv.clearStorage();
 		serv.close();
 	}
@@ -91,43 +92,65 @@ public class StoreServerTests extends TestCase {
 		}
 	}
 	
-//	@Test
-//	public void testKill() throws Exception {
-//		final int port = 2000;
-//		
-//		// Generate a server:
-//		KVServer server0 = new KVServer(port, 10, "LFU");
-//		server0.run(); // in new thread
-//		
-//		// Store writes to server:
-//		KVStore store0 = new KVStore("localhost", port);
-//		store0.connect();
-//		store0.put("A", "B");
-//		store0.disconnect();
-//		
-//		// Check that the server has the value in cache but not in storage:
-//		assertTrue(server0.inCache("A"));
-//		assertFalse(server0.inStorage("A"));
-//		
-//		// Kill the server:
-//		server0.kill();
-//		server0 = null;
-//		
-//		// Generate a new server (which should have the same db)
-//		// Notably, the original server may still be on port so we increment
-//		KVServer server1 = new KVServer(port+1, 10, "LFU");
-//		server1.run();
-//		
-//		// Store reads from server:
-//		KVStore store1 = new KVStore("localhost", port+1);
-//		store1.connect();
-//		KVMessage resp = store1.get("A");
-//		store1.disconnect();
-//		
-//		// We should have lost the value:
-//		assertFalse(resp == null);
-//		assertTrue(resp.getStatus().equals(StatusType.GET_ERROR));
-//	}
+	@Test
+	public void testGetNotPresent() throws Exception {
+		final int port = 2600;
+		
+		// Generate a server:
+		KVServer server0 = new KVServer(port, 10, "LFU");
+		server0.run(); // in new thread
+		assertFalse(server0.inCache("A"));
+		assertFalse(server0.inStorage("A"));
+		
+		// Store reads from server:
+		KVStore store0 = new KVStore("localhost", port);
+		store0.connect();
+		KVMessage resp = store0.get("A");
+		store0.disconnect();
+		
+		// Correct message:
+		KVMessage exp = new TLVMessage(StatusType.GET_ERROR, "A", null);
+		assertFalse(resp == null);
+		assertTrue(resp.equals(exp));
+	}
+	
+	@Test
+	public void testKill() throws Exception {
+		final int port = 2500;
+		
+		// Generate a server:
+		KVServer server0 = new KVServer(port, 10, "LFU");
+		server0.run(); // in new thread
+		
+		// Store writes to server:
+		KVStore store0 = new KVStore("localhost", port);
+		store0.connect();
+		store0.put("A", "B");
+		store0.disconnect();
+		
+		// Check that the server has the value in cache but not in storage:
+		assertTrue(server0.inCache("A"));
+		assertFalse(server0.inStorage("A"));
+		
+		// Kill the server:
+		server0.kill();
+		server0 = null;
+		
+		// Generate a new server (which should have the same db)
+		// Notably, the original server may still be on port so we increment
+		KVServer server1 = new KVServer(port+1, 10, "LFU");
+		server1.run();
+		
+		// Store reads from server:
+		KVStore store1 = new KVStore("localhost", port+1);
+		store1.connect();
+		KVMessage resp = store1.get("A");
+		store1.disconnect();
+		
+		// We should have lost the value:
+		assertFalse(resp == null);
+		assertTrue(resp.getStatus().equals(StatusType.GET_ERROR));
+	}
 	
 	@Test
 	public void testClose() throws Exception {
