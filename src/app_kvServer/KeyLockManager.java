@@ -39,7 +39,7 @@ public class KeyLockManager implements ILockManager {
 	public KeyLockManager() {
 		
 		activeKeyLocks = 0;
-		tableLock = new ReentrantLock();
+		tableLock = new ReentrantLock(true);
 
 		keyLocks = new HashMap<String, SimpleEntry<ReentrantLock, Integer>>();
 		
@@ -76,7 +76,7 @@ public class KeyLockManager implements ILockManager {
 		SimpleEntry<ReentrantLock, Integer> keyLockRow = keyLocks.get(key);
 		if(keyLockRow == null){ // no current lock on this key
 
-			ReentrantLock keyLock = new ReentrantLock(); // Build a new lock for this key
+			ReentrantLock keyLock = new ReentrantLock(true); // Build a new lock for this key
 			keyLock.lock(); // aquire the lock immediately
 			keyLocks.put(key, new SimpleEntry<ReentrantLock, Integer>(keyLock, 1)); // set intial count to 1
 			tableLock.unlock();
@@ -119,7 +119,7 @@ public class KeyLockManager implements ILockManager {
 
     @Override
     public void releaseLock(String key) throws LockNotHeldException {
-    	
+
     	// no need to lock for checking that this thread is the owner. if it is then it can aquire the table lock after,
     	SimpleEntry<ReentrantLock, Integer> keyLockRow = keyLocks.get(key);
 
