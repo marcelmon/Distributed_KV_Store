@@ -13,6 +13,16 @@ public interface ICache {
 			super(msg);
 		}
 	}
+	
+	/**
+	 * Thrown if a critical exception occurs with storage e.g. an inability to write.
+	 */
+	public class StorageException extends Exception {
+		private static final long serialVersionUID = 1L;
+		public StorageException(String msg) {
+			super(msg);
+		}
+	}
 
     /**
      * Get the (maximum) cache size
@@ -38,7 +48,7 @@ public interface ICache {
     /**
      * Get the value associated with the key
      */
-    public String get(String key) throws KeyDoesntExistException;
+    public String get(String key) throws KeyDoesntExistException, StorageException;
 
     /**
      * Insert/update the key-value pair.

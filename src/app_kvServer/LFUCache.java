@@ -16,21 +16,108 @@ import java.util.Objects;
 import app_kvServer.ILockManager.LockAlreadyHeldException;
 
 public class LFUCache implements ICache {
-    protected LinkedHashMap<String, String> map;
+    protected HashMap<String, String> map;  // the cache
+    protected HashMap<String, Integer> usageCounter; // the hit counter on members of cache 
     protected final int capacity;
-    
-
     protected KeyLockManager keyLockManager;
-
     protected FilePerKeyKVDB kvdb;
 
     public LFUCache(int capacity) {
-        map = new LinkedHashMap<>(capacity);
-        this.capacity = capacity;
-
+    	this.capacity = capacity;
+        map = new HashMap<>(capacity);
+        usageCounter = new HashMap<>(capacity);
         keyLockManager = new KeyLockManager();
-
         kvdb = new FilePerKeyKVDB("./data_dir");
+    }
+    
+    /**
+     * Get a value from the cache, and update the counter.
+     */
+    protected String getFromCache(String key) throws KeyDoesntExistException {
+    	if (!map.containsKey(key)) {
+    		throw new KeyDoesntExistException("Key not found: " + key);
+    	}
+    	if (!usageCounter.containsKey(key)) {
+    		throw new RuntimeException("Cache and usageCounter out of sync!");
+    	}
+    	usageCounter.put(key, usageCounter.get(key) + 1);
+    	return map.get(key);
+    }
+    
+    /**
+     * Evicts the key from the cache, writing through to the persistent storage.
+     * @param key
+     */
+    protected void evict(String key) throws Exception {
+    	String value = map.get(key);
+    	kvdb.put(key, value);
+    	map.remove(key);
+    	usageCounter.remove(key);
+    }
+    
+    /**
+     * If the key is already in the cache:
+     *   * returns false (i.e. update) but takes not other action
+     * If the key is in the db:
+     *   * (Potentially) evicts LFU key from cache
+     *   * Writes key from db through to cache
+     *   * Sets hit counter of new key to 0
+     * If the key is not in the db:
+     *   * (Potentially) evicts LFU key from cache
+     *   * Writes an empty key into the cache (value="")
+     *   * Sets hit counter of new key to 0
+     * @return true if key wasn't in storage (i.e. insert); false if key was in storage (i.e. update)
+     */
+    protected boolean evictAndReplace(String key) throws KeyDoesntExistException, Exception {
+    	if (map.containsKey(key)) {
+    		return false; // already in cache so already primed and ready to go; false means update
+    	} else {
+    		// If above capacity (incl inserted key), evict LFU:
+			if (map.size() + 1 >= capacity) {
+				// TODO O(n) search for LFU - can easily make more efficient!
+    			String lfuKey = null;
+    			Integer lfuCnt = null;
+    			Iterator<String> it = map.keySet().iterator();
+    			while (it.hasNext()) {
+    				String k = it.next();
+    				Integer c = usageCounter.get(k);
+    				if (lfuCnt == null || c < lfuCnt ) {
+    					lfuKey = k;
+    					lfuCnt = c;
+    				}
+    			}
+    			if (lfuKey != null) {
+    				evict(lfuKey);
+    			}
+			}
+    		
+    		if (kvdb.inStorage(key)) { 				// storage hit
+    			String value = kvdb.get(key);
+    			map.put(key, value);
+    			usageCounter.put(key, 0);
+    			return false; // update
+    		} else {								// storage miss
+    			// Create placeholder
+    			map.put(key, "");
+    			usageCounter.put(key, 0);
+    			return true; // insert
+    		}
+    	}
+    }
+    
+    /**
+     * Put a value into the cache, update the counter, potentially evict the LFU cache member.
+     */
+    protected boolean putIntoCache(String key, String value) throws Exception {
+    	// Ensure the value is in cache. We want to avoid it being in the storage but not
+    	// the cache as this can lead to synchronization errors:
+    	boolean inserted = evictAndReplace(key);
+    	
+    	// Perform an insert:
+        map.put(key, value);
+    	usageCounter.put(key, usageCounter.get(key) + 1);
+    	
+    	return inserted;
     }
 
     @Override
@@ -39,9 +126,6 @@ public class LFUCache implements ICache {
     }
 
     @Override
-    /**
-     * This class doesn't provide persistent storage. 
-     */
     public boolean inStorage(String key) {
         return kvdb.inStorage(key);
     }
@@ -52,20 +136,20 @@ public class LFUCache implements ICache {
     }
 
     @Override
-    public synchronized String get(String key) throws KeyDoesntExistException {
-        if (map.containsKey(key)) {
-            return map.get(key);            
-        } else {
-            if(kvdb.inStorage(key)){
-                try{
-                    String value = kvdb.get(key);
-                    map.put(key, value);
-                    return value;
-                }catch(IKVDB.KeyDoesntExistException e){
-                    throw new KeyDoesntExistException("Key \"" + key + "\" doesn't exist");
-                }
+    public synchronized String get(String key) throws KeyDoesntExistException, StorageException {   	
+        if (map.containsKey(key)) {				// cache hit
+        	return getFromCache(key);
+        } else {								// cache miss
+            if (kvdb.inStorage(key)){			// storage hit
+            	try {
+            		evictAndReplace(key);
+            	} catch (Exception e) {
+            		throw new StorageException(e.getMessage());
+            	}
+            	return getFromCache(key);
+            } else {							// storage miss
+            	throw new KeyDoesntExistException("Key \"" + key + "\" doesn't exist");
             }
-            throw new KeyDoesntExistException("Key \"" + key + "\" doesn't exist");
         }
     }
 
@@ -78,23 +162,16 @@ public class LFUCache implements ICache {
     public synchronized boolean put(String key, String value) throws Exception {
         boolean gotLock = keyLockManager.getLock(key, Duration.ofSeconds(5));
         if(!gotLock){
-            throw new Exception("Key " + key + " not updated!");
+            throw new Exception("Failed to get lock on key=" + key);
         }
-        if(map.containsKey(key)){
-            if(Objects.equals(map.get(key), value)){
-                // no update
-                return false;
-            }
-            // else the cached value is different
-            map.put(key, value);
-            kvdb.put(key, value);
-            keyLockManager.releaseLock(key);
-            return false; // tuple updated
-        }
-        map.put(key, value); // map.put returns null if no previous mapping
-        kvdb.put(key, value);
+        // we now have a lock on the key
+        
+        boolean inserted = this.putIntoCache(key, value);
+        
+        // We must remember to release the lock
         keyLockManager.releaseLock(key);
-        return true;
+        
+        return inserted;
     }
 
     @Override
@@ -102,38 +179,49 @@ public class LFUCache implements ICache {
         boolean gotLock;
         try{
             gotLock = keyLockManager.getLock(key, Duration.ofSeconds(5));
-        }catch(LockAlreadyHeldException e){
+        } catch(LockAlreadyHeldException e){
             gotLock = true;
         }
         if(!gotLock){
-            return;
+        	throw new RuntimeException("Failed to acquire a lock!");
         }
-        if(!kvdb.inStorage(key)){
-            throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");
+        
+        // Remove the key from the database and storage. If it doesn't exist in either, throw an exception.
+        // Notably, it is possible for it to exist in just the cache, just the db, or in both.
+        boolean existed = false;
+        if (map.containsKey(key)) {
+        	map.remove(key);
+        	existed = true;
         }
-        try{    
-            kvdb.delete(key);
-            map.remove(key);
-            try{
-                keyLockManager.releaseLock(key);
-            }catch(KeyLockManager.LockNotHeldException ee){
-            }
-        }catch(IKVDB.KeyDoesntExistException e){
-            try{
-                keyLockManager.releaseLock(key);
-            }catch(KeyLockManager.LockNotHeldException ee){
-            }
-            throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");
+        if (kvdb.inStorage(key)) {
+        	try {
+        		kvdb.delete(key);        		
+        		existed = true;
+        	} catch (IKVDB.KeyDoesntExistException e) {
+        		throw new RuntimeException("Fatal error: key doesnt exist after db reports it does");
+        	}
         }
-        return;
+        if (!existed) {
+        	throw new KeyDoesntExistException("Key doesnt exist in cache or db: " + key);
+        }
+        
+        // Always release the lock:
+        try {
+            keyLockManager.releaseLock(key);
+        } catch(KeyLockManager.LockNotHeldException ee){
+        	throw new RuntimeException("Completely unexpected! Lock not held");
+        }
+        
     }
 
     @Override
     public synchronized void loadData(Iterator<SimpleEntry<String, String>> iterator) {
         map.clear(); // just in case
+        usageCounter.clear();
         while (iterator.hasNext()) {
             SimpleEntry<String, String> kv = iterator.next();
             map.put(kv.getKey(), kv.getValue());
+            usageCounter.put(kv.getKey(), 0);
         }
     }
 
