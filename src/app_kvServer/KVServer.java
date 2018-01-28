@@ -192,21 +192,40 @@ public class KVServer implements IKVServer, ICommListener {
 			break;
 		case PUT:
 //			System.out.println("PUT");
-			try {
-				boolean insert = cache.put(msg.getKey(), msg.getValue());
-				KVMessage resp = null;
-				if (insert) {
-					resp = new TLVMessage(StatusType.PUT_SUCCESS, msg.getKey(), null);
-				} else {
-					resp = new TLVMessage(StatusType.PUT_UPDATE, msg.getKey(), null);
+			if (msg.getValue().isEmpty()) {     // deletion
+				try {
+					try {
+						cache.delete(msg.getKey());
+						KVMessage resp = new TLVMessage(StatusType.DELETE_SUCCESS, msg.getKey(), null);
+						server.SendMessage(resp, client);
+					} catch (ICache.KeyDoesntExistException e) {
+						KVMessage resp = new TLVMessage(StatusType.DELETE_ERROR, msg.getKey(), null);
+						server.SendMessage(resp, client);
+					}
+				} catch (KVMessage.FormatException e) {
+					//TODO log - this is unexpected!
+					System.out.println("Format exception");
+				} catch (Exception e) {
+					//TODO log - this is serious
+					System.out.println("Serious exception");
 				}
-				server.SendMessage(resp, client);
-			} catch (KVMessage.FormatException e) {
-				//TODO log - this is unexpected!
-				System.out.println("Format exception");
-			} catch (Exception e) {
-				//TODO log - this is serious
-				System.out.println("Serious exception");
+			} else {							//insert/update
+				try {
+					boolean insert = cache.put(msg.getKey(), msg.getValue());
+					KVMessage resp = null;
+					if (insert) {
+						resp = new TLVMessage(StatusType.PUT_SUCCESS, msg.getKey(), null);
+					} else {
+						resp = new TLVMessage(StatusType.PUT_UPDATE, msg.getKey(), null);
+					}
+					server.SendMessage(resp, client);
+				} catch (KVMessage.FormatException e) {
+					//TODO log - this is unexpected!
+					System.out.println("Format exception");
+				} catch (Exception e) {
+					//TODO log - this is serious
+					System.out.println("Serious exception");
+				}
 			}
 			break;
 		default:
