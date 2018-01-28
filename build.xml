@@ -116,6 +116,16 @@
     <fail message="Test failure detected, check test results." if="test.failed" />
   </target>
 	
+<!-- run test cases -->
+  <target name="unittest" depends="build">
+    <junit haltonfailure="no" failureproperty="test.failed">
+      <classpath refid="project.classpath" />
+      <formatter type="brief" usefile="false" />
+      <test name="testing.UnitTests" />
+    </junit>
+    <fail message="Test failure detected, check test results." if="test.failed" />
+  </target>
+	
   <!-- sandbox -->
 	<target name="sandbox" depends="build">
 	    <junit>
