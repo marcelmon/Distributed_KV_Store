@@ -23,6 +23,49 @@ public class CommMod implements ICommMod {
 	protected Thread serverThread;
 	protected Socket clientSocket;
 	
+	protected class ClientThread extends Thread {
+    	protected Socket client;
+    	
+    	public ClientThread(Socket client) {
+    		super();
+    		this.client = client;
+    	}
+    	
+    	@Override
+    	public void run() {
+    		try {
+        		InputStream input = client.getInputStream();
+    			BufferedInputStream bufInput = new BufferedInputStream(input);
+    			
+    			while (!interrupted() && !client.isClosed()) {
+    				if (input.available() > 0) {
+    					try {
+    						TLVMessage msg = new TLVMessage(bufInput);
+    						if (listener != null) {
+    							listener.OnMsgRcd(msg, client.getOutputStream());
+    						} else {
+    							System.out.println("Dropped a message.");
+    						}
+    					} catch (KVMessage.StreamTimeoutException e) {
+    						// we don't care about timeouts here - just keep retrying forever
+    					}
+    				} 
+    				try {
+    					Thread.sleep(10);
+    				} catch (InterruptedException e) {
+    					// do nothing with it
+    				}
+    			}
+    			
+    			if (client.isClosed()) {
+    				System.out.println("Client left.");
+    			}
+    		} catch (IOException exc) {
+    			throw new RuntimeException("Server failure");
+    		}
+    	}
+    };
+	
 	@Override
 	public void StartServer(int port) throws Exception {
 		// Create server:
@@ -37,28 +80,11 @@ public class CommMod implements ICommMod {
         serverThread = new Thread() {           	
         	@Override
         	public void run() {
-        		try {          
-                    Socket client = serverSocket.accept();
-        			InputStream input = client.getInputStream();
-        			BufferedInputStream bufInput = new BufferedInputStream(input);
-        			
+        		try {    
         			while (!interrupted()) {
-        				if (input.available() > 0) {
-        					try {
-        						TLVMessage msg = new TLVMessage(bufInput);
-        						if (listener != null) {
-        							listener.OnMsgRcd(msg, client.getOutputStream());
-        						}
-        					} catch (KVMessage.StreamTimeoutException e) {
-        						// we don't care about timeouts here - just keep retrying forever
-        					}
-        				} 
-        				try {
-        					Thread.sleep(10);
-        				} catch (InterruptedException e) {
-        					// do nothing with it
-        				}
-        			}
+	                    Socket client = serverSocket.accept();
+	                    new ClientThread(client).start();
+        			}        			
         		} catch (IOException exc) {
         			throw new RuntimeException("Server failure");
         		} finally {
@@ -104,6 +130,7 @@ public class CommMod implements ICommMod {
 			try {
 				clientSocket.close();
 			} catch (IOException e) {
+				System.out.println("Failed to close client socket.");
 				//TODO log as a warning
 			}
 		}

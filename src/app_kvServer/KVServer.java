@@ -170,9 +170,7 @@ public class KVServer implements IKVServer, ICommListener {
 		case GET:
 			try {
 				try {
-					System.out.println("Get");
 					String value = cache.get(msg.getKey());
-					System.out.println(value);
 					KVMessage resp = new TLVMessage(StatusType.GET_SUCCESS, msg.getKey(), value);
 					server.SendMessage(resp, client);
 				} catch (ICache.KeyDoesntExistException e) {
@@ -188,7 +186,6 @@ public class KVServer implements IKVServer, ICommListener {
 			break;
 		case PUT:
 			try {
-				System.out.println("Put " + msg.getKey() + " -> " + msg.getValue());
 				boolean insert = cache.put(msg.getKey(), msg.getValue());
 				KVMessage resp = null;
 				if (insert) {
