@@ -1,6 +1,7 @@
 package testing;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 
@@ -396,12 +397,12 @@ public class KVDBTests extends TestCase {
 				}
 				
 				// Get iterator:
-				Iterator<SimpleEntry<String, String>> kvIterator = kvdb.iterator();
+				Iterator<Map.Entry<String, String>> kvIterator = kvdb.iterator();
 				
 				int currentIndex = 0;
 				// check that all key-values returned by the iterator are in the list
 				while(kvIterator.hasNext()){
-					SimpleEntry<String, String> iteratedPair = kvIterator.next();
+					Map.Entry<String, String> iteratedPair = kvIterator.next();
 
 					// check that the key from iterator is in keys
 					int originalIndex = Arrays.asList(keys).indexOf(iteratedPair.getKey());
