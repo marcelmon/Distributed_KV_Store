@@ -23,8 +23,10 @@ import java.util.Objects;
 import java.lang.*;
 
 public class KVDBTests extends TestCase {
-
-
+	protected IKVDB[] kvdbs;
+	protected String rootTestDataDirPath;
+	protected String testDataDirPath;
+	
 	private static void recursiveFileDelete(String rootPath) throws IOException {
 
 		File root = new File(rootPath);
@@ -72,12 +74,6 @@ public class KVDBTests extends TestCase {
 	    throw new Exception("Could not create test data dir " + testDataDirPath); 
 	}
 
-
-	protected IKVDB[] kvdbs;
-
-	protected String rootTestDataDirPath;
-
-	protected String testDataDirPath;
 	@Override
 	public void setUp() {
 
@@ -99,6 +95,8 @@ public class KVDBTests extends TestCase {
 		try{
 	        if(!rootTestDataDir.mkdir()){
 	        	fail("Could not create root test data dir " + rootTestDataDirPath);
+	        } else {
+//	        	System.out.println("Created dir: " + rootTestDataDirPath);
 	        }
 	    } 
 	    catch(Exception e){
@@ -117,6 +115,7 @@ public class KVDBTests extends TestCase {
 	public void tearDown(){
 		try{
 			recursiveFileDelete(this.rootTestDataDirPath);
+//			System.out.println("Deleted dir: " + rootTestDataDirPath);
 		}
 		catch(IOException e){
 			fail("Unexpected exception [" + e.getClass().getSimpleName() + "]: " + e.getMessage());
@@ -127,8 +126,6 @@ public class KVDBTests extends TestCase {
 	@Test
 	public void testInsert() {
 		try {
-			
-
 			String[] keys = {"a", "b", "c"};
 			String[] values = {"1", "2", "3"};
 			assertTrue(keys.length == values.length);
@@ -424,5 +421,26 @@ public class KVDBTests extends TestCase {
 			fail("Unexpected exception [" + e.getClass().getSimpleName() + "]: " + e.getMessage());
 		}
 			
+	}
+	
+	@Test
+	public void testPersistence() {
+		IKVDB db0 = new FilePerKeyKVDB(rootTestDataDirPath);
+		assertFalse(db0.inStorage("a"));
+		try {
+			assertTrue(db0.put("a", "b")); // true => new
+		} catch (Exception e) {
+			fail(e.getMessage());
+		}
+		db0 = null;
+		
+		// New database object:
+		IKVDB db1 = new FilePerKeyKVDB(rootTestDataDirPath);
+		assertTrue(db1.inStorage("a"));
+		try {
+			assertTrue(db1.get("a").equals("b"));
+		} catch (IKVDB.KeyDoesntExistException e) {
+			fail("Key doesn't exist - highly unexpected.");
+		}
 	}
 }
