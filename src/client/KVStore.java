@@ -38,7 +38,6 @@ public class KVStore implements KVCommInterface {
 		KVMessage rx_msg = null;
 		try {
 			rx_msg = client.SendMessage(tx_msg);
-			System.out.println(rx_msg.getStatus());
 		} catch (KVMessage.StreamTimeoutException e) {
 			//TODO log error
 		}
@@ -52,8 +51,8 @@ public class KVStore implements KVCommInterface {
 		KVMessage rx_msg = null;
 		try {
 			rx_msg = client.SendMessage(tx_msg);
-			System.out.println(rx_msg.getStatus());
 		} catch (KVMessage.StreamTimeoutException e) {
+			System.out.println("Stream timeout");
 			//TODO log error
 		}
 		return rx_msg;
