@@ -1,16 +1,9 @@
 package testing;
 
-import java.util.Iterator;
-
-import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-
 import org.junit.*;
 import junit.framework.TestCase;
-import m1.src.app_kvServer.IKVServer.CacheStrategy;
 import app_kvServer.*;
 
-import app_kvServer.*;
 import client.*;
 import common.messages.KVMessage;
 import common.messages.KVMessage.StatusType;
