@@ -25,12 +25,16 @@ import java.time.Duration;
 import java.lang.Integer;
 
 public class LockManagerTest extends TestCase {
-
-
-
-
-
 	protected ILockManager[] lockManagers;
+	public ILockManager currentILock;
+	public boolean lockThreadSuccessful;
+	public Long LockThreadFailTime;
+
+	public ArrayList<Integer> finalTIDOrder;
+	public Integer currentTID;
+	public ArrayList<Integer> listOfEndtimes;
+
+	public long[] longArray;
 
 	@Override
 	public void setUp() {
@@ -44,26 +48,20 @@ public class LockManagerTest extends TestCase {
 			fail("Unexpected exception [" + e.getClass().getSimpleName() + "]: " + e.getMessage());
 		}
 	}
-
 	
 	@Test
 	public void testGetLock() {
-
 		Long startTimeMilli; 
 		Long endTimeMilli; 
 
 		try {
-			
 			boolean hasLockOne = false;
 			boolean hasLockTwo = false;
 			
 			for (ILockManager lockManager : lockManagers) {
-				
 				currentILock = lockManager;
 
 				// Check that can't release a lock we don't have
-
-				
 				boolean caught = false;
 				try {
 					lockManager.releaseLock("a");
@@ -81,11 +79,9 @@ public class LockManagerTest extends TestCase {
 				assertTrue(hasLockOne);
 				assertTrue(endTimeMilli - startTimeMilli < 500);
 
-
 				// check getting same lock throws error
 				caught = false;
 				try {
-
 					startTimeMilli = new Date().getTime();
 					hasLockTwo = lockManager.getLock("a", Duration.ofSeconds(2));
 					endTimeMilli = new Date().getTime();
@@ -96,12 +92,10 @@ public class LockManagerTest extends TestCase {
 				assertTrue(caught);
 				assertTrue(endTimeMilli - startTimeMilli < 500);
 
-				
-				// use a thread to show that it fails after timeout when the lock is already aquired
+				// use a thread to show that it fails after timeout when the lock is already acquired
 				lockThreadSuccessful = true;
 
 				Thread t = new Thread(new Thread() {
-
 					@Override
 					public void run() {
 						try{
@@ -118,10 +112,8 @@ public class LockManagerTest extends TestCase {
 		        t.join();
 		        assertFalse(lockThreadSuccessful);
 		        assertTrue(LockThreadFailTime >= 1000); // show that the timeout of 1s is reached
-		       
 
 		        lockManager.releaseLock("a"); // release the lock
-
 			}
 		} catch (Exception e) {
 			fail("Unexpected exception [" + e.getClass().getSimpleName() + "]: " + e.getMessage());
@@ -130,7 +122,7 @@ public class LockManagerTest extends TestCase {
 
 
 	/*
-	 *	Create 1000 threads and assert that they comlete in a reasonable time.
+	 *	Create 1000 threads and assert that they complete in a reasonable time.
 	 *
 	 */
 	@Test
@@ -141,8 +133,6 @@ public class LockManagerTest extends TestCase {
 		Integer total = 1000;
 
 		try {
-			
-			
 			ArrayList<SimpleEntry<Integer,Thread>> threadList = new ArrayList<SimpleEntry<Integer,Thread>>();
 
 			final Long startTimeOverall = new Date().getTime();
@@ -175,7 +165,6 @@ public class LockManagerTest extends TestCase {
 								Long startTimeMilli2 = new Date().getTime();
 								lockThreadSuccessful = currentILock.getLock("a", Duration.ofSeconds(20));
 
-
 								Long endTimeMilli2 = new Date().getTime();
 								currentILock.releaseLock("a");
 								Long LockThreadFailTime2 = endTimeMilli2 - startTimeMilli2;
@@ -184,9 +173,8 @@ public class LockManagerTest extends TestCase {
 								finalTIDOrder.add(new Integer(tid));
 								listOfEndtimes.add((int)(endTimeMilli2/1000));
 								longArray[tid] = LockThreadFailTime2;
-
-								
 							} catch(Exception e){
+								
 							}
 						}
 					});
@@ -211,7 +199,7 @@ public class LockManagerTest extends TestCase {
 		        Long startTimeMilli3 = new Date().getTime();
 
 		        System.out.print("start : " + startTimeMilli3 + "\n");
-
+		        
 		        while(listOfEndtimes.size() < total){
 		        	Thread.sleep(2);
 		        	if(new Date().getTime() - startTimeMilli3 >  10000){
@@ -219,26 +207,22 @@ public class LockManagerTest extends TestCase {
 		        	}
 		        }
 		        
-
 		        Long end3 = new Date().getTime();
-
 		        System.out.print("end3 : " + end3 + "\n");
-
-
 		        
 		        assertTrue(listOfEndtimes.size() == total); // handles 1000 (or total) threads
 
-		        for(Integer tidN : finalTIDOrder) {
+//		        for(Integer tidN : finalTIDOrder) {
 		        	// System.out.print("Order compelted : " + tidN + "\n");
-		        }
+//		        }
 
-		        for(Integer theTime : listOfEndtimes) {
+//		        for(Integer theTime : listOfEndtimes) {
 		        	// System.out.print("PRINTING time : " + theTime + "\n");
-		        }
+//		        }
 
-		        for(long ii : longArray){
+//		        for(long ii : longArray){
 		        	// System.out.print("PRINTING time 2 : " + ii + "\n");
-		        }
+//		        }
 
 		        // assertTrue(lockThreadSuccessful);
 		        // assertTrue(LockThreadFailTime < 1000); // show that the timeout of 1s is reached
@@ -246,7 +230,6 @@ public class LockManagerTest extends TestCase {
 		        // print LockThreadFailTime;
 
 		        System.out.print("Order compelted : " + new Date().getTime() + "\n");
-			
 		    }
 			    
 		}
@@ -256,16 +239,6 @@ public class LockManagerTest extends TestCase {
 	}
 
 	// also do for holding multiple locks, the synchronisation (when holding a lock with a queue, then releasing it, the next in queue gets it)
-
-	public ILockManager currentILock;
-	public boolean lockThreadSuccessful;
-	public Long LockThreadFailTime;
-
-	public ArrayList<Integer> finalTIDOrder;
-	public Integer currentTID;
-	public ArrayList<Integer> listOfEndtimes;
-
-	public long[] longArray;
 }
 
 

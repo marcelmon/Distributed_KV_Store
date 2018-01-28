@@ -17,7 +17,7 @@ public class CacheTests extends TestCase {
 		desiredCapacity = 10;
 		caches = new ICache[2];
 		caches[0] = new MemOnlyCache(desiredCapacity);
-		caches[1] = new LRUCache(desiredCapacity);
+		caches[1] = new LFUCache(desiredCapacity);
 	}
 	
 	@Test
