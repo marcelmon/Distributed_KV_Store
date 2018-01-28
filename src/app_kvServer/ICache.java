@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.AbstractMap.*;
 
 public interface ICache {
@@ -65,7 +66,12 @@ public interface ICache {
     /**
      * Called to load the data into the cache from IKVDB.iterator()
     */
-    public void loadData(Iterator<SimpleEntry<String, String>> iterator);
+    public void loadData(Iterator<Map.Entry<String, String>> iterator);
+    
+    /**
+     * Returns an Iterator of key value pairs that will be used to load data into the storage.
+    */
+    public Iterator<Map.Entry<String, String>> iterator();
 
     /**
      * Clear the local cache of the server
@@ -76,5 +82,10 @@ public interface ICache {
      * Clear the storage of the server
      */
     public void clearPersistentStorage();
+    
+    /**
+     * Ensure the storage is up to date with the cache.
+     */
+    public void writeThrough() throws Exception;
 
 }

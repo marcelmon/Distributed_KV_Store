@@ -26,8 +26,6 @@ public class KVServer implements IKVServer, ICommListener {
 			server = new CommMod();
 			server.SetListener(this);
 			server.StartServer(port);
-	        logger.info("Server listening on port: " 
-	    	   		+ port);    
 	    } catch (Exception e) {
 	       	logger.error("Error! Cannot open server socket:");
 	        if(e instanceof BindException){
@@ -114,7 +112,7 @@ public class KVServer implements IKVServer, ICommListener {
 	}
 
 	@Override
-    public String getKV(String key) throws ICache.KeyDoesntExistException {
+    public String getKV(String key) throws ICache.KeyDoesntExistException, ICache.StorageException {
 		return cache.get(key);
 	}
 
@@ -135,13 +133,19 @@ public class KVServer implements IKVServer, ICommListener {
 
 	@Override
     public void kill(){
-		//TODO verify functionality - this is supposed to kill the server without time to save.
 		cache = null;
+		server = null;
 	}
 
 	@Override
     public void close(){
-		//TODO verify functionality - we want the cache to save to storage before killing it
+		try {
+			cache.writeThrough();
+			server.Disconnect();
+		} catch (Exception e) {
+			//TODO do something with this
+			System.out.println("Failed to close cache cleanly");
+		}
 		cache = null;
 	}
 
@@ -177,13 +181,15 @@ public class KVServer implements IKVServer, ICommListener {
 		// TODO The server has received a request from the client - do something with it
 		switch (msg.getStatus()) {
 		case GET:
+//			System.out.println("GET");
 			try {
 				try {
 					String value = cache.get(msg.getKey());
+//					System.out.println("Serving up key: " + msg.getKey());
 					KVMessage resp = new TLVMessage(StatusType.GET_SUCCESS, msg.getKey(), value);
 					server.SendMessage(resp, client);
 				} catch (ICache.KeyDoesntExistException e) {
-					System.out.println("Key doesn't exist");
+//					System.out.println("Key doesn't exist: " + msg.getKey());
 					KVMessage resp = new TLVMessage(StatusType.GET_ERROR, msg.getKey(), "");
 					server.SendMessage(resp, client);
 				}
@@ -194,6 +200,7 @@ public class KVServer implements IKVServer, ICommListener {
 			}
 			break;
 		case PUT:
+//			System.out.println("PUT");
 			try {
 				boolean insert = cache.put(msg.getKey(), msg.getValue());
 				KVMessage resp = null;
@@ -213,6 +220,7 @@ public class KVServer implements IKVServer, ICommListener {
 			break;
 		default:
 			//TODO log error
+			System.out.println("Invalid request");
 			// This is either an invalid status, or a SUCCESS/FAIL (which a client shouldn't be sending us)
 			break;
 		}

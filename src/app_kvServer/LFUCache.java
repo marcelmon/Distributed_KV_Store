@@ -3,20 +3,16 @@ package app_kvServer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
-import java.util.AbstractMap.SimpleEntry;
 import java.util.Iterator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.time.Duration;
 import java.io.*;
 import java.lang.Exception;
-import java.util.Objects;
 
 import app_kvServer.ILockManager.LockAlreadyHeldException;
 
 public class LFUCache implements ICache {
-    protected HashMap<String, String> map;  // the cache
+    protected LinkedHashMap<String, String> map;  // the cache
     protected HashMap<String, Integer> usageCounter; // the hit counter on members of cache 
     protected final int capacity;
     protected KeyLockManager keyLockManager;
@@ -24,7 +20,7 @@ public class LFUCache implements ICache {
 
     public LFUCache(int capacity) {
     	this.capacity = capacity;
-        map = new HashMap<>(capacity);
+        map = new LinkedHashMap<>(capacity);
         usageCounter = new HashMap<>(capacity);
         keyLockManager = new KeyLockManager();
         kvdb = new FilePerKeyKVDB("./data_dir");
@@ -215,11 +211,11 @@ public class LFUCache implements ICache {
     }
 
     @Override
-    public synchronized void loadData(Iterator<SimpleEntry<String, String>> iterator) {
+    public synchronized void loadData(Iterator<Map.Entry<String, String>> iterator) {
         map.clear(); // just in case
         usageCounter.clear();
         while (iterator.hasNext()) {
-            SimpleEntry<String, String> kv = iterator.next();
+            Map.Entry<String, String> kv = iterator.next();
             map.put(kv.getKey(), kv.getValue());
             usageCounter.put(kv.getKey(), 0);
         }
@@ -234,5 +230,15 @@ public class LFUCache implements ICache {
     public synchronized void clearPersistentStorage() {
         kvdb.clearStorage();
     }
+
+	@Override
+	public Iterator<Map.Entry<String, String>> iterator() {
+		return map.entrySet().iterator();
+	}
+
+	@Override
+	public void writeThrough() throws Exception {
+		kvdb.loadData(iterator());
+	}
 
 }

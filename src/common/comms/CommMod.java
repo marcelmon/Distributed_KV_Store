@@ -82,6 +82,7 @@ public class CommMod implements ICommMod {
         	public void run() {
         		try {    
         			while (!interrupted()) {
+        				System.out.println("Server listening on port: " + tx_port);    
 	                    Socket client = serverSocket.accept();
 	                    new ClientThread(client).start();
         			}        			

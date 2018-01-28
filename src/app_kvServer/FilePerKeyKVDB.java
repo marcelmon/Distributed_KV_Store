@@ -2,7 +2,9 @@ package app_kvServer;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.HashMap;
+import java.util.*;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -11,16 +13,13 @@ import java.util.Arrays;
 
 import java.util.Objects;
 import java.nio.charset.StandardCharsets;
+
 public class FilePerKeyKVDB implements IKVDB {
-
-
-
-
 	/**
      * Iterator implementation to produce key-value Entries when loading data.
      * Called by FilePerKeyKVDB.iterator()
      */
-	public class FilePerKeyIterator implements Iterator<SimpleEntry<String, String>> {
+	public class FilePerKeyIterator implements Iterator<Map.Entry<String, String>> {
 
 		private String dataDir;
 		private File[] keyValueFileList;
@@ -44,7 +43,7 @@ public class FilePerKeyKVDB implements IKVDB {
 
 
         @Override
-        public SimpleEntry<String, String> next() {
+        public Map.Entry<String, String> next() {
         	File keyValueFile = keyValueFileList[currentIndex];
         	if(keyValueFile.isFile()){
         		try{
@@ -207,7 +206,7 @@ public class FilePerKeyKVDB implements IKVDB {
      * Returns an Iterator of key value pairs that will be used to load data into the cache.
     */
     @Override
-    public Iterator<SimpleEntry<String, String>> iterator() {
+    public Iterator<Map.Entry<String, String>> iterator() {
     	File f = new File(this.dataDir);
     	if (!f.exists() || !f.isDirectory()) {
 			// throw new InvalidPathException("KVDB data directory path \"" + dataDir + "\" invalid.");
@@ -215,6 +214,14 @@ public class FilePerKeyKVDB implements IKVDB {
 
 		return new FilePerKeyIterator(dataDir);
     }
+
+	@Override
+	public void loadData(Iterator<Entry<String, String>> iterator) throws Exception {
+		while (iterator.hasNext()) {
+			Entry<String, String> e = iterator.next();
+			put(e.getKey(), e.getValue());
+		}
+	}
 }
 
 

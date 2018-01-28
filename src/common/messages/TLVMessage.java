@@ -7,7 +7,7 @@ public class TLVMessage implements KVMessage {
 	String key;
 	String value;
 	StatusType status;
-	final long timeout = 100;
+	final long timeout = 250;
 	
 	/**
 	 * Constructs the TLVMessage from it's byte encoding.

@@ -32,7 +32,7 @@ public class AllTests {
 		clientSuite.addTestSuite(SocketTest.class);
 		clientSuite.addTestSuite(CommModTest.class);
 		
-//		clientSuite.addTestSuite(LockManagerTest.class);
+		clientSuite.addTestSuite(LockManagerTest.class);
 		clientSuite.addTestSuite(KVDBTests.class);
 		clientSuite.addTestSuite(CacheTests.class);
 		
