@@ -97,7 +97,7 @@ public class TLVMessage implements KVMessage {
 				f1.getBytes(),  			//src buffer
 				0,							//start pos in src buffer 
 				output, 					//dst buffer
-				1+numFields+f1.length(),    //start pos in dst buffer
+				1+numFields+f0.length(),    //start pos in dst buffer
 				f1.length());				//write len
 		return output;
 	}
