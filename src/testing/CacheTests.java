@@ -15,13 +15,15 @@ public class CacheTests extends TestCase {
 	@Override
 	public void setUp() {
 		desiredCapacity = 10;
-		caches = new ICache[1];
+		caches = new ICache[2];
 		caches[0] = new MemOnlyCache(desiredCapacity);
+		caches[1] = new LFUCache(desiredCapacity);
 	}
 	
 	@Test
 	public void testInsert() {
 		try {
+
 			String[] keys = {"a", "b", "c"};
 			String[] values = {"1", "2", "3"};
 			assertTrue(keys.length == values.length);
@@ -57,6 +59,7 @@ public class CacheTests extends TestCase {
 			
 			for (ICache cache : caches) {
 				// Check not present:
+
 				for (int i = 0; i < keys.length; i++) {
 					assertFalse(cache.inCache(keys[i]));	
 				}

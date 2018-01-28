@@ -27,12 +27,17 @@ public class AllTests {
 //		clientSuite.addTestSuite(ConnectionTest.class);
 //		clientSuite.addTestSuite(InteractionTest.class); 
 //		clientSuite.addTestSuite(AdditionalTest.class);
-//
+
 		clientSuite.addTestSuite(TLVMessageTest.class);
 		clientSuite.addTestSuite(SocketTest.class);
 		clientSuite.addTestSuite(CommModTest.class);
+		
+		clientSuite.addTestSuite(LockManagerTest.class);
+		clientSuite.addTestSuite(KVDBTests.class);
 		clientSuite.addTestSuite(CacheTests.class);
+		
 		clientSuite.addTestSuite(StoreServerTests.class);
+		
 		return clientSuite;
 	}
 	
