@@ -1,5 +1,7 @@
 package client;
 
+import java.net.UnknownHostException;
+
 import common.comms.*;
 import common.messages.*;
 import common.messages.KVMessage.StatusType;
@@ -21,14 +23,13 @@ public class KVStore implements KVCommInterface {
 	}
 
 	@Override
-	public void connect() throws Exception {
+	public void connect() throws UnknownHostException, Exception {
 		client.Connect(address, port);
 	}
 
 	@Override
 	public void disconnect() {
 		client.Disconnect();
-		client = null;
 	}
 
 	@Override

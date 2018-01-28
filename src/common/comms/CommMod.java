@@ -8,6 +8,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 
 import org.apache.log4j.Level;
 
@@ -132,20 +133,25 @@ public class CommMod implements ICommMod {
 		this.listener = listener;		
 	}
 	@Override
-	public void Connect(String ip, int port) throws Exception {
+	public void Connect(String ip, int port) throws UnknownHostException, Exception {
 		try {
 			this.tx_ip = ip;
 			this.tx_port = port;
-			clientSocket = new Socket(ip, port);	        
+			clientSocket = new Socket(ip, port);
+		} catch (UnknownHostException e) {
+			throw e;
 		} catch (IOException e) {
 			throw new Exception(e.getMessage());
 		}
 	}
+	
 	@Override
 	public void Disconnect() {
 		if (clientSocket != null) {
 			try {
-				clientSocket.close();
+				if (!clientSocket.isClosed()) {
+					clientSocket.close();
+				}
 			} catch (IOException e) {
 				System.out.println("Failed to close client socket.");
 				//TODO log as a warning

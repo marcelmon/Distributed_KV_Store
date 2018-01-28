@@ -1,5 +1,7 @@
 package client;
 
+import java.net.UnknownHostException;
+
 import common.messages.KVMessage;
 
 public interface KVCommInterface {
@@ -10,7 +12,7 @@ public interface KVCommInterface {
 	 * @throws Exception
 	 *             if connection could not be established.
 	 */
-	public void connect() throws Exception;
+	public void connect() throws UnknownHostException, Exception;
 
 	/**
 	 * disconnects the client from the currently connected server.

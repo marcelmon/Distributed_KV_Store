@@ -10,7 +10,7 @@ import junit.framework.TestSuite;
 import logger.LogSetup;
 
 
-public class AllTests {
+public class UnitTests {
 
 	static {
 		try {
@@ -22,10 +22,7 @@ public class AllTests {
 	
 	
 	public static Test suite() {
-		TestSuite clientSuite = new TestSuite("Basic Storage ServerTest-Suite");
-		clientSuite.addTestSuite(ConnectionTest.class);
-		clientSuite.addTestSuite(InteractionTest.class); 
-//		clientSuite.addTestSuite(AdditionalTest.class);
+		TestSuite clientSuite = new TestSuite("Storage Server Unit Test-Suite");
 
 		clientSuite.addTestSuite(TLVMessageTest.class);
 		clientSuite.addTestSuite(SocketTest.class);
