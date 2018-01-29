@@ -45,7 +45,15 @@ sorting=ynt
 
 \paragraph{CommMod}
 
-\paragraph{TLVMessage}
+\paragraph{TLVMessage} The TLVMessage is an implementation of the KVMessage interface. it implements a modification of tag-length-value encoding. It (un)marshals a KV message as a sequence of bytes in which:
+
+\begin{enumerate}
+\item The first byte is the ordinal value of the StatusType enum, referred to as a 'tag'.
+\item The second byte is the length of the key $L_K \in [0, 255]$. This protocol imposes an upper limit on key size of 255 bytes.
+\item For messages containing a value (the existence of a value is fully determined by the tag), the third byte is the length of the value $L_V \in [0, 255]$. This protocol imposes an upper limit on key size of 255 bytes. This could be trivially extended - for instance, the use of four bytes would give a maximum length of $2^32-1\approx 1 \text{ billion bytes}$
+\item The following $L_K$ bytes are the key.
+\item If there is a value, the following $L_V$ bytes are the value.
+\end{enumerate}
 
 \paragraph{LRUCache}
 
