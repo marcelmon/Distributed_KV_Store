@@ -150,11 +150,12 @@ public class KVServer implements IKVServer, ICommListener {
 					String strategy = args[2];
 					new KVServer(port, cacheSize, strategy).run();
 				} catch (Exception e) {
-					e.getMessage();
+					logger.error("Error! " +
+					e.getMessage());
 				}
 			}else {
 				System.out.println("Error! Invalid number of arguments!");
-				System.out.println("Usage: Server <port> <cache size> <cache strategy(None,LRU,LFU,FIFO)>!");
+				System.out.println("Usage: Server <port> <cache size> <cache strategy(LRU,LFU,FIFO)>!");
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");
@@ -186,7 +187,12 @@ public class KVServer implements IKVServer, ICommListener {
 			} catch (KVMessage.FormatException e) {
 				e.printStackTrace();
 				//TODO log - this is unexpected!
+				logger.error("Error! " +
+				e.getMessage());
 			} catch (Exception e) {
+				//TODO log - this is serious
+				logger.error("Error! " +
+				e.getMessage());
 				throw new RuntimeException(e.getMessage());
 			}
 			break;
@@ -232,6 +238,7 @@ public class KVServer implements IKVServer, ICommListener {
 			//TODO log error
 			System.out.println("Invalid request");
 			// This is either an invalid status, or a SUCCESS/FAIL (which a client shouldn't be sending us)
+			logger.error("Error! " + "Invalid status");
 			break;
 		}
 	}
