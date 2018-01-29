@@ -1,0 +1,97 @@
+\documentclass[12pt]{article}
+
+\usepackage{multicol}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage[
+backend=biber,
+style=ieee,
+sorting=ynt
+]{biblatex}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{float}
+
+% \pagestyle{fancy}
+%\fancyhf{}
+
+\title{ECE419 M1 Report}
+\date{28 January 2018}
+\author{Thomas Kingsford\\Marcel Mongeon\\Zhihao Sheng}
+
+%\titleformat{\section}{\normalfont\scshape}{\thesection}{1em}{}
+%\titlespacing*{\section}{0pt}{10pt}{0pt}
+
+%\setlength{\parindent}{0pt}
+%\setlength{\parskip}{0cm}
+%\renewcommand{\baselinestretch}{0.5}
+%\setlist{noitemsep} % {nosep, noitemsep}
+
+\begin{document}
+\begin{multicols}{2}
+\maketitle
+
+\section{Design and Decisions}
+
+\paragraph{Architecture} Refer to Figure \ref{arch} in the Appendices for an architecture diagram.
+
+\paragraph{KVClient} 
+
+\paragraph{KVStore}
+
+\paragraph{KVServer}
+
+\paragraph{CommMod}
+
+\paragraph{TLVMessage}
+
+\paragraph{LRUCache}
+
+\paragraph{LFUCache}
+
+\paragraph{FIFOCache}
+
+\paragraph{LockManager}
+
+\paragraph{FilePerKeyKVDB}
+
+
+\section{Performance Evaluation}
+
+
+\section{Test Cases}
+
+\subsection{CacheTests}
+
+\subsection{CommModTests}
+
+\subsection{ConnectionTest}
+
+\subsection{InteractionTest}
+
+\subsection{KVDBTests}
+
+\subsection{LockManagerTest}
+
+\subsection{SocketTest}
+
+\subsection{StoreServerTests}
+
+\subsection{TLVMessageTest}
+
+\end{multicols}
+
+\newpage
+
+\section{Appendices}
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.50]{architecture}
+\caption{Architecture Diagram}
+\label{arch}
+\end{figure}
+\end{document}
+
