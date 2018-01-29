@@ -1,4 +1,4 @@
-\documentclass[12pt]{article}
+\documentclass[10pt]{article}
 
 \usepackage{multicol}
 \usepackage[margin=0.75in]{geometry}
@@ -40,13 +40,13 @@ sorting=ynt
 \paragraph{KVClient} The KVClient class handles client side interface. It creats a user interface which contains following operations:
 
 \begin{enumerate}
-    \item connect <hostname> <port>: establishing a connection to the host server with the port number.
-    \item put <key> <value>: sending the key-value pair to the server which will store the pair.
-    \item get <key>: getting the key-value pair with the key from the server.
+    \item connect hostname port: establishing a connection to the host server with the port number.
+    \item put key value: sending the key-value pair to the server which will store the pair.
+    \item get key: getting the key-value pair with the key from the server.
     \item logLevel: setting the log level. The default level is OFF.
     \item disconnect: disconnecting from the current server.
     \item quit: quiting the application after disconnecting from the server.
-\rend{enumerate}
+\end{enumerate}
 
 \paragraph{KVStore} The KVStore class handles the messages from the KVClient and passes them to the CommMod.
 
@@ -64,16 +64,15 @@ sorting=ynt
 \item If there is a value, the following $L_V$ bytes are the value.
 \end{enumerate}
 
-\paragraph{LRUCache}
+\paragraph{LRUCache} The LRUCache uses a LinkedHashMap implementation which, for every put operation, checks the total cache size and if greater than capacity will evict the entry which was accessed the longest time ago.
 
-\paragraph{LFUCache}
+\paragraph{LFUCache} The LFUCache uses 2 HashMaps in order to store 1) the value to the key and 2) the usage counter. When a put is performed and the cache is becomes large then the enttry with the highest usage counter is removed from the cache.
 
-\paragraph{FIFOCache}
+\paragraph{FIFOCache} Similar to the LRUCache, the FIFOCache uses a LinkedHashMap implementation which, for every put operation, checks the total cache size and if greater than capacity will evict the entry which was inserted the longest time ago.
 
-\paragraph{LockManager}
+\paragraph{LockManager} The lock manager was designed so that locks can be acquired for a particular key, and to provide a timeout specified by the caller in the case a lock is not acquired. For all operations involving put from the KVServer/Cache, getKey(key, timeout) is called from the Cache. The key is then released by calling releaseKey(key), throwing an exception if the calling thread is not the owner. Per key locking is used in order to increase parallelized performance by ensuring that writes/deletes/updates are not blocked when threads are working on different keys.
 
-\paragraph{FilePerKeyKVDB}
-
+\paragraph{FilePerKeyKVDB} The persistent storage implementation uses a simple storage mechanism by storing all key-value pairs in the same directory, but in seperate files. The file names are the k-v pair’s key and the file data is the value for that pair. The use of file-per-key is slower for lookup than storing entire sections of k-v pairs in the same file and representing them as a structure such as a B-tree. The file system stores nodes in the form of arrays, and thus the persistent storage implementation much read each file name when doing a lookup. A major benefit over writing all k-v pairs to file without ordering is that each file is locked seperately through the Lock Manager, thus allowing safe parallelism. Writing 1 file per k-v pair is also advantageous over writing 1 file for all k-v pairs without any strucutre because each k-v pair can be cached without reading all k-v pairs thus alowing for smaller caches than total database size.
 
 \section{Performance Evaluation}
 
@@ -82,21 +81,37 @@ sorting=ynt
 
 \subsection{CacheTests}
 
+\paragraph{} The cache was tested against : insert, update, delete, get invalid, delete invalid, and checking capactiy. Insert/update/delete were done by performing the operations and checking that the resulting cache either did or did not have the correct resultant entires. Testing invalid get and delete operations was performed on keys that did not exist in the cache or database and so a KeyDoesntExistException was checked to have been thrown. Other methods of writeThrough, eviction, and loadCache were also testing by performing and guaretnteing expected results.
+
 \subsection{CommModTests}
+
+\paragraph{} The CommMod is tested against: message transfer to the server, and appropriate response received from the server.
 
 \subsection{ConnectionTest}
 
+\paragraph{} The ConnectionTest suite tests various socket conditions.
+
 \subsection{InteractionTest}
+
+\paragraph{} The Interactiontest suite tests against: get, put, update, delete, and the handling of error conditions associated.
 
 \subsection{KVDBTests}
 
+\paragraph{} The key value database was tested against critical operations of : insert, update, delete, get/delete. Setup involved creating a temporary storage directory and performing the critical operations. Resultant persistent storage was again queried to ensure the changes had taken place.
+
 \subsection{LockManagerTest}
+
+\paragraph{} Lock manager tests involved getting a lock on a signle object (key) and guarenteeing that no other thread could aquire the same lock until the lock was released, and also testing that the second thread trying to get a lock would timeout when unsuccessful. Another test was checking the seuqence of many threads trying to aquire the same lock as a parent thread, and ensuring that all locks succeeded in order given that their timeout did not expire.
 
 \subsection{SocketTest}
 
+\paragraph{} The SocketTest suite simply tests that basic socket functionality is working. It is used to quickly pick up networking errors when tests are deployed to our Continuous Integration (CI) server.
+
 \subsection{StoreServerTests}
 
-\subsection{TLVMessageTest}
+\paragraph{} The StoreServerTests test the interaction between the KVStore and KVServer. Similar to the IntegrationTests suite, it extends the tests provided by the course.
+
+\subsection{TLVMessageTest} Tests the correctness of marshalling, unmarshalling, and various error conditions being correctly handled.
 
 \end{multicols}
 
