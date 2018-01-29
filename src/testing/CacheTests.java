@@ -17,10 +17,13 @@ public class CacheTests extends TestCase {
 	@Override
 	public void setUp() {
 		desiredCapacity = 10;
-		caches = new ICache[2];
+		caches = new ICache[3];
 		caches[0] = new MemOnlyCache(desiredCapacity);
 		caches[1] = new LFUCache(desiredCapacity);
 		caches[1].clearPersistentStorage();
+
+		caches[2] = new LRUCache(desiredCapacity);
+		caches[2].clearPersistentStorage();
 	}
 	
 	@Test
