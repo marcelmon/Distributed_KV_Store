@@ -13,16 +13,17 @@ import java.util.Map;
 
 import app_kvServer.ILockManager.LockAlreadyHeldException;
 
-public class LRUCache implements ICache {
+public class FIFOCache implements ICache {
 
 
-    public class LRUCacheLinkedHashMap extends LinkedHashMap<String, String> {
+    public class FIFOCacheLinkedHashMap extends LinkedHashMap<String, String> {
 
         private int capacity;
 
-        public LRUCacheLinkedHashMap(int capacity) { // access order is true for LRU, false for insertion-order(FIFO)
-            super(capacity, 0.75f, true); // 0.75 is loadFactor, true is accessOrder
-            this.capacity = capacity;   
+        public FIFOCacheLinkedHashMap(int capacity) { // access eviction order is true for LRU, false for insertion-order(FIFO)
+            super(capacity, 0.75f, false); // 0.75 is loadFactor, true is accessOrder
+            this.capacity = capacity;
+            
         }
 
         @Override
@@ -34,15 +35,15 @@ public class LRUCache implements ICache {
     
     protected final int capacity;
     
-    protected LRUCacheLinkedHashMap map;
+    protected FIFOCacheLinkedHashMap map;
     protected KeyLockManager keyLockManager;
     protected FilePerKeyKVDB kvdb;
 
-    public LRUCache(int capacity) {
+    public FIFOCache(int capacity) {
         
         this.capacity = capacity;
 
-        map = new LRUCacheLinkedHashMap(capacity);
+        map = new FIFOCacheLinkedHashMap(capacity);
         keyLockManager = new KeyLockManager();
         kvdb = new FilePerKeyKVDB("./data_dir");
     }
