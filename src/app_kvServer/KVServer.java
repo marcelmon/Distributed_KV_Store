@@ -155,7 +155,7 @@ public class KVServer implements IKVServer, ICommListener {
 				}
 			}else {
 				System.out.println("Error! Invalid number of arguments!");
-				System.out.println("Usage: Server <port> <cache size> <cache strategy(None,LRU,LFU,FIFO)>!");
+				System.out.println("Usage: Server <port> <cache size> <cache strategy(LRU,LFU,FIFO)>!");
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");
