@@ -1,5 +1,7 @@
 package client;
 
+import java.net.UnknownHostException;
+
 import common.comms.*;
 import common.messages.*;
 import common.messages.KVMessage.StatusType;
@@ -21,18 +23,13 @@ public class KVStore implements KVCommInterface {
 	}
 
 	@Override
-	public void connect() throws Exception {
-		try {
-			client.Connect(address, port);
-		} catch (Exception e) {
-			throw new Exception(e.getMessage());
-		}
+	public void connect() throws UnknownHostException, Exception {
+		client.Connect(address, port);
 	}
 
 	@Override
 	public void disconnect() {
 		client.Disconnect();
-		client = null;
 	}
 
 	@Override
@@ -42,7 +39,6 @@ public class KVStore implements KVCommInterface {
 		KVMessage rx_msg = null;
 		try {
 			rx_msg = client.SendMessage(tx_msg);
-			// System.out.println(rx_msg.getStatus());
 		} catch (KVMessage.StreamTimeoutException e) {
 			//TODO log error
 		}
@@ -56,8 +52,8 @@ public class KVStore implements KVCommInterface {
 		KVMessage rx_msg = null;
 		try {
 			rx_msg = client.SendMessage(tx_msg);
-			// System.out.println(rx_msg.getStatus());
 		} catch (KVMessage.StreamTimeoutException e) {
+			System.out.println("Stream timeout");
 			//TODO log error
 		}
 		return rx_msg;

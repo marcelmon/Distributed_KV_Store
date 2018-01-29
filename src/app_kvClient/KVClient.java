@@ -105,9 +105,7 @@ public class KVClient implements IKVClient {
 						}
 						KVMessage kvmsg = client.put(key, msg.toString());
 						StatusType statusType = kvmsg.getStatus();
-
-// after send message, it stopped.
-
+						
 						if(statusType == StatusType.PUT_SUCCESS) {
 							System.out.println(PROMPT + "Put " + key + " succeeded.");
 							System.out.println(PROMPT + "Value: " + msg.toString());

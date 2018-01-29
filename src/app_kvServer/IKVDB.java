@@ -1,6 +1,6 @@
 package app_kvServer;
 
-import java.util.Iterator;
+import java.util.*;
 import java.util.AbstractMap.*;
 
 public interface IKVDB {
@@ -42,10 +42,15 @@ public interface IKVDB {
      * Clear the storage of the server
      */
     public void clearStorage();
+    
+    /**
+     * Called to load the data into the db from the cache
+    */
+    public void loadData(Iterator<Map.Entry<String, String>> iterator) throws Exception;
 
     /**
      * Returns an Iterator of key value pairs that will be used to load data into the cache.
     */
-    public Iterator<SimpleEntry<String, String> > iterator();
+    public Iterator<Map.Entry<String, String> > iterator();
 
 }

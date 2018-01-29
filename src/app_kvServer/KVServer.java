@@ -26,10 +26,8 @@ public class KVServer implements IKVServer, ICommListener {
 			server = new CommMod();
 			server.SetListener(this);
 			server.StartServer(port);
-	        logger.info("Server listening on port: " 
-	    	   		+ port);    
 	    } catch (Exception e) {
-	       	logger.error("Error! Cannot open server socket:");
+	       	logger.error("Error! Cannot open server socket: " + port);
 	        if(e instanceof BindException){
 	           	logger.error("Port " + port + " is already bound!");
 	        }
@@ -40,17 +38,6 @@ public class KVServer implements IKVServer, ICommListener {
 	private boolean isRunning() {
 		return running;
 	}
-
-	public void stopServer(){
-        running = false;
-        try {
-			server.StopServer();
-			server = null;
-		} catch (Exception e) {
-			logger.error("Error! " +
-			"Unable to close socket on port: " + port, e);
-		}
-    }
 
 	/**
 	 * Start KV Server at given port
@@ -64,13 +51,22 @@ public class KVServer implements IKVServer, ICommListener {
 	 */
 	public KVServer(int port, int cacheSize, String strategy) {
 		this.port = port;
-		if(strategy == "LRU") this.cacheStrategy = CacheStrategy.LRU;
-		else if(strategy == "LFU") this.cacheStrategy = CacheStrategy.LFU;
-		else if(strategy == "FIFO") this.cacheStrategy = CacheStrategy.FIFO;
-		else this.cacheStrategy = CacheStrategy.None;
-		cache = new MemOnlyCache(cacheSize);
-		//TODO have a switch statement on "strategy"; throw an exception if not implemented
-		//TODO in the switch, instantiate the cache and set the cachestrategy field
+		
+		switch (strategy) {
+		case "LRU":
+			throw new RuntimeException("LRU cache not implemented!");
+		case "LFU":
+			cache = new LFUCache(cacheSize);
+			cacheStrategy = CacheStrategy.LFU;
+			break;
+		case "FIFO":
+			throw new RuntimeException("FIFO cache not implemented!");
+		default:
+			System.out.println("Cache not recognized. Using dev mem-only cache!");
+			cache = new MemOnlyCache(cacheSize);
+			cacheStrategy = CacheStrategy.None;
+			break;
+		}
 	}
 
 	@Override
@@ -105,7 +101,7 @@ public class KVServer implements IKVServer, ICommListener {
 	}
 
 	@Override
-    public String getKV(String key) throws ICache.KeyDoesntExistException {
+    public String getKV(String key) throws ICache.KeyDoesntExistException, ICache.StorageException {
 		return cache.get(key);
 	}
 
@@ -126,13 +122,21 @@ public class KVServer implements IKVServer, ICommListener {
 
 	@Override
     public void kill(){
-		//TODO verify functionality - this is supposed to kill the server without time to save.
 		cache = null;
+		server = null;
 	}
 
 	@Override
     public void close(){
-		//TODO verify functionality - we want the cache to save to storage before killing it
+		try {
+			cache.writeThrough();
+			server.StopServer();
+			running = false;
+		} catch (Exception e) {
+			//TODO do something with this
+			System.out.println("Failed to close cache cleanly");
+			e.printStackTrace();
+		}
 		cache = null;
 	}
 
@@ -171,17 +175,17 @@ public class KVServer implements IKVServer, ICommListener {
 		case GET:
 			try {
 				try {
-					System.out.println("Get");
 					String value = cache.get(msg.getKey());
-					System.out.println(value);
+//					System.out.println("Serving up key: " + msg.getKey());
 					KVMessage resp = new TLVMessage(StatusType.GET_SUCCESS, msg.getKey(), value);
 					server.SendMessage(resp, client);
 				} catch (ICache.KeyDoesntExistException e) {
-					System.out.println("Key doesn't exist");
-					KVMessage resp = new TLVMessage(StatusType.GET_ERROR, msg.getKey(), "");
+//					System.out.println("Key doesn't exist: " + msg.getKey());
+					KVMessage resp = new TLVMessage(StatusType.GET_ERROR, msg.getKey(), null);
 					server.SendMessage(resp, client);
 				}
 			} catch (KVMessage.FormatException e) {
+				e.printStackTrace();
 				//TODO log - this is unexpected!
 				logger.error("Error! " +
 				e.getMessage());
@@ -189,29 +193,50 @@ public class KVServer implements IKVServer, ICommListener {
 				//TODO log - this is serious
 				logger.error("Error! " +
 				e.getMessage());
+				throw new RuntimeException(e.getMessage());
 			}
 			break;
 		case PUT:
-			try {
-				System.out.println("Put " + msg.getKey() + " -> " + msg.getValue());
-				boolean insert = cache.put(msg.getKey(), msg.getValue());
-				KVMessage resp = null;
-				if (insert) {
-					resp = new TLVMessage(StatusType.PUT_SUCCESS, msg.getKey(), null);
-				} else {
-					resp = new TLVMessage(StatusType.PUT_UPDATE, msg.getKey(), null);
+//			System.out.println("PUT");
+			if (msg.getValue().isEmpty()) {     // deletion
+				try {
+					try {
+						cache.delete(msg.getKey());
+						KVMessage resp = new TLVMessage(StatusType.DELETE_SUCCESS, msg.getKey(), null);
+						server.SendMessage(resp, client);
+					} catch (ICache.KeyDoesntExistException e) {
+						KVMessage resp = new TLVMessage(StatusType.DELETE_ERROR, msg.getKey(), null);
+						server.SendMessage(resp, client);
+					}
+				} catch (KVMessage.FormatException e) {
+					//TODO log - this is unexpected!
+					System.out.println("Format exception");
+				} catch (Exception e) {
+					//TODO log - this is serious
+					System.out.println("Serious exception");
 				}
-				server.SendMessage(resp, client);
-			} catch (KVMessage.FormatException e) {
-				//TODO log - this is unexpected!
-				System.out.println("Format exception");
-			} catch (Exception e) {
-				//TODO log - this is serious
-				System.out.println("Serious exception");
+			} else {							//insert/update
+				try {
+					boolean insert = cache.put(msg.getKey(), msg.getValue());
+					KVMessage resp = null;
+					if (insert) {
+						resp = new TLVMessage(StatusType.PUT_SUCCESS, msg.getKey(), null);
+					} else {
+						resp = new TLVMessage(StatusType.PUT_UPDATE, msg.getKey(), null);
+					}
+					server.SendMessage(resp, client);
+				} catch (KVMessage.FormatException e) {
+					//TODO log - this is unexpected!
+					System.out.println("Format exception");
+				} catch (Exception e) {
+					//TODO log - this is serious
+					System.out.println("Serious exception");
+				}
 			}
 			break;
 		default:
 			//TODO log error
+			System.out.println("Invalid request");
 			// This is either an invalid status, or a SUCCESS/FAIL (which a client shouldn't be sending us)
 			logger.error("Error! " + "Invalid status");
 			break;

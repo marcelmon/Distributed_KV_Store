@@ -1,8 +1,7 @@
 package app_kvServer;
 
-import java.util.AbstractMap.SimpleEntry;
-import java.util.Iterator;
-import java.util.HashMap;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class MemOnlyCache implements ICache {
 	protected HashMap<String, String> map;
@@ -58,10 +57,10 @@ public class MemOnlyCache implements ICache {
 	}
 
 	@Override
-	public synchronized void loadData(Iterator<SimpleEntry<String, String>> iterator) {
+	public synchronized void loadData(Iterator<Map.Entry<String, String>> iterator) {
 		map.clear(); // just in case
 		while (iterator.hasNext()) {
-			SimpleEntry<String, String> kv = iterator.next();
+			Map.Entry<String, String> kv = iterator.next();
 			map.put(kv.getKey(), kv.getValue());
 		}
 	}
@@ -74,6 +73,16 @@ public class MemOnlyCache implements ICache {
 	@Override
 	public synchronized void clearPersistentStorage() {
 		// no persistent storage => do nothing
+	}
+
+	@Override
+	public void writeThrough() {
+		// do nothing because there is no persistent storage
+	}
+
+	@Override
+	public Iterator<Entry<String, String>> iterator() {
+		return map.entrySet().iterator();
 	}
 
 }

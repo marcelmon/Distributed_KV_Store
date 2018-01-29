@@ -19,9 +19,9 @@ pipelines:
       - step:
           script: 
             - ant
-            - ant test
+            - ant unittest
 
     sandbox:
       - step:
           script:
-            - ant test
+            - ant unittest
