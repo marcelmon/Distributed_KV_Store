@@ -30,9 +30,12 @@ public class LockManagerTest extends TestCase {
 	public boolean lockThreadSuccessful;
 	public Long LockThreadFailTime;
 
-	public ArrayList<Integer> finalTIDOrder;
 	public Integer currentTID;
-	public ArrayList<Integer> listOfEndtimes;
+
+
+	public ArrayList startAndEndTimesByThreadId;
+	public ArrayList failedStartAndEndTimesByThreadId;
+
 
 	public long[] longArray;
 
@@ -144,35 +147,43 @@ public class LockManagerTest extends TestCase {
 				boolean hasLockTwo = false;
 				
 				currentTID = new Integer(0);
-				finalTIDOrder = new ArrayList<Integer>();
-				listOfEndtimes = new ArrayList<Integer>();
+
+				startAndEndTimesByThreadId = new ArrayList<SimpleEntry<Integer, SimpleEntry<Long, Long>>>();
+				failedStartAndEndTimesByThreadId = new ArrayList<SimpleEntry<Integer, SimpleEntry<Long, Long>>>();
 
 				hasLockOne = lockManager.getLock("a", Duration.ofSeconds(2));
 				assertTrue(hasLockOne);
 				
-				longArray = new long[total];
 
-				System.out.print("started id : " + currentTID + "\n");
+
 				for (Integer i = 0; i < total; i++) {
 					// use a thread to show that it succeeds right after the parent releases the lock.
-					lockThreadSuccessful = false;
 
 					Thread t = new Thread(new Thread() {
 						private Integer tid = currentTID;
 						@Override
 						public void run() {
 							try{
-								Long startTimeMilli2 = new Date().getTime();
-								lockThreadSuccessful = currentILock.getLock("a", Duration.ofSeconds(20));
+								// record time started waiting for lock (just after thread.start())
+								Long threadStartTime = new Date().getTime();
+								// get lock waiting for success or timeout (in seconds)
+								boolean gotLock = currentILock.getLock("a", Duration.ofSeconds(20));
+								// record time where lock was aquired
+								Long threadEndTime = new Date().getTime();
+								// put the timing information in the ArrayList while the lock is still squired to prevent other threads from doing the same at the same time
+								if(gotLock){
+									SimpleEntry<Long, Long> startAndEntTime = new SimpleEntry<Long, Long>(threadStartTime, threadEndTime);
+									SimpleEntry<Integer, SimpleEntry<Long, Long>> timesByTID = new SimpleEntry<Integer, SimpleEntry<Long, Long>>(tid, startAndEntTime);
+									startAndEndTimesByThreadId.add(timesByTID);
+								}
+								else{
+									SimpleEntry<Long, Long> startAndEntTime = new SimpleEntry<Long, Long>(threadStartTime, threadEndTime);
+									SimpleEntry<Integer, SimpleEntry<Long, Long>> timesByTID = new SimpleEntry<Integer, SimpleEntry<Long, Long>>(tid, startAndEntTime);
+									failedStartAndEndTimesByThreadId.add(timesByTID);
+								}
+									
+								currentILock.releaseLock("a");	
 
-								Long endTimeMilli2 = new Date().getTime();
-								currentILock.releaseLock("a");
-								Long LockThreadFailTime2 = endTimeMilli2 - startTimeMilli2;
-								// System.out.print("out at : " + tid + lockThreadSuccessful + " endtime " + endTimeMilli2 + " total tiem " + LockThreadFailTime2 + "\n");
-
-								finalTIDOrder.add(new Integer(tid));
-								listOfEndtimes.add((int)(endTimeMilli2/1000));
-								longArray[tid] = LockThreadFailTime2;
 							} catch(Exception e){
 								
 							}
@@ -183,58 +194,37 @@ public class LockManagerTest extends TestCase {
 					threadList.add(newThreadEntry);
 					currentTID++;
 				}
-				
-
-				System.out.print("final id : " + currentTID + "\n");
 
 				Thread lastThread;
 			    for(SimpleEntry<Integer,Thread> threadEntry : threadList){
 			    	threadEntry.getValue().start();
 			    	lastThread = threadEntry.getValue();
-			    	// System.out.print("Order started : " + threadEntry.getKey() + "\n");
-
 			    }
 
-		        lockManager.releaseLock("a");
-		        Long startTimeMilli3 = new Date().getTime();
+			    Long unlockStartTime = new Date().getTime();
 
-		        System.out.print("start : " + startTimeMilli3 + "\n");
+		        lockManager.releaseLock("a");
 		        
-		        while(listOfEndtimes.size() < total){
-		        	Thread.sleep(2);
-		        	if(new Date().getTime() - startTimeMilli3 >  10000){
+		        // sum of successes and failures
+		        while(startAndEndTimesByThreadId.size() + failedStartAndEndTimesByThreadId.size() < total){
+		        	Thread.sleep(2); // 2 miliseconds
+		        	if(new Date().getTime() - unlockStartTime >  20000){
 		        		break;
 		        	}
 		        }
 		        
-		        Long end3 = new Date().getTime();
-		        System.out.print("end3 : " + end3 + "\n");
-		        
-		        assertTrue(listOfEndtimes.size() == total); // handles 1000 (or total) threads
+		        assertTrue(startAndEndTimesByThreadId.size() == total); // handles 1000 (or total) threads
 
-//		        for(Integer tidN : finalTIDOrder) {
-		        	// System.out.print("Order compelted : " + tidN + "\n");
-//		        }
-
-//		        for(Integer theTime : listOfEndtimes) {
-		        	// System.out.print("PRINTING time : " + theTime + "\n");
-//		        }
-
-//		        for(long ii : longArray){
-		        	// System.out.print("PRINTING time 2 : " + ii + "\n");
-//		        }
-
-		        // assertTrue(lockThreadSuccessful);
-		        // assertTrue(LockThreadFailTime < 1000); // show that the timeout of 1s is reached
-		       
-		        // print LockThreadFailTime;
-
-		        System.out.print("Order compelted : " + new Date().getTime() + "\n");
+		        // System.out.println("FINAL DATA : \n");
+		        // for (int i = 0; i < startAndEndTimesByThreadId.size(); ++i) {
+		        // 	 System.out.println(startAndEndTimesByThreadId.get(i).toString());
+		        // }
 		    }
 			    
 		}
 		catch (Exception e) {
 			fail("Unexpected exception [" + e.getClass().getSimpleName() + "]: " + e.getMessage());
+			System.out.println();
 		}	
 	}
 
