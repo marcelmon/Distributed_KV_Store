@@ -20,8 +20,9 @@ public class LRUCache implements ICache {
 
         private int capacity;
 
-        public LRUCacheLinkedHashMap(int capacity) {
+        public LRUCacheLinkedHashMap(int capacity) { // access order is true for LRU, false for insertion-order(FIFO)
             this.capacity = capacity;
+            super(capacity, 0.75f, true); // 0.75 is loadFactor, true is accessOrder
         }
 
         @Override
