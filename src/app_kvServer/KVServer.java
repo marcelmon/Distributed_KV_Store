@@ -54,13 +54,17 @@ public class KVServer implements IKVServer, ICommListener {
 		
 		switch (strategy) {
 		case "LRU":
-			throw new RuntimeException("LRU cache not implemented!");
+			cache = new LRUCache(cacheSize);
+			cacheStrategy = CacheStrategy.LRU;
+			break;
 		case "LFU":
 			cache = new LFUCache(cacheSize);
 			cacheStrategy = CacheStrategy.LFU;
 			break;
 		case "FIFO":
-			throw new RuntimeException("FIFO cache not implemented!");
+			cache = new FIFOCache(cacheSize);
+			cacheStrategy = CacheStrategy.FIFO;
+			break;
 		default:
 			System.out.println("Cache not recognized. Using dev mem-only cache!");
 			cache = new MemOnlyCache(cacheSize);
