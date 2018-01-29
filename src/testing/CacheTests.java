@@ -24,6 +24,9 @@ public class CacheTests extends TestCase {
 
 		caches[2] = new LRUCache(desiredCapacity);
 		caches[2].clearPersistentStorage();
+
+		caches[2] = new FIFOCache(desiredCapacity);
+		caches[2].clearPersistentStorage();
 	}
 	
 	@Test
