@@ -43,7 +43,7 @@ sorting=ynt
 
 \paragraph{KVServer}
 
-\paragraph{CommMod}
+\paragraph{CommMod} The CommMod class handles client and server communications. The server registers as a listener and receives KVMessages by way of a callback. The server must respond to each received KVMessage with a response message. Clients Connect() then send messages via SendMessage(), which returns a KVMessage response or else times out if the server fails to respond quickly enough.
 
 \paragraph{TLVMessage} The TLVMessage is an implementation of the KVMessage interface. it implements a modification of tag-length-value encoding. It (un)marshals a KV message as a sequence of bytes in which:
 
