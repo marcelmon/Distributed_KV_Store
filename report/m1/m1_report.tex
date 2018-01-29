@@ -37,11 +37,20 @@ sorting=ynt
 
 \paragraph{Architecture} Refer to Figure \ref{arch} in the Appendices for an architecture diagram.
 
-\paragraph{KVClient} 
+\paragraph{KVClient} The KVClient class handles client side interface. It creats a user interface which contains following operations:
 
-\paragraph{KVStore}
+\begin{enumerate}
+    \item connect <hostname> <port>: establishing a connection to the host server with the port number.
+    \item put <key> <value>: sending the key-value pair to the server which will store the pair.
+    \item get <key>: getting the key-value pair with the key from the server.
+    \item logLevel: setting the log level. The default level is OFF.
+    \item disconnect: disconnecting from the current server.
+    \item quit: quiting the application after disconnecting from the server.
+\rend{enumerate}
 
-\paragraph{KVServer}
+\paragraph{KVStore} The KVStore class handles the messages from the KVClient and passes them to the CommMod.
+
+\paragraph{KVServer} The KVServer class handles server side interface. It gets the KVMessage from KVClient through the CommMod and does the put or get request, then it will give the response to the KVClient through the CommMode.
 
 \paragraph{CommMod} The CommMod class handles client and server communications. The server registers as a listener and receives KVMessages by way of a callback. The server must respond to each received KVMessage with a response message. Clients Connect() then send messages via SendMessage(), which returns a KVMessage response or else times out if the server fails to respond quickly enough.
 
