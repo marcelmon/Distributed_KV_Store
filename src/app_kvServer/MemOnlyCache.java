@@ -11,6 +11,13 @@ public class MemOnlyCache implements ICache {
 		map = new HashMap<>(capacity);
 		this.capacity = capacity;
 	}
+	
+	@Override
+	public boolean validateKey(String key) {
+		boolean result = !key.isEmpty() && !key.contains(" ") && !(key.length() > 20);
+		// System.out.println("Key [" + key + "] validates: " + result);
+		return result;
+	}
 
 	@Override
 	public int getCacheSize() {
@@ -72,6 +79,7 @@ public class MemOnlyCache implements ICache {
 
 	@Override
 	public synchronized void clearPersistentStorage() {
+		clearCache();
 		// no persistent storage => do nothing
 	}
 

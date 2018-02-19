@@ -23,7 +23,10 @@ import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-public class Sandbox extends TestCase {
+import org.apache.zookeeper.*;
+import org.apache.zookeeper.ZooDefs;
+
+public class Sandbox extends TestCase implements Watcher {
 	protected static Logger logger = Logger.getRootLogger();
 	protected ArrayList<Byte> serverRx = new ArrayList<>();
 	protected ArrayList<Byte> clientRx = new ArrayList<>();
@@ -31,7 +34,15 @@ public class Sandbox extends TestCase {
 	protected TLVMessage clientRx_msg;
 	
 	@Test
-	public void testMain() {
-		
+	public void testMain() throws Exception {
+		ZooKeeper zoo = new ZooKeeper("127.0.0.1:2181", 1000, this);
+		assertTrue(zoo.exists("/test", false) != null);
+		assertTrue(zoo.create("/bluh", "mydata".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL) != null);
+		Thread.sleep(3000);
+	}
+
+	@Override
+	public void process(WatchedEvent event) {
+		System.out.println(event.toString());
 	}
 }

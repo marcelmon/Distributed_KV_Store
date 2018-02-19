@@ -52,7 +52,7 @@ public interface IKVServer {
      * @throws Exception
      *      when key not in the key range of the server
      */
-    public String getKV(String key) throws ICache.KeyDoesntExistException, ICache.StorageException;
+    public String getKV(String key) throws ICache.KeyDoesntExistException, ICache.StorageException, Exception;
 
     /**
      * Put the key-value pair into storage

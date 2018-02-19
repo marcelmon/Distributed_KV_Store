@@ -9,22 +9,25 @@ import java.time.Duration;
 import java.io.*;
 import java.lang.Exception;
 
-import app_kvServer.ILockManager.LockAlreadyHeldException;
-
 public class LFUCache implements ICache {
     protected LinkedHashMap<String, String> map;  // the cache
     protected HashMap<String, Integer> usageCounter; // the hit counter on members of cache 
     protected final int capacity;
-    protected KeyLockManager keyLockManager;
     protected FilePerKeyKVDB kvdb;
 
     public LFUCache(int capacity) {
     	this.capacity = capacity;
         map = new LinkedHashMap<>(capacity);
         usageCounter = new HashMap<>(capacity);
-        keyLockManager = new KeyLockManager();
-        kvdb = new FilePerKeyKVDB("./data_dir");
+        kvdb = new FilePerKeyKVDB("data_dir");
     }
+    
+    @Override
+	public boolean validateKey(String key) {
+		boolean result = !key.isEmpty() && !key.contains(" ") && !(key.length() > 20);
+		// System.out.println("Key [" + key + "] validates: " + result);
+		return result;
+	}
     
     /**
      * Get a value from the cache, and update the counter.
@@ -156,32 +159,13 @@ public class LFUCache implements ICache {
      */
     @Override
     public synchronized boolean put(String key, String value) throws Exception {
-        boolean gotLock = keyLockManager.getLock(key, Duration.ofSeconds(5));
-        if(!gotLock){
-            throw new Exception("Failed to get lock on key=" + key);
-        }
-        // we now have a lock on the key
-        
+        System.out.println("LFU Cache put:" + key + "," + value);
         boolean inserted = this.putIntoCache(key, value);
-        
-        // We must remember to release the lock
-        keyLockManager.releaseLock(key);
-        
         return inserted;
     }
 
     @Override
-    public synchronized void delete(String key) throws KeyDoesntExistException {
-        boolean gotLock;
-        try{
-            gotLock = keyLockManager.getLock(key, Duration.ofSeconds(5));
-        } catch(LockAlreadyHeldException e){
-            gotLock = true;
-        }
-        if(!gotLock){
-        	throw new RuntimeException("Failed to acquire a lock!");
-        }
-        
+    public synchronized void delete(String key) throws KeyDoesntExistException {       
         // Remove the key from the database and storage. If it doesn't exist in either, throw an exception.
         // Notably, it is possible for it to exist in just the cache, just the db, or in both.
         boolean existed = false;
@@ -199,15 +183,7 @@ public class LFUCache implements ICache {
         }
         if (!existed) {
         	throw new KeyDoesntExistException("Key doesnt exist in cache or db: " + key);
-        }
-        
-        // Always release the lock:
-        try {
-            keyLockManager.releaseLock(key);
-        } catch(KeyLockManager.LockNotHeldException ee){
-        	throw new RuntimeException("Completely unexpected! Lock not held");
-        }
-        
+        }        
     }
 
     @Override
@@ -228,6 +204,7 @@ public class LFUCache implements ICache {
 
     @Override
     public synchronized void clearPersistentStorage() {
+    	clearCache();
         kvdb.clearStorage();
     }
 

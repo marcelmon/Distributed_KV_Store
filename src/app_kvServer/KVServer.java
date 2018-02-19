@@ -14,7 +14,7 @@ import common.messages.KVMessage.StatusType;
 
 public class KVServer implements IKVServer, ICommListener {
 	protected static Logger logger = Logger.getRootLogger();
-	protected final int port;
+	protected final int desired_port;
 	protected final CacheStrategy cacheStrategy;
 	protected CommMod server;
 	protected boolean running;
@@ -25,11 +25,11 @@ public class KVServer implements IKVServer, ICommListener {
 	   	try {
 			server = new CommMod();
 			server.SetListener(this);
-			server.StartServer(port);
+			server.StartServer(desired_port);
 	    } catch (Exception e) {
-	       	logger.error("Error! Cannot open server socket: " + port);
+	       	logger.error("Error! Cannot open server socket: " + desired_port);
 	        if(e instanceof BindException){
-	           	logger.error("Port " + port + " is already bound!");
+	           	logger.error("Port " + desired_port + " is already bound!");
 	        }
 	        throw e;
 	    }
@@ -50,7 +50,7 @@ public class KVServer implements IKVServer, ICommListener {
 	 *           and "LFU".
 	 */
 	public KVServer(int port, int cacheSize, String strategy) {
-		this.port = port;
+		this.desired_port = port;
 		
 		switch (strategy) {
 		case "LRU":
@@ -75,7 +75,7 @@ public class KVServer implements IKVServer, ICommListener {
 
 	@Override
 	public int getPort(){
-		return port;
+		return server.GetPort();
 	}
 
 	@Override
@@ -105,12 +105,13 @@ public class KVServer implements IKVServer, ICommListener {
 	}
 
 	@Override
-    public String getKV(String key) throws ICache.KeyDoesntExistException, ICache.StorageException {
+    public String getKV(String key) throws ICache.KeyDoesntExistException, ICache.StorageException, Exception {
 		return cache.get(key);
 	}
 
 	@Override
     public void putKV(String key, String value) throws Exception{
+	        System.out.println("Server put:" + key + "," + value);
 		cache.put(key, value);
 	}
 
@@ -121,6 +122,8 @@ public class KVServer implements IKVServer, ICommListener {
 
 	@Override
     public void clearStorage(){
+	    	System.out.println("CLEAR");
+		cache.clearCache();
 		cache.clearPersistentStorage();
 	}
 
@@ -221,12 +224,22 @@ public class KVServer implements IKVServer, ICommListener {
 				}
 			} else {							//insert/update
 				try {
-					boolean insert = cache.put(msg.getKey(), msg.getValue());
+					boolean insert = false;
+					boolean failure = false;
+					try { 
+    					    insert = cache.put(msg.getKey(), msg.getValue());
+					} catch (Exception e) {
+						failure = true;
+					}
 					KVMessage resp = null;
+					if (!failure) {
 					if (insert) {
 						resp = new TLVMessage(StatusType.PUT_SUCCESS, msg.getKey(), null);
 					} else {
 						resp = new TLVMessage(StatusType.PUT_UPDATE, msg.getKey(), null);
+					}
+					} else {
+						resp = new TLVMessage(StatusType.PUT_ERROR, msg.getKey(), null);
 					}
 					server.SendMessage(resp, client);
 				} catch (KVMessage.FormatException e) {
@@ -234,6 +247,7 @@ public class KVServer implements IKVServer, ICommListener {
 					System.out.println("Format exception");
 				} catch (Exception e) {
 					//TODO log - this is serious
+					e.printStackTrace();
 					System.out.println("Serious exception");
 				}
 			}

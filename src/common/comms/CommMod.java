@@ -18,9 +18,9 @@ import common.messages.TLVMessage;
 import logger.LogSetup;
 
 public class CommMod implements ICommMod {
-	protected String tx_ip;
-	protected int tx_port;
-	protected int rx_port;
+	protected String client_ip;
+	protected int server_port;
+	protected int client_port;
 	protected ICommListener listener;
 	protected ServerSocket serverSocket;
 	protected Thread serverThread;
@@ -72,10 +72,10 @@ public class CommMod implements ICommMod {
 	@Override
 	public void StartServer(int port) throws Exception {
 		// Create server:
-		tx_port = port;
 		try {
 			serverSocket = new ServerSocket(port);
 			serverSocket.setSoTimeout(50);
+			server_port = serverSocket.getLocalPort();
 		} catch (IOException exc) {
 			throw new Exception(exc.getMessage());
 		}
@@ -135,8 +135,8 @@ public class CommMod implements ICommMod {
 	@Override
 	public void Connect(String ip, int port) throws UnknownHostException, Exception {
 		try {
-			this.tx_ip = ip;
-			this.tx_port = port;
+			this.client_ip = ip;
+			this.client_port = port;
 			clientSocket = new Socket(ip, port);
 		} catch (UnknownHostException e) {
 			throw e;
@@ -163,6 +163,11 @@ public class CommMod implements ICommMod {
 	@Override
 	public void SendMessage(KVMessage msg, OutputStream client) throws Exception {
 		client.write(msg.getBytes());
+	}
+	
+	@Override
+	public int GetPort() {
+		return server_port;
 	}
 	
 	@Override

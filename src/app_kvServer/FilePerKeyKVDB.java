@@ -135,10 +135,11 @@ public class FilePerKeyKVDB implements IKVDB {
      * If file exists first read the file to make sure content is changing.
      */
     public boolean put(String key, String value) throws Exception {
+        System.out.println("DB Put called:" + key + "," + value);
     	File f = new File(this.dataDir + key);
     	if(f.exists()){
     		if(f.isDirectory()){
-    			// throw new InvalidPathException("The key data file " + this.dataDir + key + " is a directory.");
+    			throw new Exception("The key data file " + this.dataDir + key + " is a directory.");
     		}
             try{
                 byte[] valueBytes = Files.readAllBytes(Paths.get(this.dataDir + key));
@@ -155,9 +156,10 @@ public class FilePerKeyKVDB implements IKVDB {
                     
             }
             catch(IOException e){
-
+                throw e;
             }
     		
+	        System.out.println(this.dataDir + key);
     		Writer fileWriter = new FileWriter(this.dataDir + key);
     		fileWriter.write(value);
     		fileWriter.close();

@@ -20,5 +20,6 @@
 	<classpathentry kind="lib" path="libs/log4j-1.2.17.jar"/>
 	<classpathentry kind="lib" path="m1-client.jar"/>
 	<classpathentry kind="lib" path="m1-server.jar"/>
+	<classpathentry kind="lib" path="/home/tom/bin/zookeeper-3.4.11/zookeeper-3.4.11.jar"/>
 	<classpathentry kind="output" path="archive/echoClient/bin"/>
 </classpath>

@@ -11,11 +11,7 @@ import java.util.Objects;
 
 import java.util.Map;
 
-import app_kvServer.ILockManager.LockAlreadyHeldException;
-
 public class FIFOCache implements ICache {
-
-
     public class FIFOCacheLinkedHashMap extends LinkedHashMap<String, String> {
 
         private int capacity;
@@ -36,7 +32,6 @@ public class FIFOCache implements ICache {
     protected final int capacity;
     
     protected FIFOCacheLinkedHashMap map;
-    protected KeyLockManager keyLockManager;
     protected FilePerKeyKVDB kvdb;
 
     public FIFOCache(int capacity) {
@@ -44,9 +39,15 @@ public class FIFOCache implements ICache {
         this.capacity = capacity;
 
         map = new FIFOCacheLinkedHashMap(capacity);
-        keyLockManager = new KeyLockManager();
-        kvdb = new FilePerKeyKVDB("./data_dir");
+        kvdb = new FilePerKeyKVDB("data_dir");
     }
+    
+    @Override
+	public boolean validateKey(String key) {
+		boolean result = !key.isEmpty() && !key.contains(" ") && !(key.length() > 20);
+		// System.out.println("Key [" + key + "] validates: " + result);
+		return result;
+	}
 
     @Override
     public int getCacheSize() {
@@ -91,10 +92,6 @@ public class FIFOCache implements ICache {
      */
     @Override
     public synchronized boolean put(String key, String value) throws Exception {
-        boolean gotLock = keyLockManager.getLock(key, Duration.ofSeconds(5));
-        if(!gotLock){
-            throw new Exception("Key " + key + " not updated!");
-        }
         if(map.containsKey(key)){
             if(Objects.equals(map.get(key), value)){
                 // no update
@@ -103,37 +100,27 @@ public class FIFOCache implements ICache {
             // else the cached value is different
             map.put(key, value);
             kvdb.put(key, value);
-            keyLockManager.releaseLock(key);
             return false; // tuple updated
         }
         map.put(key, value); // map.put returns null if no previous mapping
         kvdb.put(key, value);
-        keyLockManager.releaseLock(key);
         return true;
     }
 
     @Override
     public synchronized void delete(String key) throws KeyDoesntExistException {
-        boolean gotLock;
-        try{
-            gotLock = keyLockManager.getLock(key, Duration.ofSeconds(5));
-        }catch(LockAlreadyHeldException e){
-            gotLock = true;
-        }
-        if(!gotLock){
-            return;
-        }
-        if(!kvdb.inStorage(key)){
+        if (!kvdb.inStorage(key)) {
             map.remove(key); // for good measure (but probably don't need due to locking)
             throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");
         }
-        try{
-            if(!kvdb.inStorage(key)){
+        
+        try {
+            if (!kvdb.inStorage(key)){
                 throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");
             }
             kvdb.delete(key);
             map.remove(key);
-        }catch(IKVDB.KeyDoesntExistException e){
+        } catch(IKVDB.KeyDoesntExistException e) {
             throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");
         }
         return;
@@ -155,6 +142,7 @@ public class FIFOCache implements ICache {
 
     @Override
     public synchronized void clearPersistentStorage() {
+    	clearCache();
         kvdb.clearStorage();
     }
 

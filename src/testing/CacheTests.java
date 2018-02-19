@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import org.junit.*;
 import junit.framework.TestCase;
 import app_kvServer.*;
+import common.messages.KVMessage.StatusType;
 
 public class CacheTests extends TestCase {
 	protected ICache[] caches;
@@ -327,52 +328,45 @@ public class CacheTests extends TestCase {
 	}
 	
 	@Test
-	public void testWriteThrough() throws Exception {
-		final int N = 10;
+	public void testInvalidKeys() throws Exception {
 		for (ICache cache : caches ) {
+			String key0 = "abcdefg";
+			assertTrue(cache.validateKey(key0));
+			
+			String key1 = "abc ";  // white space
+			assertFalse(cache.validateKey(key1));
+			
+			String key2 = "ab c"; // white space
+			assertFalse(cache.validateKey(key2));
+			
+			String key3 = ""; // empty
+			assertFalse(cache.validateKey(key3));
+			
+			String key4 = "12345678901234567890"; // 20 characters is okay
+			assertTrue(cache.validateKey(key4));
+			
+			String key5 = "123456789012345678901";  // 21 characters is not
+			assertFalse(cache.validateKey(key5));
+		}
+	}
+	
+	@Test
+	public void testClearPersistent() throws Exception {
+		for (ICache cache : caches) {
 			if (cache.getClass().equals(MemOnlyCache.class)) {
-//				System.out.println("Skipping " + MemOnlyCache.class.getSimpleName());
 				// Skip MemOnlyCache because it doesn't maintain capacity
 				break;
 			}
 			
-			// Clear the cache and storage for good measure:
-			cache.clearCache();
+			// Insert a key:
+			cache.put("abcdefg", "abc");
+			
+			// Check it is present in the cache:
+			cache.inCache("abcdefg");
+			
+			// Clear the *persistent* storage and check it is cleared from the *cache*:
 			cache.clearPersistentStorage();
-			
-			// Make sure we know the capacity of the cache. If not, this test might fail or pass
-			// incorrectly as we need to *know* when the cache will start evicting.
-			assertTrue(cache.getCacheSize() == N);
-			
-			// Write some data into the cache:
-			cache.put("0", "100");
-			cache.put("1", "101");
-			
-			// Ensure it's not in storage:
-			assertFalse(cache.inStorage("a"));
-			assertFalse(cache.inStorage("c"));
-			
-			// Write enough data that the cache overflows:
-			for (int i = 2; i < N+1; i++ ) {
-				cache.put(Integer.toString(i), Integer.toString(i+100));
-			}
-			
-			// We expect the last item to be evicted and placed in storage:
-			assertFalse(cache.inCache("9"));
-			assertTrue(cache.inStorage("9"));
-			
-			// Write through to storage:
-			cache.writeThrough();
-			
-			// Ensure everything is in storage:
-			for (int i = 0; i < N+1; i++) {
-				assertTrue(cache.inStorage(Integer.toString(i)));
-			}
-			
-			// Ensure we can retrieve everything:
-			for (int i = 0; i < N+1; i++) {
-				assertTrue(cache.get(Integer.toString(i)).equals(Integer.toString(i+100)));
-			}
+			assertFalse(cache.inCache("abcdefg"));
 		}
 	}
 }
