@@ -128,11 +128,12 @@
 	
   <!-- sandbox -->
 	<target name="sandbox" depends="build">
-	    <junit>
+	    <junit haltonfailure="no" failureproperty="test.failed">
 	      <classpath refid="project.classpath" />
 	      <formatter type="brief" usefile="false" />
 	      <test name="testing.RunSandbox" />
 	    </junit>
+            <fail message="bluh" if="test.failed" />
 	  </target>
 
   <target name="run" >
