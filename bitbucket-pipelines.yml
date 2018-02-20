@@ -14,12 +14,13 @@ pipelines:
     master:
       - step:
           script: 
-            - ant
+            - /home/dependencies/startServer.sh
             - ant test
+
     develop:
       - step:
           script: 
-            - ant
+            - /home/dependencies/startServer.sh
             - ant unittest
 
     sandbox:
