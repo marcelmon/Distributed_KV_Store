@@ -25,5 +25,5 @@ pipelines:
     sandbox:
       - step:
           script:
-            - ./startServer.sh
+            - /home/dependencies/startServer.sh
             - ant sandbox
