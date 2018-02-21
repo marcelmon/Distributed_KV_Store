@@ -11,19 +11,27 @@ import java.util.Objects;
 
 import java.util.Map;
 
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
+
 public class FIFOCache implements ICache {
     public class FIFOCacheLinkedHashMap extends LinkedHashMap<String, String> {
 
         private int capacity;
+        // private Logger logger;
 
         public FIFOCacheLinkedHashMap(int capacity) { // access eviction order is true for LRU, false for insertion-order(FIFO)
             super(capacity, 0.75f, false); // 0.75 is loadFactor, true is accessOrder
             this.capacity = capacity;
-            
+            // logger = new LogSetup("logs/server/server.log", Level.ALL);
+            logger.debug("FIFOCacheLinkedHashMap()" + capacity);
         }
 
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+            logger.debug("FIFOCacheLinkedHashMap removeEldestEntry() : " + (this.size() > this.capacity));
             return this.size() > this.capacity;
         }
     }
@@ -34,12 +42,16 @@ public class FIFOCache implements ICache {
     protected FIFOCacheLinkedHashMap map;
     protected FilePerKeyKVDB kvdb;
 
+    protected static Logger logger = Logger.getRootLogger();
+
     public FIFOCache(int capacity) {
         
         this.capacity = capacity;
 
         map = new FIFOCacheLinkedHashMap(capacity);
         kvdb = new FilePerKeyKVDB("data_dir");
+
+        logger.debug("FIFOCache() : " + capacity);
     }
     
     @Override
@@ -59,6 +71,10 @@ public class FIFOCache implements ICache {
      * This class doesn't provide persistent storage. 
      */
     public boolean inStorage(String key) {
+        if (!validateKey(key)) {
+            return false;
+            // throw new Exception("Attempted to check in storage for an invalid key");
+        }
         return kvdb.inStorage(key);
     }
 
@@ -69,10 +85,15 @@ public class FIFOCache implements ICache {
 
     @Override
     public synchronized String get(String key) throws KeyDoesntExistException {
+        if (!validateKey(key)) {
+            return null;
+        }
         if (map.containsKey(key)) {
-            return map.get(key);            
+            logger.debug("get() cache hit");
+            return map.get(key);          
         } else {
             if(kvdb.inStorage(key)){
+                logger.debug("get() stored key found");
                 try{
                     String value = kvdb.get(key);
                     map.put(key, value);
@@ -92,28 +113,35 @@ public class FIFOCache implements ICache {
      */
     @Override
     public synchronized boolean put(String key, String value) throws Exception {
+        if (!validateKey(key)) {
+            return false;
+        }
         if(map.containsKey(key)){
             if(Objects.equals(map.get(key), value)){
-                // no update
+                logger.debug("FIFOCache put() cache hit key and value -> key : " + key + ", value : " + value);
                 return false;
             }
             // else the cached value is different
             map.put(key, value);
             kvdb.put(key, value);
+            logger.debug("FIFOCache put() cache hit key, update value -> key : " + key + ", value : " + value);
             return false; // tuple updated
         }
         map.put(key, value); // map.put returns null if no previous mapping
         kvdb.put(key, value);
+        logger.debug("FIFOCache put() cache miss key : " + key + ", value : " + value);
         return true;
     }
 
     @Override
     public synchronized void delete(String key) throws KeyDoesntExistException {
+        if (!validateKey(key)) {
+            return;
+        }
         if (!kvdb.inStorage(key)) {
             map.remove(key); // for good measure (but probably don't need due to locking)
             throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");
         }
-        
         try {
             if (!kvdb.inStorage(key)){
                 throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");

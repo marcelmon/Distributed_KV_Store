@@ -14,6 +14,9 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 public class FilePerKeyKVDB implements IKVDB {
 	/**
      * Iterator implementation to produce key-value Entries when loading data.
@@ -32,12 +35,15 @@ public class FilePerKeyKVDB implements IKVDB {
 			}
 			this.dataDir = dataDir;
 			keyValueFileList = f.listFiles();
+            logger.debug("FilePerKeyIterator()");
 		}
 
 
 		@Override
         public boolean hasNext() {
-            return currentIndex < keyValueFileList.length && keyValueFileList[currentIndex] != null;
+            boolean result = currentIndex < keyValueFileList.length && keyValueFileList[currentIndex] != null;
+            logger.debug("hasNext() -> result : " + result);
+            return result;
         }
 
 
@@ -54,6 +60,7 @@ public class FilePerKeyKVDB implements IKVDB {
 
         		}
         		catch(IOException e){
+                    logger.error("FilePerKeyIterator next() IOException : " + e + " , " + e.getMessage());
         			return null;
         		}
         	}
@@ -72,7 +79,7 @@ public class FilePerKeyKVDB implements IKVDB {
 
 	protected String dataDir;
 
-
+    protected static Logger logger = Logger.getRootLogger();
 
 	public FilePerKeyKVDB(String dataDir) {
 		

@@ -71,6 +71,7 @@ public class KVServer implements IKVServer, ICommListener {
 			cacheStrategy = CacheStrategy.None;
 			break;
 		}
+		cache = new ICacheDecorator(cache);
 	}
 
 	@Override
