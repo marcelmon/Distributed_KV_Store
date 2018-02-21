@@ -26,7 +26,7 @@ public class FIFOCache implements ICache {
             super(capacity, 0.75f, false); // 0.75 is loadFactor, true is accessOrder
             this.capacity = capacity;
             // logger = new LogSetup("logs/server/server.log", Level.ALL);
-            logger.debug("FIFOCacheLinkedHashMap()" + capacity);
+            logger.debug("FIFOCacheLinkedHashMap() " + capacity);
         }
 
         @Override
