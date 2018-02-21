@@ -25,24 +25,31 @@ import org.apache.log4j.Logger;
 
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.*;
 
-public class Sandbox extends TestCase implements Watcher {
+public class ZookeeperTest extends TestCase implements Watcher {
 	protected static Logger logger = Logger.getRootLogger();
-	protected ArrayList<Byte> serverRx = new ArrayList<>();
-	protected ArrayList<Byte> clientRx = new ArrayList<>();
-	protected TLVMessage serverRx_msg;
-	protected TLVMessage clientRx_msg;
+	protected final String addr = "127.0.0.1:2181";
 	
 	@Test
-	public void testMain() throws Exception {
-		ZooKeeper zoo = new ZooKeeper("127.0.0.1:2181", 1000, this);
-		//assertTrue(zoo.exists("/test", false) != null);
-		assertTrue(zoo.create("/bluh", "mydata".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL) != null);
-		//Thread.sleep(3000);
+	public void testInit() throws Exception {
+		new ZooKeeper(addr, 1000, this);
+	}
+	
+	@Test
+	public void testCreate() throws Exception {
+		final String key = "/asbsd";
+		final String value = "mydata";
+		
+		ZooKeeper zoo = new ZooKeeper(addr, 1000, this);
+		assertTrue(zoo.create(key, value.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL) != null);
+		Stat stat = null;
+		byte[] data = zoo.getData(key, false, stat);		
+		assertTrue(Arrays.equals(data, value.getBytes()));
 	}
 
 	@Override
 	public void process(WatchedEvent event) {
-		System.out.println(event.toString());
+		// do nothing
 	}
 }

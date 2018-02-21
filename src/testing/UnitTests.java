@@ -33,6 +33,8 @@ public class UnitTests {
 		
 		clientSuite.addTestSuite(StoreServerTests.class);
 		
+		clientSuite.addTestSuite(ZookeeperTest.class);
+		
 		return clientSuite;
 	}
 	
