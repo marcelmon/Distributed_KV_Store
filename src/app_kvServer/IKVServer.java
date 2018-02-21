@@ -5,7 +5,8 @@ public interface IKVServer {
         None,
         LRU,
         LFU,
-        FIFO
+        FIFO,
+        NONE
     };
 
     /**
