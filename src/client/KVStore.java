@@ -33,6 +33,12 @@ public class KVStore implements KVCommInterface {
 	}
 
 	@Override
+	public boolean isConnected() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
 	public KVMessage put(String key, String value) throws Exception {
 		StatusType statusType = StatusType.PUT;
 		KVMessage tx_msg = new TLVMessage(statusType,key,value);

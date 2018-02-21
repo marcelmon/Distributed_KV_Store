@@ -20,6 +20,11 @@ public interface KVCommInterface {
 	public void disconnect();
 
 	/**
+	 * @return	true if connected to server, false otherwise
+	 */
+	public boolean isConnected();
+
+	/**
 	 * Inserts a key-value pair into the KVServer.
 	 *
 	 * @param key

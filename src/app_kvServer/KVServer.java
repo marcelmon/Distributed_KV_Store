@@ -41,7 +41,10 @@ public class KVServer implements IKVServer, ICommListener {
 
 	/**
 	 * Start KV Server at given port
+         * @param name unique name of server
 	 * @param port given port for storage server to operate
+         * @param zkHostname hostname where zookeeper is running
+         * @param zkPort port where zookeeper is running
 	 * @param cacheSize specifies how many key-value pairs the server is allowed
 	 *           to keep in-memory
 	 * @param strategy specifies the cache replacement strategy in case the cache
@@ -49,7 +52,8 @@ public class KVServer implements IKVServer, ICommListener {
 	 *           currently not contained in the cache. Options are "FIFO", "LRU",
 	 *           and "LFU".
 	 */
-	public KVServer(int port, int cacheSize, String strategy) {
+	public KVServer(String name, int port, String zkHostname, int zkPort, int cacheSize, String strategy) {
+                //TODO use name, zkHostname, zkPort
 		this.desired_port = port;
 		
 		switch (strategy) {
@@ -260,5 +264,31 @@ public class KVServer implements IKVServer, ICommListener {
 			break;
 		}
 	}
+
+	@Override
+	public void start() {
+		// TODO
+	}
+
+        @Override
+        public void stop() {
+            // TODO
+	}
+
+        @Override
+        public void lockWrite() {
+            // TODO
+        }
+
+        @Override
+        public void unlockWrite() {
+            // TODO
+        }
+
+        @Override
+        public boolean moveData(String[] hashRange, String targetName) throws Exception {
+            // TODO
+            return false;
+        }
 
 }
