@@ -154,27 +154,30 @@ public class KVServer implements IKVServer, ICommListener {
 	public static void main (String[] args) {
 		try {
 			new LogSetup("logs/server/server.log", Level.ALL);
-			if(args.length == 3){
+			if(args.length == 6){
 				try {
-					int port = Integer.parseInt(args[0]);
-					int cacheSize = Integer.parseInt(args[1]);
-					String strategy = args[2];
-					new KVServer(port, cacheSize, strategy).run();
+					String name = args[0];
+					int port = Integer.parseInt(args[1]);
+					String zkHostname = args[2];
+					int zkPort = Integer.parseInt(args[3]);					
+					int cacheSize = Integer.parseInt(args[4]);
+					String strategy = args[5];
+					new KVServer(name, port, zkHostname, zkPort, cacheSize, strategy).run();
 				} catch (Exception e) {
 					logger.error("Error! " +
 					e.getMessage());
 				}
 			}else {
 				System.out.println("Error! Invalid number of arguments!");
-				System.out.println("Usage: Server <port> <cache size> <cache strategy(LRU,LFU,FIFO)>!");
+				System.out.println("Usage: Server <name> <port> <zkHostname> <zkPort> <cache size> <cache strategy(LRU,LFU,FIFO)>!");
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");
 			e.printStackTrace();
 			System.exit(1);
 		} catch (NumberFormatException nfe) {
-			System.out.println("Error! Invalid argument <port>! Not a number!");
-			System.out.println("Usage: Server <port>!");
+			System.out.println("Error! Invalid argument! Not a number!");
+			System.out.println("Usage: Server <name> <port> <zkHostname> <zkPort> <cache size> <cache strategy(LRU,LFU,FIFO)>!");
 			System.exit(1);
 		}
 	}
