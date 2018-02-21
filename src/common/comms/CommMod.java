@@ -157,7 +157,14 @@ public class CommMod implements ICommMod {
 				//TODO log as a warning
 			}
 		}
-		
+	}
+	
+	@Override
+	public boolean isConnected() {
+		if (clientSocket != null) {
+			return clientSocket.isConnected();
+		}
+		return false;
 	}
 	
 	@Override

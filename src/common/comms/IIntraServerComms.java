@@ -8,15 +8,24 @@ import app_kvServer.IKVServer;
 public interface IIntraServerComms {
 	public enum RPCMethod {
 		Start,
-		Stop
+		Stop,
+		LockWrite,
+		UnlockWrite,
+		MoveData
 	}
 	
+	/**
+	 * Sets the name of the server calling the object. Allows other methods to reference the
+	 * name of this server. Should be called during construction if the object is to be used
+	 * by an IKVServer (but does not need to be called by ECS).
+	 * @param me
+	 */
 	public void setSelf(String me);
 	
 	/**
 	 * Performs a remote procedure call of the method defined by "type" on the KVServer identified by target.
 	 */
-	public boolean call(String target, RPCMethod method);
+	public boolean call(String target, RPCMethod method, String... args);
 	
 	/**
 	 * Populates an IConsistentHasher implementation with the current state according to Zookeeper.
@@ -28,7 +37,6 @@ public interface IIntraServerComms {
 	 * Registers the given IKVServer as receiving remote procedure calls directed to the indicated target.
 	 */
 	public void register(String target, IKVServer server);
-	
 	
 	/**
 	 * Requests that the designated server enter a write lock - during which it only allows reads.

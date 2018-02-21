@@ -19,6 +19,9 @@ public class KVServer implements IKVServer, ICommListener {
 	protected CommMod server;
 	protected boolean running;
 	protected ICache cache;
+	protected final String name;
+	protected final String zkHostname;
+	protected final int zkPort;
 	
 	public void run() throws BindException, Exception {
 		logger.info("Initialize server ...");
@@ -53,8 +56,11 @@ public class KVServer implements IKVServer, ICommListener {
 	 *           and "LFU".
 	 */
 	public KVServer(String name, int port, String zkHostname, int zkPort, int cacheSize, String strategy) {
-                //TODO use name, zkHostname, zkPort
+        // TODO use name, zkHostname, zkPort
+		this.name = name;
 		this.desired_port = port;
+		this.zkHostname = zkHostname;
+		this.zkPort = zkPort;
 		
 		switch (strategy) {
 		case "LRU":
@@ -273,25 +279,24 @@ public class KVServer implements IKVServer, ICommListener {
 		// TODO
 	}
 
-        @Override
-        public void stop() {
-            // TODO
+	@Override
+	public void stop() {
+	    // TODO
 	}
 
-        @Override
-        public void lockWrite() {
-            // TODO
-        }
+    @Override
+    public void lockWrite() {
+        // TODO
+    }
 
-        @Override
-        public void unlockWrite() {
-            // TODO
-        }
+    @Override
+    public void unlockWrite() {
+        // TODO
+    }
 
-        @Override
-        public boolean moveData(String[] hashRange, String targetName) throws Exception {
-            // TODO
-            return false;
-        }
-
+    @Override
+    public boolean moveData(String[] hashRange, String targetName) throws Exception {
+        // TODO
+        return false;
+    }
 }
