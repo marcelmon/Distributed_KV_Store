@@ -94,7 +94,35 @@ public class BulkMessageTest extends TestCase {
 	}
 	
 	@Test
-	public void testBulkPackageBytes() throws Exception {
+	public void testBulkPackageBytes0() throws Exception {		
+		byte[] buffer = new byte[] {
+			(byte) StatusType.BULK_PACKAGE.ordinal(),
+			0, 0, 0, 8, // 4 bytes of length
+			1,
+			1,
+			'a',
+			'b',
+			1,
+			1,
+			'c',
+			'd'
+		};
+		
+		BulkPackageMessage msg = new BulkPackageMessage();
+		msg.fromBytes(buffer);
+		
+		Map.Entry<?, ?>[] expected = new AbstractMap.SimpleEntry<?, ?>[] {
+			new AbstractMap.SimpleEntry<String, String>("a", "b"),
+			new AbstractMap.SimpleEntry<String, String>("c", "d"),
+		};		
+		
+		Map.Entry<?, ?>[] received = msg.getTuples();
+		
+		assertTrue(Arrays.deepEquals(received, expected));
+	}
+	
+	@Test
+	public void testBulkPackageBytes1() throws Exception {
 		byte[] buffer = new byte[] {
 			(byte) StatusType.BULK_PACKAGE.ordinal(),
 			0, 0, 0, 20, // 4 bytes of length

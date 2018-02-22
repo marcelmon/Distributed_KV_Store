@@ -149,7 +149,7 @@ public class BulkPackageMessage extends Message {
 				new ArrayList<AbstractMap.SimpleEntry<String, String>>();
 		
 		int cursor = 1+sizeofInt;
-		while (cursor < len+1+sizeofInt) {
+		while (cursor < len+1+sizeofInt) { 
 			System.out.println(cursor + "/" + len);
 			int kl = buffer[cursor];
 			int vl = buffer[cursor+1];
