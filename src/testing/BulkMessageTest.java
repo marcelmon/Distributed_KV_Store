@@ -1,5 +1,6 @@
 package testing;
 
+import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Map;
@@ -63,7 +64,7 @@ public class BulkMessageTest extends TestCase {
 	public void testBulkPackageBuffer() throws Exception {
 		byte[] buffer = new byte[] {
 			(byte) StatusType.BULK_PACKAGE.ordinal(),
-			20,
+			0, 0, 0, 20, // 4 bytes of length
 			4,
 			5,
 			't', 'e', 's', 't',

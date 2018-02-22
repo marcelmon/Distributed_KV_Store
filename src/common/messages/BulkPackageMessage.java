@@ -1,6 +1,8 @@
 package common.messages;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +14,7 @@ public class BulkPackageMessage extends Message {
 	// are string or else an error can arise!
 	Map.Entry<?, ?> tuples[] = null;
 	final long timeout = 250;
+	final int sizeofInt = 4;
 	
 	/**
 	 * Default constructor.
@@ -78,13 +81,22 @@ public class BulkPackageMessage extends Message {
 		if (len >= 255) {
 			//TODO make non fatal
 			throw new RuntimeException("Bulk package too long!");
-		}
+		}		
 		
 		byte[] output = new byte[len];
 		output[0] = (byte) StatusType.BULK_PACKAGE.ordinal();
-		output[1] = (byte) len;
+		ByteBuffer bb = ByteBuffer.allocate(sizeofInt).putInt(len);
+		for (byte b : bb.array()) {
+			System.out.println("A: " + b);
+		}
+		System.arraycopy(
+				bb.array(), 
+				0,
+				output,
+				1,
+				sizeofInt);
 		
-		int cursor = 2;
+		int cursor = 1+sizeofInt;
 		for (Map.Entry<?, ?> t : tuples) {
 			String key = (String) t.getKey();
 			String value = (String) t.getValue();
@@ -116,14 +128,24 @@ public class BulkPackageMessage extends Message {
 	}
 	
 	protected void fromTLV(byte[] buffer) {
-		byte tag = buffer[0];		
-		int len = buffer[1];
+		byte tag = buffer[0];
+		byte[] rawlen = new byte[sizeofInt];
+		System.arraycopy(
+				buffer, 
+				1,
+				rawlen,
+				0,
+				sizeofInt);
+		ByteBuffer bb =ByteBuffer.allocate(sizeofInt).wrap(rawlen);
+		// bb.order(ByteOrder.BIG_ENDIAN);
+		int len = bb.getInt(0);
 		
 		ArrayList<AbstractMap.SimpleEntry<String, String>> lTuples = 
 				new ArrayList<AbstractMap.SimpleEntry<String, String>>();
 		
-		int cursor = 2;
+		int cursor = 1+sizeofInt;
 		while (cursor < len) {
+//			System.out.println(cursor + "/" + len);
 			int kl = buffer[cursor];
 			int vl = buffer[cursor+1];
 			
