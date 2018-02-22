@@ -74,14 +74,18 @@ public class BulkRequestMessage extends Message {
 		output[0] = tag;
 	    output[1] = (byte) lower.length;
 	    output[2] = (byte) upper.length;
+	    byte[] rawlower = new byte[lower.length];
+	    for (int i = 0; i < lower.length; i++) rawlower[i] = lower[i];
+	    byte[] rawupper = new byte[upper.length];
+	    for (int i = 0; i < upper.length; i++) rawupper[i] = upper[i];
 		System.arraycopy(
-				lower,  //src buffer 
+				rawlower,  //srcbuffer 
 				0, 				//start pos in src buffer
 				output, 		//dst buffer
 				1+2,    //start post in dst buffer
 				lower.length);   //write len
 		System.arraycopy(
-				upper,  			//src buffer
+				rawupper,  			//src buffer
 				0,							//start pos in src buffer 
 				output, 					//dst buffer
 				1+2+lower.length,    //start pos in dst buffer

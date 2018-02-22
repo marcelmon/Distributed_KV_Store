@@ -13,7 +13,7 @@ public class BulkPackageMessage extends Message {
 	// a generic type. Not very clean, but we must know everywhere that the key/value types
 	// are string or else an error can arise!
 	Map.Entry<?, ?> tuples[] = null;
-	final long timeout = 250;
+	final long timeout = 3000;
 	final int sizeofInt = 4;
 	
 	/**
@@ -83,12 +83,9 @@ public class BulkPackageMessage extends Message {
 			throw new RuntimeException("Bulk package too long!");
 		}		
 		
-		byte[] output = new byte[len];
+		byte[] output = new byte[1+4+len];
 		output[0] = (byte) StatusType.BULK_PACKAGE.ordinal();
 		ByteBuffer bb = ByteBuffer.allocate(sizeofInt).putInt(len);
-		for (byte b : bb.array()) {
-			System.out.println("A: " + b);
-		}
 		System.arraycopy(
 				bb.array(), 
 				0,
@@ -124,10 +121,18 @@ public class BulkPackageMessage extends Message {
 			cursor += 2 + kl + vl;
 		}
 		
+		for (byte b : output) {
+			System.out.println("o:" + b);
+		}
+		
 		return output;
 	}
 	
 	protected void fromTLV(byte[] buffer) {
+		for (byte b : buffer) {
+			System.out.println("b:" + b);
+		}
+		
 		byte tag = buffer[0];
 		byte[] rawlen = new byte[sizeofInt];
 		System.arraycopy(
@@ -136,18 +141,21 @@ public class BulkPackageMessage extends Message {
 				rawlen,
 				0,
 				sizeofInt);
-		ByteBuffer bb =ByteBuffer.allocate(sizeofInt).wrap(rawlen);
+		ByteBuffer bb = ByteBuffer.allocate(sizeofInt).wrap(rawlen);
 		// bb.order(ByteOrder.BIG_ENDIAN);
-		int len = bb.getInt(0);
+		int len = bb.getInt(0);	
 		
 		ArrayList<AbstractMap.SimpleEntry<String, String>> lTuples = 
 				new ArrayList<AbstractMap.SimpleEntry<String, String>>();
 		
 		int cursor = 1+sizeofInt;
-		while (cursor < len) {
-//			System.out.println(cursor + "/" + len);
+		while (cursor < len+1+sizeofInt) {
+			System.out.println(cursor + "/" + len);
 			int kl = buffer[cursor];
 			int vl = buffer[cursor+1];
+			
+			System.out.println("kl=" + kl);
+			System.out.println("vl=" + vl);
 			
 			// Read key
 			byte[] rawkey = new byte[kl];
@@ -241,31 +249,33 @@ public class BulkPackageMessage extends Message {
 			
 			// Allow TIMEOUT ms for length to become available:
 			t0 = System.currentTimeMillis();
-			while (stream.available() < 1) {
+			while (stream.available() < sizeofInt) {
 				if (System.currentTimeMillis() - t0 > timeout) {
 					stream.reset();
-					throw new StreamTimeoutException("Timed out waiting for first byte to appear");
+					throw new StreamTimeoutException("Timed out waiting for second byte to appear");
 				}
 				try {
 					Thread.sleep(SLEEPDT);
 				} catch ( InterruptedException e) { }
 			}
 			
-			int msgLen = stream.read() & 0xFF; // to get unsigned value
+			header = new byte[1+sizeofInt];
+			header[0] = (byte) tag;
+			
+			byte[] rawlen = new byte[sizeofInt];
+			stream.read(rawlen, 0, sizeofInt);
+			int msgLen = ByteBuffer.allocate(sizeofInt).wrap(rawlen).getInt();
 			if (msgLen < 0) {
 				throw new RuntimeException("Negative message length"); // programmatic error
 			}
-			
-			header = new byte[2];
-			header[0] = (byte) tag;
-			header[1] = (byte) msgLen;
+			System.arraycopy(rawlen, 0, header, 1, sizeofInt);
 
 			// Allow TIMEOUT ms for data to become available:
 			t0 = System.currentTimeMillis();
 			while (stream.available() < msgLen) {
 				if (System.currentTimeMillis() - t0 > timeout) {
 					stream.reset();
-					throw new StreamTimeoutException("Timed out waiting for first byte to appear");
+					throw new StreamTimeoutException("Timed out waiting for body to appear");
 				}
 				try {
 					Thread.sleep(SLEEPDT);

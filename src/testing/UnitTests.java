@@ -24,16 +24,16 @@ public class UnitTests {
 	public static Test suite() {
 		TestSuite clientSuite = new TestSuite("Storage Server Unit Test-Suite");
 
-		clientSuite.addTestSuite(MessageTest.class);
-		clientSuite.addTestSuite(KVMessageTest.class);
-		clientSuite.addTestSuite(BulkMessageTest.class);
-		clientSuite.addTestSuite(SocketTest.class);
+//		clientSuite.addTestSuite(MessageTest.class);
+//		clientSuite.addTestSuite(KVMessageTest.class);
+//		clientSuite.addTestSuite(BulkMessageTest.class);
+//		clientSuite.addTestSuite(SocketTest.class);
 		clientSuite.addTestSuite(CommModTest.class);
-		clientSuite.addTestSuite(KVDBTests.class);
-		clientSuite.addTestSuite(CacheTests.class);
-		clientSuite.addTestSuite(StoreServerTests.class);		
-		clientSuite.addTestSuite(ZookeeperTest.class);
-		clientSuite.addTestSuite(ConsistentHasherTest.class);
+//		clientSuite.addTestSuite(KVDBTests.class);
+//		clientSuite.addTestSuite(CacheTests.class);
+//		clientSuite.addTestSuite(StoreServerTests.class);		
+//		clientSuite.addTestSuite(ZookeeperTest.class);
+//		clientSuite.addTestSuite(ConsistentHasherTest.class);
 		
 		return clientSuite;
 	}
