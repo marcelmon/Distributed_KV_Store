@@ -40,6 +40,8 @@ public class AllTests {
 		clientSuite.addTestSuite(ZookeeperTest.class);
 		clientSuite.addTestSuite(ZookeeperExtTest.class);
 		
+		clientSuite.addTestSuite(ConsistentHasherTest.class);
+		
 		return clientSuite;
 	}
 	

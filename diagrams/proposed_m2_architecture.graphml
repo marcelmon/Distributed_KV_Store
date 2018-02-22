@@ -171,7 +171,7 @@
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="46.0" width="93.0" x="404.0" y="503.75000000000006"/>
-          <y:Fill color="#FFCC00" transparent="false"/>
+          <y:Fill color="#FF0000" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="68.412109375" x="12.2939453125" y="14.015624999999943">CommMod<y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
@@ -371,7 +371,7 @@ calls from ECS, write locking, etc.<y:LabelModel>
       <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="22.838915470494385" width="178.93301435406738" x="1002.561403508772" y="343.2380382775121"/>
+          <y:Geometry height="22.838915470494385" width="178.93301435406738" x="68.7559808612441" y="546.7101275917066"/>
           <y:Fill color="#FF0000" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="39.4609375" x="69.73603842703369" y="2.4350827352471924">TODO<y:LabelModel>
@@ -389,7 +389,7 @@ calls from ECS, write locking, etc.<y:LabelModel>
       <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="22.838915470494385" width="178.93301435406738" x="1002.561403508772" y="368.93819776714525"/>
+          <y:Geometry height="22.838915470494385" width="178.93301435406738" x="68.7559808612441" y="572.4102870813398"/>
           <y:Fill color="#339966" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="66.923828125" x="56.00459311453369" y="2.4350827352471924">EXTERNAL<y:LabelModel>
@@ -407,7 +407,7 @@ calls from ECS, write locking, etc.<y:LabelModel>
       <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="22.838915470494385" width="178.93301435406738" x="1002.561403508772" y="394.3385167464116"/>
+          <y:Geometry height="22.838915470494385" width="178.93301435406738" x="68.7559808612441" y="597.8106060606061"/>
           <y:Fill color="#0000FF" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="135.33203125" x="21.80049155203369" y="2.4350827352471924">INTERFACES DEFINED<y:LabelModel>
@@ -425,7 +425,7 @@ calls from ECS, write locking, etc.<y:LabelModel>
       <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="22.838915470494385" width="178.93301435406738" x="1002.561403508772" y="420.13915470494425"/>
+          <y:Geometry height="22.838915470494385" width="178.93301435406738" x="68.7559808612441" y="623.6112440191388"/>
           <y:Fill color="#00CCFF" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="98.353515625" x="40.28974936453369" y="2.4350827352471924">TESTS DEFINED<y:LabelModel>
@@ -443,7 +443,7 @@ calls from ECS, write locking, etc.<y:LabelModel>
       <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="22.838915470494385" width="178.93301435406738" x="1002.5614035087715" y="445.74043062200957"/>
+          <y:Geometry height="22.838915470494385" width="178.93301435406738" x="68.75598086124364" y="649.2125199362041"/>
           <y:Fill color="#FFCC00" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="97.439453125" x="40.74678061453369" y="2.4350827352471924">DEV COMPLETE<y:LabelModel>
@@ -461,12 +461,53 @@ calls from ECS, write locking, etc.<y:LabelModel>
       <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="170.3572567783093" width="281.26315789473665" x="951.3963317384373" y="316.09928229665087"/>
+          <y:Geometry height="170.3572567783093" width="281.26315789473665" x="17.590909090909463" y="519.5713716108454"/>
           <y:Fill hasColor="false" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="bolditalic" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true" width="57.89453125" x="111.68431332236833" y="4.0">LEGEND</y:NodeLabel>
           <y:Shape type="rectangle"/>
         </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n26">
+      <data key="d4"/>
+      <data key="d6">
+        <y:UMLNoteNode>
+          <y:Geometry height="122.92822966507174" width="240.01913875598086" x="941.4752791068585" y="234.82177033492826"/>
+          <y:Fill color="#C0C0C0" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="87.8125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="340.9609375" x="-50.47089937200951" y="17.55786483253587">rpc is done via zookeeper
+could be with TCP but I propose ZK because
+a) I want to learn about zookeeper features
+b) fairly arbitrary difference
+c) it means we can use "names" instead of "addresses" 
+of servers<y:LabelModel>
+              <y:SmartNodeLabelModel distance="4.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>
+            </y:ModelParameter>
+          </y:NodeLabel>
+        </y:UMLNoteNode>
+      </data>
+    </node>
+    <node id="n27">
+      <data key="d4"/>
+      <data key="d6">
+        <y:UMLNoteNode>
+          <y:Geometry height="57.04625199362039" width="168.82296650717728" x="671.4561403508776" y="387.75"/>
+          <y:Fill color="#C0C0C0" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="45.90625" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="134.171875" x="17.325545753588585" y="5.570000996810222">Add bulk transfer
+Send(tuples[], target)
+Receive callback<y:LabelModel>
+              <y:SmartNodeLabelModel distance="4.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>
+            </y:ModelParameter>
+          </y:NodeLabel>
+        </y:UMLNoteNode>
       </data>
     </node>
     <edge id="e0" source="n4" target="n5">
@@ -492,9 +533,9 @@ calls from ECS, write locking, etc.<y:LabelModel>
     <edge id="e2" source="n13" target="n9">
       <data key="d10">
         <y:PolyLineEdge>
-          <y:Path sx="0.0" sy="23.0" tx="-46.5" ty="0.0">
-            <y:Point x="349.25" y="511.25"/>
-            <y:Point x="364.75" y="526.75"/>
+          <y:Path sx="0.0" sy="23.0" tx="-46.5" ty="-17.58931419457724">
+            <y:Point x="349.25" y="494.25"/>
+            <y:Point x="364.16068580542276" y="509.16068580542276"/>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="white_delta"/>
@@ -505,9 +546,9 @@ calls from ECS, write locking, etc.<y:LabelModel>
     <edge id="e3" source="n14" target="n9">
       <data key="d10">
         <y:PolyLineEdge>
-          <y:Path sx="-14.25" sy="23.0" tx="46.5" ty="0.0">
-            <y:Point x="537.0" y="515.0"/>
-            <y:Point x="525.25" y="526.75"/>
+          <y:Path sx="0.0" sy="23.0" tx="46.5" ty="-9.0">
+            <y:Point x="551.25" y="501.75"/>
+            <y:Point x="535.25" y="517.75"/>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="white_delta"/>
@@ -637,6 +678,31 @@ calls from ECS, write locking, etc.<y:LabelModel>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="-84.41148325358859" sy="0.0" tx="46.5" ty="0.0"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e15" source="n26" target="n5">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-120.00956937799049" sy="-37.53588516746413" tx="117.0" ty="0.0"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e16" source="n27" target="n9">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-46.29385964912308" sy="28.523125996810165" tx="46.5" ty="9.0">
+            <y:Point x="709.5737639553431" y="513.4262360446569"/>
+            <y:Point x="687.25" y="535.75"/>
+          </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
           <y:BendStyle smoothed="false"/>

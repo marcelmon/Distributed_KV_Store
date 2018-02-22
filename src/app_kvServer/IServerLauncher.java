@@ -19,5 +19,5 @@ public interface IServerLauncher {
 			String zkHostname, 
 			int zkPort, 
 			int cacheSize, 
-			String strategy)
+			String strategy);
 }
