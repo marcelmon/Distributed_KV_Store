@@ -303,4 +303,10 @@ public class KVServer implements IKVServer, ICommListener {
         // TODO
         return false;
     }
+
+	@Override
+	public void consistentHasherUpdated(IConsistentHasher hasher) {
+		// TODO Auto-generated method stub
+		
+	}
 }
