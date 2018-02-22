@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import org.junit.Test;
 import common.messages.*;
-import common.messages.KVMessage.StatusType;
+import common.messages.Message.StatusType;
 import junit.framework.TestCase;
 import junit.runner.Version;
 

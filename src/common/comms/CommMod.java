@@ -9,12 +9,13 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Level;
 
 import app_kvServer.KVServer;
 import common.messages.KVMessage;
-import common.messages.TLVMessage;
+import common.messages.KVMessage;
 import logger.LogSetup;
 
 public class CommMod implements ICommMod {
@@ -43,7 +44,7 @@ public class CommMod implements ICommMod {
     			while (!interrupted() && !client.isClosed()) {
     				if (input.available() > 0) {
     					try {
-    						TLVMessage msg = new TLVMessage(bufInput);
+    						KVMessage msg = new KVMessage(bufInput);
     						if (listener != null) {
     							listener.OnMsgRcd(msg, client.getOutputStream());
     						} else {
@@ -128,10 +129,12 @@ public class CommMod implements ICommMod {
 		}
 		
 	}
+	
 	@Override
 	public void SetListener(ICommListener listener) {
 		this.listener = listener;		
 	}
+	
 	@Override
 	public void Connect(String ip, int port) throws UnknownHostException, Exception {
 		try {
@@ -185,10 +188,25 @@ public class CommMod implements ICommMod {
 		OutputStream output = clientSocket.getOutputStream();
         output.write(msg.getBytes());
         BufferedInputStream input = new BufferedInputStream(clientSocket.getInputStream());
-        KVMessage response = new TLVMessage(input);
+        KVMessage response = new KVMessage(input);
         return response;
 	}
 	
+	@Override
+	public void SendTuples(Entry<String, String> tuples) throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
 	
+	@Override
+	public Entry<String, String> GetTuples(Byte[] lower, Byte[] upper) throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	public void SendTuples(Entry<String, String> tuples, OutputStream client) throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
 
 }

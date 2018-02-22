@@ -2,7 +2,7 @@ package testing;
 
 import org.junit.Test;
 import common.messages.*;
-import common.messages.KVMessage.*;
+import common.messages.Message.*;
 import junit.framework.TestCase;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,8 +16,8 @@ import java.lang.Thread;
 public class SocketTest extends TestCase {
 	protected ArrayList<Byte> serverRx = new ArrayList<>();
 	protected ArrayList<Byte> clientRx = new ArrayList<>();
-	protected TLVMessage serverRx_msg;
-	protected TLVMessage clientRx_msg;
+	protected KVMessage serverRx_msg;
+	protected KVMessage clientRx_msg;
 	
 	@Test
 	public void testSocketEcho() {
@@ -137,7 +137,7 @@ public class SocketTest extends TestCase {
             InputStream input = client.getInputStream();
             
             // Transmit a message
-            TLVMessage txMsg = new TLVMessage(StatusType.PUT, "abc", "def");
+            KVMessage txMsg = new KVMessage(StatusType.PUT, "abc", "def");
             output.write(txMsg.getBytes());
             
             // Give the server some time to process:
@@ -152,7 +152,7 @@ public class SocketTest extends TestCase {
             
             // Receive the response:
             try {
-	            TLVMessage rxMsg = new TLVMessage(new BufferedInputStream(input));
+	            KVMessage rxMsg = new KVMessage(new BufferedInputStream(input));
 	            assertTrue(rxMsg.equals(txMsg));
 	            assertTrue(input.available() == 0);
             } catch (KVMessage.StreamTimeoutException e) {

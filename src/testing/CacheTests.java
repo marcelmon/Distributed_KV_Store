@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import org.junit.*;
 import junit.framework.TestCase;
 import app_kvServer.*;
-import common.messages.KVMessage.StatusType;
+import common.messages.Message.StatusType;
 
 public class CacheTests extends TestCase {
 	protected ICache[] caches;

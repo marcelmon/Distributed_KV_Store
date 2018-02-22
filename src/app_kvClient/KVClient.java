@@ -12,8 +12,8 @@ import logger.LogSetup;
 
 import client.KVCommInterface;
 import client.KVStore;
-import common.messages.KVMessage;
-import common.messages.KVMessage.StatusType;
+import common.messages.*;
+import common.messages.Message.StatusType;
 
 public class KVClient implements IKVClient {
 
@@ -240,7 +240,6 @@ public class KVClient implements IKVClient {
     public void newConnection(String hostname, int port) throws Exception{
 		try {
 			client = new KVStore(hostname, port);
-			client.connect();
 			System.out.println(PROMPT + "Connection established to " + this.serverAddress + " on port " + this.serverPort);
 		} catch (Exception e) {
 			client = null;

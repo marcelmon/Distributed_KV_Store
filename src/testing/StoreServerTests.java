@@ -6,8 +6,7 @@ import app_kvServer.*;
 
 import client.*;
 import common.messages.KVMessage;
-import common.messages.KVMessage.StatusType;
-import common.messages.TLVMessage;
+import common.messages.Message.StatusType;
 
 public class StoreServerTests extends TestCase {
 	@Override
@@ -95,7 +94,7 @@ public class StoreServerTests extends TestCase {
 		store0.disconnect();
 		
 		// Correct message:
-		KVMessage exp = new TLVMessage(StatusType.GET_ERROR, "A", null);
+		KVMessage exp = new KVMessage(StatusType.GET_ERROR, "A", null);
 		assertFalse(resp == null);
 		assertTrue(resp.equals(exp));
 	}
@@ -169,7 +168,7 @@ public class StoreServerTests extends TestCase {
 		
 		// We should *NOT* have lost the value:
 		assertFalse(resp == null);
-		KVMessage exp = new TLVMessage(StatusType.GET_SUCCESS, "A", "B");
+		KVMessage exp = new KVMessage(StatusType.GET_SUCCESS, "A", "B");
 		assertTrue(resp.equals(exp));
 	}
 }

@@ -28,7 +28,9 @@ public class AllTests {
 		clientSuite.addTestSuite(InteractionTest.class); 
 //		clientSuite.addTestSuite(AdditionalTest.class);
 
-		clientSuite.addTestSuite(TLVMessageTest.class);
+		clientSuite.addTestSuite(MessageTest.class);
+		clientSuite.addTestSuite(KVMessageTest.class);
+		clientSuite.addTestSuite(BulkMessageTest.class);
 		clientSuite.addTestSuite(SocketTest.class);
 		clientSuite.addTestSuite(CommModTest.class);
 		

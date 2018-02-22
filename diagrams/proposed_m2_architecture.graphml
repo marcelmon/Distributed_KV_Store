@@ -188,7 +188,7 @@
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="46.0" width="93.0" x="404.0" y="659.75"/>
-          <y:Fill color="#0000FF" transparent="false"/>
+          <y:Fill color="#FFCC00" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="110.11328125" x="-8.556640625" y="14.015625">ConsistentHasher<y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
@@ -368,7 +368,6 @@ calls from ECS, write locking, etc.<y:LabelModel>
       </data>
     </node>
     <node id="n20">
-      <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="22.838915470494385" width="178.93301435406738" x="68.7559808612441" y="546.7101275917066"/>
@@ -386,7 +385,6 @@ calls from ECS, write locking, etc.<y:LabelModel>
       </data>
     </node>
     <node id="n21">
-      <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="22.838915470494385" width="178.93301435406738" x="68.7559808612441" y="572.4102870813398"/>
@@ -404,7 +402,6 @@ calls from ECS, write locking, etc.<y:LabelModel>
       </data>
     </node>
     <node id="n22">
-      <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="22.838915470494385" width="178.93301435406738" x="68.7559808612441" y="597.8106060606061"/>
@@ -422,7 +419,6 @@ calls from ECS, write locking, etc.<y:LabelModel>
       </data>
     </node>
     <node id="n23">
-      <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="22.838915470494385" width="178.93301435406738" x="68.7559808612441" y="623.6112440191388"/>
@@ -440,7 +436,6 @@ calls from ECS, write locking, etc.<y:LabelModel>
       </data>
     </node>
     <node id="n24">
-      <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="22.838915470494385" width="178.93301435406738" x="68.75598086124364" y="649.2125199362041"/>
@@ -458,7 +453,6 @@ calls from ECS, write locking, etc.<y:LabelModel>
       </data>
     </node>
     <node id="n25">
-      <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="170.3572567783093" width="281.26315789473665" x="17.590909090909463" y="519.5713716108454"/>
@@ -685,7 +679,6 @@ Receive callback<y:LabelModel>
       </data>
     </edge>
     <edge id="e15" source="n26" target="n5">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="-120.00956937799049" sy="-37.53588516746413" tx="117.0" ty="0.0"/>
@@ -696,7 +689,6 @@ Receive callback<y:LabelModel>
       </data>
     </edge>
     <edge id="e16" source="n27" target="n9">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="-46.29385964912308" sy="28.523125996810165" tx="46.5" ty="9.0">
