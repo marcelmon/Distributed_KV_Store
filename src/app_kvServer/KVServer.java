@@ -75,6 +75,10 @@ public class KVServer implements IKVServer, ICommListener {
 			cache = new FIFOCache(cacheSize);
 			cacheStrategy = CacheStrategy.FIFO;
 			break;
+		case "NONE":
+			cache = new NoCache();
+			cacheStrategy = CacheStrategy.NONE;
+			break;
 		default:
 			System.out.println("Cache not recognized. Using dev mem-only cache!");
 			cache = new MemOnlyCache(cacheSize);
