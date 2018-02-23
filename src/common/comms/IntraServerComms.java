@@ -19,12 +19,40 @@ import common.comms.IConsistentHasher.StringFormatException;
 
 public class IntraServerComms implements IIntraServerComms, Watcher {
 	protected ZooKeeper zk = null;
-	protected final String clusterGroup = "/cluster";	
+	protected final String clusterGroup = "/cluster";
+	protected final String rpcGroup = "/rpc";	
 	protected String me = null;
 	protected IIntraServerCommsListener listener = null;
 	protected IConsistentHasher hasher = null;
 	
-	public IntraServerComms(String zkAddr) throws Exception {		
+	public static class RPCRecord {
+		public RPCMethod method;
+		public Object[] args;
+		
+		public byte[] getBytes() {
+			byte[] buffer = new byte[1];
+			buffer[0] = (byte) method.ordinal();
+			//TODO manage args
+			return buffer;
+		}
+		
+		protected void fromBytes(byte[] bytes) {
+			method = RPCMethod.values()[bytes[0]];
+			//TODO manage args
+		}
+		
+		public RPCRecord(byte[] bytes) {
+			fromBytes(bytes);
+		}
+		
+		public RPCRecord(RPCMethod method, Object... args) {
+			this.method = method;
+			this.args = args;
+		}
+	}
+	
+	public IntraServerComms(String zkAddr, String hostname, Integer port) throws Exception {	
+		init(hostname, port);
 		zk = new ZooKeeper(zkAddr, 100, this);
 		
 		hasher = new ConsistentHasher();
@@ -34,11 +62,25 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 			zk.create(clusterGroup, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 		}
 		
+		// If rpc group doesn't exist, create it:
+		if (zk.exists(rpcGroup, false) == null) {
+			zk.create(rpcGroup, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+		}
+		
 		// Set up server watcher:
 		List<String> servers = zk.getChildren(clusterGroup, true);		
 		hasher.fromServerListString(servers);
-
-		//TODO set up rpc watcher
+		
+		// Set up rpc watcher:
+		processRPC();
+	}
+	
+	@Override
+	public void init(String hostname, Integer port) throws ServerExistsException {
+		if (me != null) {
+			throw new ServerExistsException("Multiple calls to addServer() detected");
+		}
+		me = hostname + ":" + port;
 	}
 	
 	@Override
@@ -51,9 +93,9 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 	}
 	
 	@Override
-	public boolean call(String target, RPCMethod method, String... args) {
-		// TODO Auto-generated method stub
-		return false;
+	public void call(String target, RPCMethod method, Object... args) throws InvalidArgsException, Exception {
+		RPCRecord rec = new RPCRecord(method, args);
+		zk.create(rpcGroup + "/" + target + "-", rec.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
 	}
 
 	@Override
@@ -64,13 +106,9 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 	}
 
 	@Override
-	public void addServer(String hostname, Integer port) throws ServerExistsException, Exception {
-		if (me != null) {
-			throw new ServerExistsException("Multiple calls to addServer() detected");
-		}
+	public void addServer() throws ServerExistsException, Exception {		
 		try {
-			String _me = hostname + ":" + port;
-			String node = clusterGroup + "/" + _me;
+			String node = clusterGroup + "/" + me;
 			System.out.println("Creating: " + node);
 			
 			// If it already exists this means a previous version of *this* server has crashed
@@ -86,9 +124,8 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 					"".getBytes(), 
 					ZooDefs.Ids.OPEN_ACL_UNSAFE, 
 					CreateMode.EPHEMERAL);
-			me = _me;
 		} catch (NodeExistsException e) {
-			throw new ServerExistsException(hostname + ":" + port);
+			throw new ServerExistsException("ZK node already exists for: " + me);
 		} catch (InterruptedException e) {
 			throw e;
 		}
@@ -107,6 +144,69 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 			throw e;
 		} catch (InterruptedException e) {
 			throw e;
+		}
+	}
+	
+	protected synchronized void processRPC() throws Exception {
+		if (me == null) {
+			// TODO Log that we're pre init
+			return;
+		}
+		
+		// Process through the RPC queue
+		List<String> calls = zk.getChildren(rpcGroup,  true); // reset watch
+		StackTraceElement[] st = Thread.currentThread().getStackTrace();
+		for (int i = 0; i < calls.size(); i++) {
+			System.out.println("[" + Thread.currentThread().getId() + "][" + i + "]: " + calls.get(i));
+		}
+		for (String c : calls) {			
+			// Does this refer to us?
+			String[] spl = c.split("-");
+			if (spl.length != 2) {
+				throw new Exception("Unexpected rpc node format.");
+			}
+			if (spl[0].equals(me)) {
+				Stat stat = new Stat();
+				byte[] data = zk.getData(rpcGroup + "/" + c, false, stat);
+				
+				// Remove the znode for this rpc call:
+				System.out.println("Exists [" + c + "]: " + (zk.exists(rpcGroup + "/" + c, false) != null));
+				zk.delete(rpcGroup + "/" + c, -1);
+				
+				RPCRecord rec = new RPCRecord(data);
+				switch (rec.method) {
+					case Start:
+						listener.start();
+						break;
+					case Stop:
+						listener.stop();
+						break;
+					case LockWrite:
+						listener.lockWrite();
+						break;
+					case UnlockWrite:
+						listener.unlockWrite();
+						break;
+					case MoveData:
+						//TODO 
+						throw new RuntimeException("Unimplemented rpc method: movedata");
+					default:
+						throw new Exception("Unknown RPC method encountered");
+				}				
+				
+				// Wait until delete confirmation to ensure we don't double-dip if this method returns
+				// and then (in this thread) there is another call to processRPC() before zookeeper
+				// has deleted the thread
+				while (zk.exists(rpcGroup + "/" + c, false) != null) {
+					System.out.println("Waiting...");
+					Thread.sleep(100);
+					//TODO have a timeout here
+				}
+				System.out.println("endExists [" + c + "]: " + (zk.exists(rpcGroup + "/" + c, false) != null));
+			} else {
+				// TODO log that we rejected this
+				System.out.println("Determined RPC \"" + c + "\" not aimed at \"" + me + "\"");
+			}
 		}
 	}
 
@@ -152,10 +252,15 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 					e.printStackTrace();
 					throw new RuntimeException("An unknown error occurred with zookeeper");
 				}
-		    // TODO RPC
-//		    // Listen for RPCs:
-//			} else if (event.getPath().equals(rpcGroup)) {
-//				
+		    // Listen for RPCs:
+			} else if (event.getPath().equals(rpcGroup)) {
+				try {
+					processRPC();
+				} catch (Exception e) {
+					//TODO log error
+					e.printStackTrace();
+					System.out.println("Unknown error occurred processing RPCs: " + e.getMessage());
+				}
 			} else {
 				// TODO log error
 				System.out.println("Unknown zookeeper event occurred");

@@ -5,6 +5,7 @@ import java.util.Map;
 
 import app_kvServer.IKVServer;
 import common.comms.IIntraServerComms.NotYetRegisteredException;
+import common.comms.IIntraServerComms.ServerExistsException;
 
 public interface IIntraServerComms {
 	public class ServerExistsException extends Exception {
@@ -21,6 +22,13 @@ public interface IIntraServerComms {
 		}
 	}
 	
+	public class InvalidArgsException extends Exception {
+		private static final long serialVersionUID = 1L;
+		public InvalidArgsException(String msg) {
+			super(msg);
+		}
+	}
+	
 	public enum RPCMethod {
 		Start,
 		Stop,
@@ -29,12 +37,14 @@ public interface IIntraServerComms {
 		MoveData
 	}
 	
+	public void init(String hostname, Integer port) throws ServerExistsException;
+	
 	public void close() throws Exception;
 	
 	/**
 	 * Performs a remote procedure call of the method defined by "type" on the KVServer identified by target.
 	 */
-	public boolean call(String target, RPCMethod method, String... args);
+	public void call(String target, RPCMethod method, Object... args) throws InvalidArgsException, Exception;
 	
 	/**
 	 * Registers the given server as receiving remote procedure calls directed to it. It will only begin
@@ -48,7 +58,7 @@ public interface IIntraServerComms {
 	 * to receive a server and range of keys, a call to requestWriteLock(), a call to requestTuples(), then
 	 * a call to releaseWriteLock().
 	 */
-	public void addServer(String hostname, Integer port) throws ServerExistsException, Exception;
+	public void addServer() throws ServerExistsException, Exception;
 	
 	/**
 	 * Removes self from Zookeeper. Subsequently, this server will stop receving client requests for its
