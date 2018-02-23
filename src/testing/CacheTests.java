@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import org.junit.*;
 import junit.framework.TestCase;
 import app_kvServer.*;
-import common.messages.KVMessage.StatusType;
+import common.messages.Message.StatusType;
 
 public class CacheTests extends TestCase {
 	protected ICache[] caches;
@@ -18,16 +18,22 @@ public class CacheTests extends TestCase {
 	@Override
 	public void setUp() {
 		desiredCapacity = 10;
-		caches = new ICache[3];
+		caches = new ICache[5];
 		caches[0] = new MemOnlyCache(desiredCapacity);
+
 		caches[1] = new LFUCache(desiredCapacity);
 		caches[1].clearPersistentStorage();
 
 		caches[2] = new LRUCache(desiredCapacity);
 		caches[2].clearPersistentStorage();
 
-		caches[2] = new FIFOCache(desiredCapacity);
-		caches[2].clearPersistentStorage();
+		caches[3] = new FIFOCache(desiredCapacity);
+		caches[3].clearPersistentStorage();
+
+		caches[4] = new NoCache();
+		caches[4].clearPersistentStorage();
+
+
 	}
 	
 	@Test
@@ -37,6 +43,9 @@ public class CacheTests extends TestCase {
 		assertTrue(keys.length == values.length);
 		
 		for (ICache cache : caches) {
+
+			cache.clearPersistentStorage();
+
 			// Check not present:
 			for (int i = 0; i < keys.length; i++) {
 				assertFalse(cache.inCache(keys[i]));	
@@ -49,8 +58,13 @@ public class CacheTests extends TestCase {
 			
 			// Check present:
 			for (int i = 0; i < keys.length; i++) {
-				assertTrue(cache.inCache(keys[i]));
-				assertTrue(cache.get(keys[i]) == values[i]);
+				if (cache instanceof NoCache) {
+					assertFalse(cache.inCache(keys[i]));
+				}
+				else {
+					assertTrue(cache.inCache(keys[i]));
+				}
+				assertTrue(cache.get(keys[i]).equals(values[i]));
 			}
 		}
 	}
@@ -64,6 +78,8 @@ public class CacheTests extends TestCase {
 		for (ICache cache : caches) {
 			// Check not present:
 
+			cache.clearPersistentStorage();
+
 			for (int i = 0; i < keys.length; i++) {
 				assertFalse(cache.inCache(keys[i]));	
 			}
@@ -75,7 +91,14 @@ public class CacheTests extends TestCase {
 			
 			// Check present:
 			for (int i = 0; i < keys.length; i++) {
-				assertTrue(cache.inCache(keys[i]));
+				// NoCache will not have it cached, ever
+				if (cache instanceof NoCache) {
+					assertFalse(cache.inCache(keys[i]));
+				}
+				else{
+					assertTrue(cache.inCache(keys[i]));
+				}
+				
 				assertTrue(cache.get(keys[i]).equals(values[i]));
 			}
 			
@@ -93,6 +116,9 @@ public class CacheTests extends TestCase {
 		assertTrue(keys.length == values.length);
 		
 		for (ICache cache : caches) {
+			
+			cache.clearPersistentStorage();
+
 			// Check not present:
 			for (int i = 0; i < keys.length; i++) {
 				assertFalse(cache.inCache(keys[i]));	
@@ -105,8 +131,14 @@ public class CacheTests extends TestCase {
 			
 			// Check present:
 			for (int i = 0; i < keys.length; i++) {
-				assertTrue(cache.inCache(keys[i]));
-				assertTrue(cache.get(keys[i]) == values[i]);
+				if (cache instanceof NoCache) {
+					assertFalse(cache.inCache(keys[i]));
+				}
+				else{
+					assertTrue(cache.inCache(keys[i]));
+				}
+
+				assertTrue(cache.get(keys[i]).equals(values[i]));
 			}
 			
 			// Delete:
@@ -124,6 +156,9 @@ public class CacheTests extends TestCase {
 		assertTrue(keys.length == values.length);
 		
 		for (ICache cache : caches) {
+
+			cache.clearPersistentStorage();
+
 			// Check not present:
 			for (int i = 0; i < keys.length; i++) {
 				assertFalse(cache.inCache(keys[i]));	
@@ -136,7 +171,12 @@ public class CacheTests extends TestCase {
 			
 			// Check present:
 			for (int i = 0; i < keys.length; i++) {
-				assertTrue(cache.inCache(keys[i]));
+				if (cache instanceof NoCache) {
+					assertFalse(cache.inCache(keys[i]));
+				}
+				else{
+					assertTrue(cache.inCache(keys[i]));
+				}
 				assertTrue(cache.get(keys[i]).equals(values[i]));
 			}
 			
@@ -158,19 +198,27 @@ public class CacheTests extends TestCase {
 		assertTrue(keys.length == values.length);
 		
 		for (ICache cache : caches) {
+
+			cache.clearPersistentStorage();
+
 			// Check not present:
 			for (int i = 0; i < keys.length; i++) {
 				assertFalse(cache.inCache(keys[i]));	
 			}
-			
+
 			// Insert
 			for (int i = 0; i < keys.length; i++) {
-				assertTrue(cache.put(keys[i], values[i]));  // true for new
+				assertTrue(cache.put(keys[i], values[i])); // true for new
 			}
 			
 			// Check present:
 			for (int i = 0; i < keys.length; i++) {
-				assertTrue(cache.inCache(keys[i]));
+				if (cache instanceof NoCache) {
+					assertFalse(cache.inCache(keys[i]));
+				}
+				else{
+					assertTrue(cache.inCache(keys[i]));
+				}
 				assertTrue(cache.get(keys[i]).equals(values[i]));
 			}
 			
@@ -192,6 +240,9 @@ public class CacheTests extends TestCase {
 		assertTrue(keys.length == values.length);
 		
 		for (ICache cache : caches) {
+
+			cache.clearPersistentStorage();
+
 			// Check not present:
 			for (int i = 0; i < keys.length; i++) {
 				assertFalse(cache.inCache(keys[i]));	
@@ -204,12 +255,23 @@ public class CacheTests extends TestCase {
 			
 			// Check present:
 			for (int i = 0; i < keys.length; i++) {
-				assertTrue(cache.inCache(keys[i]));
+				if (cache instanceof NoCache) {
+					assertFalse(cache.inCache(keys[i]));
+				}
+				else{
+					assertTrue(cache.inCache(keys[i]));
+				}
 				assertTrue(cache.get(keys[i]).equals(values[i]));
 			}
 			
 			// Cache size should be max size (capacity), not current size:
-			assertTrue(cache.getCacheSize() == 10);
+			if (cache instanceof NoCache) {
+				assertTrue(cache.getCacheSize() == 0);
+			}
+			else{
+				assertTrue(cache.getCacheSize() == 10);
+			}
+			
 		}
 	}
 	
@@ -220,6 +282,9 @@ public class CacheTests extends TestCase {
 		assertTrue(keys.length == values.length);
 		
 		for (ICache cache : caches) {
+
+			cache.clearPersistentStorage();
+
 			// Check not present:
 			for (int i = 0; i < keys.length; i++) {
 				assertFalse(cache.inCache(keys[i]));	
@@ -232,7 +297,12 @@ public class CacheTests extends TestCase {
 			
 			// Check present:
 			for (int i = 0; i < keys.length; i++) {
-				assertTrue(cache.inCache(keys[i]));
+				if (cache instanceof NoCache) {
+					assertFalse(cache.inCache(keys[i]));
+				}
+				else{
+					assertTrue(cache.inCache(keys[i]));
+				}
 				assertTrue(cache.get(keys[i]).equals(values[i]));
 			}
 			
@@ -258,6 +328,13 @@ public class CacheTests extends TestCase {
 		}
 		
 		for (ICache cache : caches) {
+
+			if (cache instanceof NoCache) {
+				continue;
+			}
+
+			cache.clearPersistentStorage();
+
 			// Put a key in to start - this should be destroyed:
 			try {
 				cache.put("erroneous", "1");
@@ -270,7 +347,9 @@ public class CacheTests extends TestCase {
 			
 			// Check present:
 			for (int i = 0; i < keys.length; i++) {
+				
 				assertTrue(cache.inCache(keys[i]));
+				
 				try {
 					assertTrue(cache.get(keys[i]).equals(values[i]));
 				} catch (ICache.KeyDoesntExistException e) {
@@ -288,12 +367,21 @@ public class CacheTests extends TestCase {
 		final int N = 10;
 		
 		for (ICache cache : caches) {
+
+			cache.clearPersistentStorage();
+
+
 			if (cache.getClass().equals(MemOnlyCache.class)) {
 //				System.out.println("Skipping " + MemOnlyCache.class.getSimpleName());
 				// Skip MemOnlyCache because it doesn't maintain capacity
 				break;
 			}
-			assertTrue(cache.getCacheSize() == N); // this test assumes capacity is 10
+			if (cache instanceof NoCache) {
+				assertTrue(cache.getCacheSize() == 0);
+			}
+			else{
+				assertTrue(cache.getCacheSize() == N); // this test assumes capacity is 10 (or 0 for nocache)
+			} 
 			
 			// Insert N keys:
 			for (int i = 0; i < N; i++) {
@@ -310,7 +398,12 @@ public class CacheTests extends TestCase {
 			
 			// Check all keys are present:
 			for (int i = 0; i < N; i++) {
-				assertTrue(cache.inCache(Integer.toString(i)));	
+				if (cache instanceof NoCache) {
+					assertFalse(cache.inCache(Integer.toString(i)));
+				}
+				else{
+					assertTrue(cache.inCache(Integer.toString(i)));
+				}
 			}
 			
 			// Insert another key. This should cause the cache to evict the second key:
@@ -319,9 +412,15 @@ public class CacheTests extends TestCase {
 			// Check all keys are present except for the 2nd (key=1):
 			for (int i = 0; i < N+1; i++) {
 				if (i == 1) {
+
 					assertFalse(cache.inCache(Integer.toString(i)));
 				} else {
-					assertTrue(cache.inCache(Integer.toString(i)));
+					if (cache instanceof NoCache) {
+						assertFalse(cache.inCache(Integer.toString(i)));
+					}
+					else{
+						assertTrue(cache.inCache(Integer.toString(i)));
+					}
 				}
 			}
 		}
@@ -357,6 +456,8 @@ public class CacheTests extends TestCase {
 				// Skip MemOnlyCache because it doesn't maintain capacity
 				break;
 			}
+
+			cache.clearPersistentStorage();
 			
 			// Insert a key:
 			cache.put("abcdefg", "abc");

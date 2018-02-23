@@ -4,17 +4,17 @@ import java.util.Arrays;
 
 import org.junit.Test;
 import common.messages.*;
-import common.messages.KVMessage.StatusType;
+import common.messages.Message.StatusType;
 import junit.framework.TestCase;
 
 import java.io.*;
 
-public class TLVMessageTest extends TestCase {
+public class KVMessageTest extends TestCase {
 	@Test
 	public void testGetRecovery() {
 		try {
-			TLVMessage msg = new TLVMessage(KVMessage.StatusType.GET, "a", null);
-			TLVMessage recoveredMsg = new TLVMessage(msg.getBytes());
+			KVMessage msg = new KVMessage(KVMessage.StatusType.GET, "a", null);
+			KVMessage recoveredMsg = new KVMessage(msg.getBytes());
 			assertTrue(msg.equals(recoveredMsg));
 		} catch (KVMessage.FormatException e) {
 			fail(e.getMessage());
@@ -24,7 +24,7 @@ public class TLVMessageTest extends TestCase {
 	@Test
 	public void testGetMarshal() {
 		try {
-			TLVMessage msg = new TLVMessage(KVMessage.StatusType.GET, "ab", null);
+			KVMessage msg = new KVMessage(KVMessage.StatusType.GET, "ab", null);
 			byte[] bMsg = msg.getBytes();
 			byte[] truth = {0, 2, 97, 98};
 			
@@ -38,8 +38,8 @@ public class TLVMessageTest extends TestCase {
 	public void testGetUnmarshal() {
 		try {
 			byte[] bMsg = {0, 2, 97, 98};		
-			TLVMessage msg = new TLVMessage(bMsg);
-			TLVMessage truth = new TLVMessage(StatusType.GET, "ab", null); 
+			KVMessage msg = new KVMessage(bMsg);
+			KVMessage truth = new KVMessage(StatusType.GET, "ab", null); 
 			assertTrue(msg.equals(truth));
 		} catch (KVMessage.FormatException e) {
 			fail(e.getMessage());
@@ -50,7 +50,7 @@ public class TLVMessageTest extends TestCase {
 	public void testGetMalformed() {
 		boolean caught = false;
 		try {
-			new TLVMessage(KVMessage.StatusType.GET, "a", "b");
+			new KVMessage(KVMessage.StatusType.GET, "a", "b");
 		} catch (KVMessage.FormatException e) {
 			caught = true;
 		}
@@ -60,8 +60,8 @@ public class TLVMessageTest extends TestCase {
 	@Test
 	public void testPutRecovery() {
 		try {
-			TLVMessage msg = new TLVMessage(KVMessage.StatusType.PUT, "a", "b");
-			TLVMessage recoveredMsg = new TLVMessage(msg.getBytes());
+			KVMessage msg = new KVMessage(KVMessage.StatusType.PUT, "a", "b");
+			KVMessage recoveredMsg = new KVMessage(msg.getBytes());
 			assertTrue(msg.equals(recoveredMsg));
 		} catch (KVMessage.FormatException e) {
 			fail(e.getMessage());
@@ -72,7 +72,7 @@ public class TLVMessageTest extends TestCase {
 	public void testPutMalformed() {
 		boolean caught = false;
 		try {
-			new TLVMessage(KVMessage.StatusType.PUT, "a", null);
+			new KVMessage(KVMessage.StatusType.PUT, "a", null);
 		} catch (KVMessage.FormatException e) {
 			caught = true;
 		}
@@ -82,11 +82,11 @@ public class TLVMessageTest extends TestCase {
 	@Test
 	public void testFromStream() {
 		try {
-			TLVMessage truth = new TLVMessage(StatusType.PUT, "b", "c");
+			KVMessage truth = new KVMessage(StatusType.PUT, "b", "c");
 			InputStream stream = new ByteArrayInputStream(truth.getBytes());
 			BufferedInputStream bufStream = new BufferedInputStream(stream);
 			try {
-				TLVMessage msg = new TLVMessage(bufStream);
+				KVMessage msg = new KVMessage(bufStream);
 				assertTrue(msg.equals(truth));
 			} catch (KVMessage.StreamTimeoutException e) {
 				fail("Truncated stream");
@@ -99,7 +99,7 @@ public class TLVMessageTest extends TestCase {
 	@Test
 	public void testFromTruncatedStream() {
 		try {
-			TLVMessage truth = new TLVMessage(StatusType.PUT, "b", "c");
+			KVMessage truth = new KVMessage(StatusType.PUT, "b", "c");
 			byte[] bytes = truth.getBytes();
 			byte[] truncated = new byte[bytes.length-1];
 			System.arraycopy(bytes, 0, truncated, 0, bytes.length-1);
@@ -107,7 +107,7 @@ public class TLVMessageTest extends TestCase {
 			BufferedInputStream bufStream = new BufferedInputStream(stream);
 			boolean caught = false;
 			try {
-				new TLVMessage(bufStream);
+				new KVMessage(bufStream);
 			} catch (KVMessage.StreamTimeoutException e) {
 				caught = true;
 			}
@@ -123,7 +123,7 @@ public class TLVMessageTest extends TestCase {
 		BufferedInputStream bufStream = new BufferedInputStream(stream);
 		boolean caught = false;
 		try {
-			new TLVMessage(bufStream);
+			new KVMessage(bufStream);
 		} catch (KVMessage.StreamTimeoutException e) {
 			caught = true;
 		}
@@ -134,7 +134,7 @@ public class TLVMessageTest extends TestCase {
 	public void testRecoveryFromStreamTimeout() {
 		try {
 			// Correct message:
-			TLVMessage truth = new TLVMessage(StatusType.PUT, "b", "c");
+			KVMessage truth = new KVMessage(StatusType.PUT, "b", "c");
 			final byte[] bytes = truth.getBytes();
 			
 			// Stream:
@@ -147,7 +147,7 @@ public class TLVMessageTest extends TestCase {
 			out.write(bytes, 0, 2); // first two bytes
 			boolean caught = false;
 			try {
-				new TLVMessage(stream);
+				new KVMessage(stream);
 			} catch (KVMessage.StreamTimeoutException e) {
 				caught = true;
 			}
@@ -157,7 +157,7 @@ public class TLVMessageTest extends TestCase {
 			out.write(bytes, 2, bytes.length-2);  // the rest
 			KVMessage rx;
 			try {
-				rx = new TLVMessage(stream);
+				rx = new KVMessage(stream);
 				
 				// Check for correctness:
 				assertTrue(rx != null);
@@ -174,8 +174,8 @@ public class TLVMessageTest extends TestCase {
 	@Test
 	public void testGetSuccess() {
 		try {
-			TLVMessage msg = new TLVMessage(StatusType.GET_SUCCESS, "a", "b");
-			TLVMessage recovered = new TLVMessage(msg.getBytes());
+			KVMessage msg = new KVMessage(StatusType.GET_SUCCESS, "a", "b");
+			KVMessage recovered = new KVMessage(msg.getBytes());
 			assertTrue(msg.equals(recovered));
 		} catch (KVMessage.FormatException e) {
 			fail("Unexpected format exception");
@@ -185,16 +185,16 @@ public class TLVMessageTest extends TestCase {
 	@Test
 	public void testUnevenLengths() {
 		try {
-			TLVMessage msg = new TLVMessage(StatusType.PUT, "abc", "defghi");
-			TLVMessage recovered = new TLVMessage(msg.getBytes());
+			KVMessage msg = new KVMessage(StatusType.PUT, "abc", "defghi");
+			KVMessage recovered = new KVMessage(msg.getBytes());
 			assertTrue(msg.equals(recovered));
 		} catch (KVMessage.FormatException e) {
 			fail("Unexpected format exception");
 		}
 		
 		try {
-			TLVMessage msg = new TLVMessage(StatusType.PUT, "abcdef", "bcd");
-			TLVMessage recovered = new TLVMessage(msg.getBytes());
+			KVMessage msg = new KVMessage(StatusType.PUT, "abcdef", "bcd");
+			KVMessage recovered = new KVMessage(msg.getBytes());
 			assertTrue(msg.equals(recovered));
 		} catch (KVMessage.FormatException e) {
 			fail("Unexpected format exception");

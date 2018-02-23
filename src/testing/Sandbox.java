@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import org.junit.Test;
 import common.messages.*;
-import common.messages.KVMessage.StatusType;
+import common.messages.Message.StatusType;
 import junit.framework.TestCase;
 import junit.runner.Version;
 
@@ -30,8 +30,8 @@ public class Sandbox extends TestCase implements Watcher {
 	protected static Logger logger = Logger.getRootLogger();
 	protected ArrayList<Byte> serverRx = new ArrayList<>();
 	protected ArrayList<Byte> clientRx = new ArrayList<>();
-	protected TLVMessage serverRx_msg;
-	protected TLVMessage clientRx_msg;
+	protected KVMessage serverRx_msg;
+	protected KVMessage clientRx_msg;
 	
 	@Test
 	public void testMain() throws Exception {

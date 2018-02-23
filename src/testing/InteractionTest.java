@@ -6,7 +6,7 @@ import app_kvServer.KVServer;
 import client.KVStore;
 import junit.framework.TestCase;
 import common.messages.KVMessage;
-import common.messages.KVMessage.StatusType;
+import common.messages.Message.StatusType;
 
 
 public class InteractionTest extends TestCase {
@@ -17,11 +17,10 @@ public class InteractionTest extends TestCase {
 	@Override
 	public void setUp() throws Exception {
 		int port = 50000;
-		server = new KVServer(port, 10, "LFU");
+		server = new KVServer("", port, "localhost", 2181, 10, "LFU"); // TODO put proper args when zookeeper implemented
 		kvClient = new KVStore("localhost", port);
 		server.run();
 		server.clearStorage();
-		kvClient.connect();
 	}
 
 	@Override
@@ -46,22 +45,6 @@ public class InteractionTest extends TestCase {
 
 		assertTrue(ex == null);
 		assertTrue(response.getStatus() == StatusType.PUT_SUCCESS);
-	}
-	
-	@Test
-	public void testPutDisconnected() {
-		kvClient.disconnect();
-		String key = "foo";
-		String value = "bar";
-		Exception ex = null;
-
-		try {
-			kvClient.put(key, value);
-		} catch (Exception e) {
-			ex = e;
-		}
-
-		assertNotNull(ex);
 	}
 
 	@Test

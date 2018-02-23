@@ -13,7 +13,7 @@ public class ConnectionTest extends TestCase {
 
 	@Override
 	public void setUp() throws Exception {
-		server = new KVServer(50000, 10, "LFU");
+		server = new KVServer("", 50000, "localhost", 2181, 10, "LFU"); // TODO put proper args when zookeeper implemented
 		server.run();
 	}
 	
@@ -28,7 +28,7 @@ public class ConnectionTest extends TestCase {
 		
 		KVStore kvClient = new KVStore("localhost", 50000);
 		try {
-			kvClient.connect();
+			kvClient.get("");
 		} catch (Exception e) {
 			ex = e;
 		}	
@@ -42,7 +42,7 @@ public class ConnectionTest extends TestCase {
 		KVStore kvClient = new KVStore("unknown", 50000);
 		
 		try {
-			kvClient.connect();
+			kvClient.get("");
 		} catch (Exception e) {
 			ex = e; 
 		}
@@ -56,7 +56,7 @@ public class ConnectionTest extends TestCase {
 		KVStore kvClient = new KVStore("localhost", 123456789);
 		
 		try {
-			kvClient.connect();
+			kvClient.get("");
 		} catch (Exception e) {
 			ex = e; 
 		}

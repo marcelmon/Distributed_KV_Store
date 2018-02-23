@@ -9,12 +9,20 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.crypto.Mac;
 
 import org.apache.log4j.Level;
 
 import app_kvServer.KVServer;
+import common.messages.BulkPackageMessage;
+import common.messages.BulkRequestMessage;
 import common.messages.KVMessage;
-import common.messages.TLVMessage;
+import common.messages.Message;
+import common.messages.Message.StatusType;
+import common.messages.KVMessage;
 import logger.LogSetup;
 
 public class CommMod implements ICommMod {
@@ -42,10 +50,28 @@ public class CommMod implements ICommMod {
     			
     			while (!interrupted() && !client.isClosed()) {
     				if (input.available() > 0) {
+    					bufInput.mark(1); // we'll only need to read a single byte
     					try {
-    						TLVMessage msg = new TLVMessage(bufInput);
+    						// Read the tag without disturbing
+    						int tag = bufInput.read();
+    						bufInput.reset();    						
+    						
+    						Message msg = Message.getInstance(StatusType.values()[tag]);
+    						msg.fromInputStream(bufInput);
     						if (listener != null) {
-    							listener.OnMsgRcd(msg, client.getOutputStream());
+    							// TODO differentiate between Message types here
+    							if (msg instanceof KVMessage)
+    								listener.OnKVMsgRcd((KVMessage)msg, client.getOutputStream());
+    							else if (msg instanceof BulkPackageMessage)
+    								listener.OnTuplesReceived(((BulkPackageMessage) msg).getTuples());
+    							else if (msg instanceof BulkRequestMessage) {
+    								System.out.println("receiving request...");
+    								BulkRequestMessage brm = (BulkRequestMessage) msg;
+    								// client.getOutputStream().write(StatusType.BULK_PACKAGE.ordinal()); //DEBUG
+    								listener.OnTuplesRequest(brm.getLower(), brm.getUpper(), client.getOutputStream());
+    							} else {
+    								throw new RuntimeException("Unknown child of Message detected");
+    							}
     						} else {
     							System.out.println("Dropped a message.");
     						}
@@ -87,7 +113,7 @@ public class CommMod implements ICommMod {
         		try {    
         			while (!interrupted() && !serverSocket.isClosed()) {
 //        				System.out.println("Server listening on port: " + tx_port);
-        				try {
+        				try {        					
 		                    Socket client = serverSocket.accept();
 		                    new ClientThread(client).start();
         				} catch (SocketException e) {
@@ -128,10 +154,12 @@ public class CommMod implements ICommMod {
 		}
 		
 	}
+	
 	@Override
 	public void SetListener(ICommListener listener) {
 		this.listener = listener;		
 	}
+	
 	@Override
 	public void Connect(String ip, int port) throws UnknownHostException, Exception {
 		try {
@@ -157,7 +185,14 @@ public class CommMod implements ICommMod {
 				//TODO log as a warning
 			}
 		}
-		
+	}
+	
+	@Override
+	public boolean isConnected() {
+		if (clientSocket != null) {
+			return clientSocket.isConnected();
+		}
+		return false;
 	}
 	
 	@Override
@@ -173,15 +208,53 @@ public class CommMod implements ICommMod {
 	@Override
 	public KVMessage SendMessage(KVMessage msg) throws KVMessage.StreamTimeoutException, Exception {
 		if (clientSocket == null) {
-			throw new Exception("Not yet connceted to server");
+			throw new Exception("Not yet connected to server");
 		}
 		OutputStream output = clientSocket.getOutputStream();
         output.write(msg.getBytes());
         BufferedInputStream input = new BufferedInputStream(clientSocket.getInputStream());
-        KVMessage response = new TLVMessage(input);
+        KVMessage response = new KVMessage(input);
         return response;
 	}
 	
+	@Override
+	public void SendTuples(Map.Entry<?, ?>[] tuples) throws Exception {
+		if (clientSocket == null) {
+			throw new Exception("Not yet connected to server");
+		}
+		if (tuples.length == 0) {
+			throw new Exception("Empty set of tuples");
+		}
+		if (!(tuples[0].getKey() instanceof String)) {
+			throw new Exception("Provided tuples don't have String keys!");
+		}
+		if (!(tuples[0].getValue() instanceof String)) {
+			throw new Exception("Provided tuples don't have String keys!");
+		}
+		
+		OutputStream output = clientSocket.getOutputStream();
+		BulkPackageMessage msg = new BulkPackageMessage(tuples);
+		output.write(msg.getBytes());
+		// no response
+	}
 	
+	@Override
+	public Map.Entry<?, ?>[] GetTuples(Byte[] lower, Byte[] upper) throws Exception {
+		if (clientSocket == null) {
+			throw new Exception("Not yet connected to server");
+		}
+		OutputStream output = clientSocket.getOutputStream();
+		BulkRequestMessage msg = new BulkRequestMessage(lower, upper);
+		System.out.println("writing...");
+		output.write(msg.getBytes());
+		BufferedInputStream input = new BufferedInputStream(clientSocket.getInputStream());
+		System.out.println("Requester waiting...");
+		BulkPackageMessage response = new BulkPackageMessage(input);
+        return response.getTuples();
+	}
+	@Override
+	public void SendTuples(Map.Entry<?, ?>[] tuples, OutputStream client) throws Exception {
+		// TODO Auto-generated method stub
+	}
 
 }
