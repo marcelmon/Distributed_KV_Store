@@ -15,5 +15,6 @@ public interface ICommMod {
 	// Client
 	public void Connect(String ip, int port) throws UnknownHostException, Exception;
 	public void Disconnect();
+	public boolean isConnected();
 	public KVMessage SendMessage(KVMessage msg) throws KVMessage.StreamTimeoutException, Exception;
 }

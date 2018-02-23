@@ -19,6 +19,9 @@ public class KVServer implements IKVServer, ICommListener {
 	protected CommMod server;
 	protected boolean running;
 	protected ICache cache;
+	protected final String name;
+	protected final String zkHostname;
+	protected final int zkPort;
 	
 	public void run() throws BindException, Exception {
 		logger.info("Initialize server ...");
@@ -41,7 +44,10 @@ public class KVServer implements IKVServer, ICommListener {
 
 	/**
 	 * Start KV Server at given port
+         * @param name unique name of server
 	 * @param port given port for storage server to operate
+         * @param zkHostname hostname where zookeeper is running
+         * @param zkPort port where zookeeper is running
 	 * @param cacheSize specifies how many key-value pairs the server is allowed
 	 *           to keep in-memory
 	 * @param strategy specifies the cache replacement strategy in case the cache
@@ -49,8 +55,12 @@ public class KVServer implements IKVServer, ICommListener {
 	 *           currently not contained in the cache. Options are "FIFO", "LRU",
 	 *           and "LFU".
 	 */
-	public KVServer(int port, int cacheSize, String strategy) {
+	public KVServer(String name, int port, String zkHostname, int zkPort, int cacheSize, String strategy) {
+        // TODO use name, zkHostname, zkPort
+		this.name = name;
 		this.desired_port = port;
+		this.zkHostname = zkHostname;
+		this.zkPort = zkPort;
 		
 		switch (strategy) {
 		case "LRU":
@@ -154,27 +164,30 @@ public class KVServer implements IKVServer, ICommListener {
 	public static void main (String[] args) {
 		try {
 			new LogSetup("logs/server/server.log", Level.ALL);
-			if(args.length == 3){
+			if(args.length == 6){
 				try {
-					int port = Integer.parseInt(args[0]);
-					int cacheSize = Integer.parseInt(args[1]);
-					String strategy = args[2];
-					new KVServer(port, cacheSize, strategy).run();
+					String name = args[0];
+					int port = Integer.parseInt(args[1]);
+					String zkHostname = args[2];
+					int zkPort = Integer.parseInt(args[3]);					
+					int cacheSize = Integer.parseInt(args[4]);
+					String strategy = args[5];
+					new KVServer(name, port, zkHostname, zkPort, cacheSize, strategy).run();
 				} catch (Exception e) {
 					logger.error("Error! " +
 					e.getMessage());
 				}
 			}else {
 				System.out.println("Error! Invalid number of arguments!");
-				System.out.println("Usage: Server <port> <cache size> <cache strategy(LRU,LFU,FIFO)>!");
+				System.out.println("Usage: Server <name> <port> <zkHostname> <zkPort> <cache size> <cache strategy(LRU,LFU,FIFO)>!");
 			}
 		} catch (IOException e) {
 			System.out.println("Error! Unable to initialize logger!");
 			e.printStackTrace();
 			System.exit(1);
 		} catch (NumberFormatException nfe) {
-			System.out.println("Error! Invalid argument <port>! Not a number!");
-			System.out.println("Usage: Server <port>!");
+			System.out.println("Error! Invalid argument! Not a number!");
+			System.out.println("Usage: Server <name> <port> <zkHostname> <zkPort> <cache size> <cache strategy(LRU,LFU,FIFO)>!");
 			System.exit(1);
 		}
 	}
@@ -265,4 +278,35 @@ public class KVServer implements IKVServer, ICommListener {
 		}
 	}
 
+	@Override
+	public void start() {
+		// TODO
+	}
+
+	@Override
+	public void stop() {
+	    // TODO
+	}
+
+    @Override
+    public void lockWrite() {
+        // TODO
+    }
+
+    @Override
+    public void unlockWrite() {
+        // TODO
+    }
+
+    @Override
+    public boolean moveData(String[] hashRange, String targetName) throws Exception {
+        // TODO
+        return false;
+    }
+
+	@Override
+	public void consistentHasherUpdated(IConsistentHasher hasher) {
+		// TODO Auto-generated method stub
+		
+	}
 }

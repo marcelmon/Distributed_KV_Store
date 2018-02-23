@@ -5,19 +5,15 @@ import java.net.UnknownHostException;
 import common.messages.KVMessage;
 
 public interface KVCommInterface {
-
 	/**
-	 * Establishes a connection to the KV Server.
-	 *
-	 * @throws Exception
-	 *             if connection could not be established.
-	 */
-	public void connect() throws UnknownHostException, Exception;
-
-	/**
-	 * disconnects the client from the currently connected server.
+	 * disconnects the client from the currently connected server or do nothing if not connected
 	 */
 	public void disconnect();
+
+	/**
+	 * @return	true if connected to server, false otherwise
+	 */
+	public boolean isConnected();
 
 	/**
 	 * Inserts a key-value pair into the KVServer.

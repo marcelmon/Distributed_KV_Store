@@ -27,13 +27,11 @@ public class UnitTests {
 		clientSuite.addTestSuite(TLVMessageTest.class);
 		clientSuite.addTestSuite(SocketTest.class);
 		clientSuite.addTestSuite(CommModTest.class);
-		
 		clientSuite.addTestSuite(KVDBTests.class);
 		clientSuite.addTestSuite(CacheTests.class);
-		
-		clientSuite.addTestSuite(StoreServerTests.class);
-		
+		clientSuite.addTestSuite(StoreServerTests.class);		
 		clientSuite.addTestSuite(ZookeeperTest.class);
+		clientSuite.addTestSuite(ConsistentHasherTest.class);
 		
 		return clientSuite;
 	}
