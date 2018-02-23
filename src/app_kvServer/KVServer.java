@@ -194,8 +194,7 @@ public class KVServer implements IKVServer, ICommListener {
 	}
 
 	@Override
-	public synchronized void OnMsgRcd(KVMessage msg, OutputStream client) {
-		// TODO The server has received a request from the client - do something with it
+	public synchronized void OnKVMsgRcd(KVMessage msg, OutputStream client) {
 		switch (msg.getStatus()) {
 		case GET:
 			try {
@@ -271,11 +270,7 @@ public class KVServer implements IKVServer, ICommListener {
 			}
 			break;
 		default:
-			//TODO log error
-			System.out.println("Invalid request");
-			// This is either an invalid status, or a SUCCESS/FAIL (which a client shouldn't be sending us)
-			logger.error("Error! " + "Invalid status");
-			break;
+			throw new RuntimeException("Invalid request!"); // fatal because programmatic error
 		}
 	}
 
@@ -312,14 +307,13 @@ public class KVServer implements IKVServer, ICommListener {
 	}
 
 	@Override
-	public void OnTuplesReceived(Entry<String, String>[] tuples) {
+	public void OnTuplesReceived(Entry<?, ?>[] tuples) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public Entry<String, String>[] OnTuplesRequest(Byte[] lower, Byte[] upper) {
+	public void OnTuplesRequest(Byte[] lower, Byte[] upper, OutputStream client) {
 		// TODO Auto-generated method stub
-		return null;
 	}
 }

@@ -171,7 +171,7 @@
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="46.0" width="93.0" x="404.0" y="503.75000000000006"/>
-          <y:Fill color="#FF0000" transparent="false"/>
+          <y:Fill color="#FFCC00" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="68.412109375" x="12.2939453125" y="14.015624999999943">CommMod<y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>

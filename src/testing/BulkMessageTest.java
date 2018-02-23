@@ -1,5 +1,8 @@
 package testing;
 
+import java.io.BufferedInputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Arrays;
@@ -25,7 +28,7 @@ public class BulkMessageTest extends TestCase {
 	}
 	
 	@Test
-	public void testBulkRequestBuffer() throws Exception {
+	public void testBulkRequestBytes() throws Exception {
 		byte[] buffer = new byte[] {
 			(byte) StatusType.BULK_REQUEST.ordinal(),
 			2,
@@ -40,7 +43,37 @@ public class BulkMessageTest extends TestCase {
 		Byte[] lower = new Byte[] {'a', 'b'};
 		Byte[] upper = new Byte[] {'c', 'd', 'e'};
 		
-		BulkRequestMessage msg = new BulkRequestMessage(buffer);
+		BulkRequestMessage msg = new BulkRequestMessage();
+		msg.fromBytes(buffer);
+		
+		assertTrue(Arrays.equals(msg.getLower(), lower));
+		assertTrue(Arrays.equals(msg.getUpper(), upper));
+	}
+	
+	@Test
+	public void testBulkRequestStream() throws Exception {
+		byte[] buffer = new byte[] {
+			(byte) StatusType.BULK_REQUEST.ordinal(),
+			2,
+			3,
+			'a',
+			'b',
+			'c',
+			'd',
+			'e'
+		};
+		
+		// Stream:
+		PipedOutputStream out = new PipedOutputStream();
+		PipedInputStream in = new PipedInputStream(out);
+		BufferedInputStream stream = new BufferedInputStream(in);
+		out.write(buffer, 0, buffer.length);
+		
+		Byte[] lower = new Byte[] {'a', 'b'};
+		Byte[] upper = new Byte[] {'c', 'd', 'e'};
+		
+		BulkRequestMessage msg = new BulkRequestMessage();
+		msg.fromInputStream(stream);
 		
 		assertTrue(Arrays.equals(msg.getLower(), lower));
 		assertTrue(Arrays.equals(msg.getUpper(), upper));
@@ -61,7 +94,35 @@ public class BulkMessageTest extends TestCase {
 	}
 	
 	@Test
-	public void testBulkPackageBuffer() throws Exception {
+	public void testBulkPackageBytes0() throws Exception {		
+		byte[] buffer = new byte[] {
+			(byte) StatusType.BULK_PACKAGE.ordinal(),
+			0, 0, 0, 8, // 4 bytes of length
+			1,
+			1,
+			'a',
+			'b',
+			1,
+			1,
+			'c',
+			'd'
+		};
+		
+		BulkPackageMessage msg = new BulkPackageMessage();
+		msg.fromBytes(buffer);
+		
+		Map.Entry<?, ?>[] expected = new AbstractMap.SimpleEntry<?, ?>[] {
+			new AbstractMap.SimpleEntry<String, String>("a", "b"),
+			new AbstractMap.SimpleEntry<String, String>("c", "d"),
+		};		
+		
+		Map.Entry<?, ?>[] received = msg.getTuples();
+		
+		assertTrue(Arrays.deepEquals(received, expected));
+	}
+	
+	@Test
+	public void testBulkPackageBytes1() throws Exception {
 		byte[] buffer = new byte[] {
 			(byte) StatusType.BULK_PACKAGE.ordinal(),
 			0, 0, 0, 20, // 4 bytes of length
@@ -75,7 +136,42 @@ public class BulkMessageTest extends TestCase {
 			'd', 'v'
 		};
 		
-		BulkPackageMessage msg = new BulkPackageMessage(buffer);
+		BulkPackageMessage msg = new BulkPackageMessage();
+		msg.fromBytes(buffer);
+		
+		Map.Entry<?, ?>[] expected = new AbstractMap.SimpleEntry<?, ?>[] {
+			new AbstractMap.SimpleEntry<String, String>("test", "value"),
+			new AbstractMap.SimpleEntry<String, String>("test2", "dv"),
+		};
+		
+		Map.Entry<?, ?>[] received = msg.getTuples();
+		
+		assertTrue(Arrays.deepEquals(received, expected));
+	}
+	
+	@Test
+	public void testBulkPackageStream() throws Exception {
+		byte[] buffer = new byte[] {
+			(byte) StatusType.BULK_PACKAGE.ordinal(),
+			0, 0, 0, 20, // 4 bytes of length
+			4,
+			5,
+			't', 'e', 's', 't',
+			'v', 'a', 'l', 'u', 'e',
+			5,
+			2,
+			't', 'e', 's', 't', '2',
+			'd', 'v'
+		};
+		
+		// Stream:
+		PipedOutputStream out = new PipedOutputStream();
+		PipedInputStream in = new PipedInputStream(out);
+		BufferedInputStream stream = new BufferedInputStream(in);
+		out.write(buffer, 0, buffer.length);
+		
+		BulkPackageMessage msg = new BulkPackageMessage();
+		msg.fromInputStream(stream);
 		
 		Map.Entry<?, ?>[] expected = new AbstractMap.SimpleEntry<?, ?>[] {
 			new AbstractMap.SimpleEntry<String, String>("test", "value"),
