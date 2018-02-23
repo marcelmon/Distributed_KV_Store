@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import common.comms.IConsistentHasher.ServerRecord;
+
 public class ConsistentHasher implements IConsistentHasher {
 	protected List<ServerRecord> servers = new ArrayList<ServerRecord>();
 
@@ -48,11 +50,30 @@ public class ConsistentHasher implements IConsistentHasher {
 	}
 
 	@Override
-	public void fromServerList(List<ServerRecord> servers) {	
+	public void fromServerList(List<ServerRecord> servers) {
 		this.servers = servers; 
 		
 		// Sort by hash:
 		Collections.sort(this.servers, new HashComparator());
+	}
+	
+	@Override
+	public void fromServerListString(List<String> rawnodes) throws StringFormatException {
+		List<ServerRecord> servers = new ArrayList<ServerRecord>();
+		for (String s : rawnodes) {
+			String[] spl = s.split(":");
+			if (spl.length != 2) throw new StringFormatException("ZooKeeper server list has an invalid server: " + s);
+			String host = null;
+			Integer port = null;
+			host = spl[0];
+			try {
+				port = Integer.parseInt(spl[1]);
+			} catch (NumberFormatException e) {
+				throw new StringFormatException("ZooKeeper server list has a server with invalid port: " + s);
+			}
+			servers.add(new ServerRecord(host, port));
+		}
+		fromServerList(servers);
 	}
 	
 	@Override
