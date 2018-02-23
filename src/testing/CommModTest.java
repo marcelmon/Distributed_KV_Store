@@ -2,7 +2,7 @@ package testing;
 
 import org.junit.Test;
 import common.messages.*;
-import common.messages.KVMessage.*;
+import common.messages.Message.*;
 import common.comms.*;
 import junit.framework.TestCase;
 import java.net.ServerSocket;
@@ -11,14 +11,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.Map.Entry;
 import java.lang.Thread;
 import java.io.*;
 
 public class CommModTest extends TestCase {
 	protected ArrayList<Byte> serverRx = new ArrayList<>();
 	protected ArrayList<Byte> clientRx = new ArrayList<>();
-	protected TLVMessage serverRx_msg;
-	protected TLVMessage clientRx_msg;
+	protected KVMessage serverRx_msg;
+	protected KVMessage clientRx_msg;
 	
 	private class TestCommListener implements ICommListener {
 		protected KVMessage mostRecentMsg;
@@ -36,10 +37,22 @@ public class CommModTest extends TestCase {
 		public void OnMsgRcd(KVMessage msg, OutputStream client) {
 			mostRecentMsg = msg;
 			try {
-				server.SendMessage(new TLVMessage(StatusType.PUT, "abc", "def"), client);
+				server.SendMessage(new KVMessage(StatusType.PUT, "abc", "def"), client);
 			} catch (Exception e) {
 				// do nothing - the error will come out in the wash
 			}
+		}
+
+		@Override
+		public void OnTuplesReceived(Entry<String, String>[] tuples) {
+			// do nothing for now
+			
+		}
+
+		@Override
+		public Entry<String, String>[] OnTuplesRequest(Byte[] lower, Byte[] upper) {
+			// do nothing for now
+			return null;
 		}
 		
 	}
@@ -56,7 +69,7 @@ public class CommModTest extends TestCase {
 			server.SetListener(listener);
 			
 			// Create test message:
-			KVMessage msg = new TLVMessage(StatusType.PUT, "ab", "cd");
+			KVMessage msg = new KVMessage(StatusType.PUT, "ab", "cd");
 			
 			// Generate client:
 			CommMod client = new CommMod();
@@ -86,7 +99,7 @@ public class CommModTest extends TestCase {
 			server.SetListener(listener);
 			
 			// Create test message:
-			KVMessage msg = new TLVMessage(StatusType.PUT, "ab", "cd");
+			KVMessage msg = new KVMessage(StatusType.PUT, "ab", "cd");
 			
 			// Generate client:
 			CommMod client = new CommMod();
@@ -94,7 +107,7 @@ public class CommModTest extends TestCase {
 			KVMessage resp = client.SendMessage(msg);
 			
 			// Query we have the correct response:
-			assertTrue(new TLVMessage(StatusType.PUT, "abc", "def").equals(resp));
+			assertTrue(new KVMessage(StatusType.PUT, "abc", "def").equals(resp));
 		} catch (Exception e) {
 			fail("Exception: " + e.getMessage());
 		}

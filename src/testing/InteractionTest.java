@@ -6,7 +6,7 @@ import app_kvServer.KVServer;
 import client.KVStore;
 import junit.framework.TestCase;
 import common.messages.KVMessage;
-import common.messages.KVMessage.StatusType;
+import common.messages.Message.StatusType;
 
 
 public class InteractionTest extends TestCase {

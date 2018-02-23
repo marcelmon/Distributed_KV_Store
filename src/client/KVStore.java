@@ -7,7 +7,7 @@ import java.util.List;
 import common.comms.*;
 import common.comms.IConsistentHasher.*;
 import common.messages.*;
-import common.messages.KVMessage.StatusType;
+import common.messages.Message.StatusType;
 
 public class KVStore implements KVCommInterface {
 	private IConsistentHasher hasher;
@@ -51,7 +51,7 @@ public class KVStore implements KVCommInterface {
 		client.Connect(ip, port);
 		
 		StatusType statusType = StatusType.PUT;
-		KVMessage tx_msg = new TLVMessage(statusType,key,value);
+		KVMessage tx_msg = new KVMessage(statusType,key,value);
 		KVMessage rx_msg = null;
 		try {
 			rx_msg = client.SendMessage(tx_msg);
@@ -72,7 +72,7 @@ public class KVStore implements KVCommInterface {
 		client.Connect(ip, port);
 		
 		StatusType statusType = StatusType.GET;
-		KVMessage tx_msg = new TLVMessage(statusType,key,null);
+		KVMessage tx_msg = new KVMessage(statusType,key,null);
 		KVMessage rx_msg = null;
 		try {
 			rx_msg = client.SendMessage(tx_msg);

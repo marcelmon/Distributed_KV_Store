@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import java.net.BindException;
+import java.util.Map.Entry;
 import java.io.*;
 
 import logger.LogSetup;
@@ -10,7 +11,7 @@ import org.apache.log4j.Logger;
 
 import common.comms.*;
 import common.messages.*;
-import common.messages.KVMessage.StatusType;
+import common.messages.Message.StatusType;
 
 public class KVServer implements IKVServer, ICommListener {
 	protected static Logger logger = Logger.getRootLogger();
@@ -201,11 +202,11 @@ public class KVServer implements IKVServer, ICommListener {
 				try {
 					String value = cache.get(msg.getKey());
 //					System.out.println("Serving up key: " + msg.getKey());
-					KVMessage resp = new TLVMessage(StatusType.GET_SUCCESS, msg.getKey(), value);
+					KVMessage resp = new KVMessage(StatusType.GET_SUCCESS, msg.getKey(), value);
 					server.SendMessage(resp, client);
 				} catch (ICache.KeyDoesntExistException e) {
 //					System.out.println("Key doesn't exist: " + msg.getKey());
-					KVMessage resp = new TLVMessage(StatusType.GET_ERROR, msg.getKey(), null);
+					KVMessage resp = new KVMessage(StatusType.GET_ERROR, msg.getKey(), null);
 					server.SendMessage(resp, client);
 				}
 			} catch (KVMessage.FormatException e) {
@@ -226,10 +227,10 @@ public class KVServer implements IKVServer, ICommListener {
 				try {
 					try {
 						cache.delete(msg.getKey());
-						KVMessage resp = new TLVMessage(StatusType.DELETE_SUCCESS, msg.getKey(), null);
+						KVMessage resp = new KVMessage(StatusType.DELETE_SUCCESS, msg.getKey(), null);
 						server.SendMessage(resp, client);
 					} catch (ICache.KeyDoesntExistException e) {
-						KVMessage resp = new TLVMessage(StatusType.DELETE_ERROR, msg.getKey(), null);
+						KVMessage resp = new KVMessage(StatusType.DELETE_ERROR, msg.getKey(), null);
 						server.SendMessage(resp, client);
 					}
 				} catch (KVMessage.FormatException e) {
@@ -251,12 +252,12 @@ public class KVServer implements IKVServer, ICommListener {
 					KVMessage resp = null;
 					if (!failure) {
 					if (insert) {
-						resp = new TLVMessage(StatusType.PUT_SUCCESS, msg.getKey(), null);
+						resp = new KVMessage(StatusType.PUT_SUCCESS, msg.getKey(), null);
 					} else {
-						resp = new TLVMessage(StatusType.PUT_UPDATE, msg.getKey(), null);
+						resp = new KVMessage(StatusType.PUT_UPDATE, msg.getKey(), null);
 					}
 					} else {
-						resp = new TLVMessage(StatusType.PUT_ERROR, msg.getKey(), null);
+						resp = new KVMessage(StatusType.PUT_ERROR, msg.getKey(), null);
 					}
 					server.SendMessage(resp, client);
 				} catch (KVMessage.FormatException e) {
@@ -308,5 +309,17 @@ public class KVServer implements IKVServer, ICommListener {
 	public void consistentHasherUpdated(IConsistentHasher hasher) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public void OnTuplesReceived(Entry<String, String>[] tuples) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Entry<String, String>[] OnTuplesRequest(Byte[] lower, Byte[] upper) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
