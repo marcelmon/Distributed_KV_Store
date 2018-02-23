@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Map;
 
 public class FIFOCache implements ICache {
+
     public class FIFOCacheLinkedHashMap extends LinkedHashMap<String, String> {
 
         private int capacity;
@@ -40,6 +41,7 @@ public class FIFOCache implements ICache {
 
         map = new FIFOCacheLinkedHashMap(capacity);
         kvdb = new FilePerKeyKVDB("data_dir");
+
     }
     
     @Override
@@ -156,5 +158,10 @@ public class FIFOCache implements ICache {
         kvdb.loadData(iterator());
     }
 
+
+    @Override 
+    public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash) {
+        return new HashRangeIterator(minHash, maxHash, this, kvdb);
+    }
 
 }

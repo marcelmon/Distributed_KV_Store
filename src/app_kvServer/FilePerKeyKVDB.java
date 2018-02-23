@@ -224,6 +224,51 @@ public class FilePerKeyKVDB implements IKVDB {
 			put(e.getKey(), e.getValue());
 		}
 	}
+
+
+    /**
+     * Returns an Iterator of keys that will be used to load data into the cache.
+    */
+    @Override
+    public Iterator<String> keyIterator() {
+        return new FilePerKeyKVDBKeyIterator();
+    }
+
+
+    public class FilePerKeyKVDBKeyIterator implements Iterator<String> {
+
+        private File[] allFiles;
+        private int currentIndex;
+
+        public FilePerKeyKVDBKeyIterator() {
+            File f = new File(dataDir);
+            if (!f.exists() || !f.isDirectory()) {
+                // throw new InvalidPathException("KVDB data directory path \"" + dataDir + "\" invalid.");
+            }
+            allFiles = f.listFiles();
+            currentIndex = 0;
+        }
+
+        public boolean hasNext() {
+            while(currentIndex < allFiles.length){
+                if(allFiles[currentIndex].isDirectory()){
+                    currentIndex++;
+                    continue;
+                }
+                return true;
+            }   
+            return false;
+        }
+
+        public String next() throws NoSuchElementException {
+            if(hasNext() != true){
+                throw new NoSuchElementException("No more files in db");
+            }
+            String retKey = allFiles[currentIndex].getName();
+            currentIndex++;
+            return retKey;
+        }
+    }
 }
 
 

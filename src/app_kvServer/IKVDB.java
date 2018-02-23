@@ -53,4 +53,12 @@ public interface IKVDB {
     */
     public Iterator<Map.Entry<String, String> > iterator();
 
+
+    /*
+     * Only iterate keys so that we don't have to read off disk each time. 
+     * Used for hash range iteration.
+    */
+    public Iterator<String> keyIterator();
+
+
 }

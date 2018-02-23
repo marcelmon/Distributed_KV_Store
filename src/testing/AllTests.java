@@ -44,6 +44,9 @@ public class AllTests {
 		
 		clientSuite.addTestSuite(ConsistentHasherTest.class);
 		
+
+		clientSuite.addTestSuite(HashRangeIteratorTest.class);
+		
 		return clientSuite;
 	}
 	
