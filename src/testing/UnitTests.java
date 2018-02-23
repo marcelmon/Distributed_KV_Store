@@ -34,6 +34,7 @@ public class UnitTests {
 		clientSuite.addTestSuite(StoreServerTests.class);		
 		clientSuite.addTestSuite(ZookeeperTest.class);
 		clientSuite.addTestSuite(ConsistentHasherTest.class);
+		clientSuite.addTestSuite(IntraServerCommsTest.class);
 		
 		return clientSuite;
 	}
