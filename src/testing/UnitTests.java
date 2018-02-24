@@ -24,6 +24,7 @@ public class UnitTests {
 		clientSuite.addTestSuite(BulkMessageTest.class);
 		clientSuite.addTestSuite(CacheTests.class);
 		clientSuite.addTestSuite(CommModTest.class);
+		//clientSuite.addTestSuite(CommModPerfTest.class);
 		//clientSuite.addTestSuite(ConnectionTest.class);
 		clientSuite.addTestSuite(ConsistentHasherTest.class);
 		//clientSuite.addTestSuite(InteractionTest.class);

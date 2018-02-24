@@ -7,6 +7,8 @@ import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
 
 import org.junit.Test;
 
@@ -181,5 +183,64 @@ public class BulkMessageTest extends TestCase {
 		Map.Entry<?, ?>[] received = msg.getTuples();
 		
 		assertTrue(Arrays.deepEquals(received, expected));
+	}
+	
+	@Test
+	public void testLargeMessage() throws Exception {
+		// final int N = (int) Math.pow(10, 1); // 10^6 elements
+		final int N = (int) Math.pow(10, 3);
+		final int klen = 255;
+		final int vlen = 255;
+		AbstractMap.SimpleEntry<?, ?>[] tuples = new AbstractMap.SimpleEntry<?,?>[N];
+		for (int i = 0; i < N; i++) {
+			byte[] rawk = new byte[klen];
+			byte[] rawv = new byte[vlen];
+//			new Random().nextBytes(rawk);
+//			new Random().nextBytes(rawv);
+			for (int j = 0; j < klen; j++) {
+				// rawk[j] = (byte) ('a' + (j % 26));
+				rawk[j] = (byte) ('a' + (new Random().nextInt(26)));
+			}
+			for (int j = 0; j < vlen; j++) {
+				// rawv[j] = (byte) ('A' + (j % 26));
+				rawv[j] = (byte) ('A' + (new Random().nextInt(26)));
+			}
+			
+			// note that some bytes will be control characters so string length will be lower 
+			
+			String k = new String(rawk);
+			String v = new String(rawv);
+			
+//			System.out.println("k[" + i + "]=" + k);
+//			System.out.println("v[" + i + "]=" + v);
+			
+			tuples[i] = new AbstractMap.SimpleEntry<String, String>(k, v);
+		}
+		
+		BulkPackageMessage tx_msg = new BulkPackageMessage(tuples);
+		BulkPackageMessage rx_msg = new BulkPackageMessage(tx_msg.getBytes());
+		
+//		for (byte b : tx_msg.getBytes()) {
+//			System.out.println("b:" + (b & 0xff));
+//		}
+		
+		Entry<?, ?>[] tx = tx_msg.getTuples();
+		Entry<?, ?>[] rx = rx_msg.getTuples();
+		
+//		System.out.println("txlen=" + tx.length);
+//		System.out.println("rxlen=" + rx.length);
+		assertTrue(tx.length == rx.length);
+		for (int i = 0; i < tx.length; i++) {
+			String rx_key = (String) rx[i].getKey();
+			String tx_key = (String) tx[i].getKey();
+			String rx_value = (String) rx[i].getValue();
+			String tx_value = (String) tx[i].getValue();
+			
+//			System.out.println("rx:" + rx_key + ">" + rx_value);
+//			System.out.println("tx:" + tx_key + ">" + tx_value);
+			
+			assertTrue(rx_key.equals(tx_key));
+			assertTrue(rx_value.equals(tx_value));
+		}
 	}
 }
