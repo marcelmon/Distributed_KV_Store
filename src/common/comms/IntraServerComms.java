@@ -225,9 +225,6 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 		// Process through the RPC queue
 		List<String> calls = zk.getChildren(rpcGroup,  true); // reset watch
 		StackTraceElement[] st = Thread.currentThread().getStackTrace();
-		for (int i = 0; i < calls.size(); i++) {
-			System.out.println("[" + Thread.currentThread().getId() + "][" + i + "]: " + calls.get(i));
-		}
 		for (String c : calls) {			
 			// Does this refer to us?
 			String[] spl = c.split("-");
@@ -239,8 +236,11 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 				byte[] data = zk.getData(rpcGroup + "/" + c, false, stat);
 				
 				// Remove the znode for this rpc call:
-				System.out.println("Exists [" + c + "]: " + (zk.exists(rpcGroup + "/" + c, false) != null));
-				zk.delete(rpcGroup + "/" + c, -1);
+				try {
+					zk.delete(rpcGroup + "/" + c, -1);
+				} catch (KeeperException.NoNodeException e) {
+					// do nothing
+				}
 				
 				RPCRecord rec = new RPCRecord(data);
 				switch (rec.method) {
@@ -270,11 +270,9 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 				// and then (in this thread) there is another call to processRPC() before zookeeper
 				// has deleted the thread
 				while (zk.exists(rpcGroup + "/" + c, false) != null) {
-					System.out.println("Waiting...");
 					Thread.sleep(100);
 					//TODO have a timeout here
 				}
-				System.out.println("endExists [" + c + "]: " + (zk.exists(rpcGroup + "/" + c, false) != null));
 			} else {
 				// TODO log that we rejected this
 				System.out.println("Determined RPC \"" + c + "\" not aimed at \"" + me + "\"");
@@ -284,7 +282,7 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 
 	@Override
 	public void process(WatchedEvent event) {
-		System.out.println("zk event");
+		System.out.println("zk event: " + event);
 		
 		// Re-register for events
 		// "Watches are one time triggers; if you get a watch event and you want to get notified of future changes, you must set another watch."
@@ -309,8 +307,6 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 				try {
 					// Something changed, so let's just read the entire current state:
 					List<String> nodes = zk.getChildren(clusterGroup, false);
-					for (String n : nodes)
-						System.out.println("n:" + n);
 					hasher.fromServerListString(nodes);
 					System.out.println("Sent to listener " + event.getType().toString());
 					listener.consistentHasherUpdated(hasher);
@@ -329,9 +325,8 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 				try {
 					processRPC();
 				} catch (Exception e) {
-					//TODO log error
-					e.printStackTrace();
-					System.out.println("Unknown error occurred processing RPCs: " + e.getMessage());
+					// This could probably be made non-fatal
+					throw new RuntimeException("Unknown error occurred processing RPCs: " + e.getMessage());
 				}
 			} else {
 				// TODO log error
