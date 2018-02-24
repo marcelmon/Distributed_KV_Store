@@ -14,6 +14,9 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 public class FilePerKeyKVDB implements IKVDB {
 	/**
      * Iterator implementation to produce key-value Entries when loading data.
@@ -25,19 +28,22 @@ public class FilePerKeyKVDB implements IKVDB {
 		private File[] keyValueFileList;
 		private int currentIndex = 0;
 
-		public FilePerKeyIterator(String dataDir) {
+		public FilePerKeyIterator (String dataDir) {
 			File f = new File(dataDir);
 			if (!f.exists() || !f.isDirectory()) {
 				// throw new InvalidPathException("KVDB data directory path \"" + dataDir + "\" invalid.");
 			}
 			this.dataDir = dataDir;
 			keyValueFileList = f.listFiles();
+            logger.debug("FilePerKeyIterator()");
 		}
 
 
 		@Override
         public boolean hasNext() {
-            return currentIndex < keyValueFileList.length && keyValueFileList[currentIndex] != null;
+            boolean result = currentIndex < keyValueFileList.length && keyValueFileList[currentIndex] != null;
+            logger.debug("hasNext() -> result : " + result);
+            return result;
         }
 
 
@@ -49,14 +55,17 @@ public class FilePerKeyKVDB implements IKVDB {
         		try{
         			String allValue = new String(Files.readAllBytes(Paths.get(keyValueFile.getAbsolutePath())));
         			this.currentIndex++;
+                    logger.debug("FilePerKeyIterator next(), -> key : " + keyValueFile.getName() + ", value : " + allValue);
 		        	// keyValueFile.getName() == keyName,  Arrays.toString(valueBytes) == value
 		        	return new SimpleEntry<String, String>(keyValueFile.getName(),  allValue);
 
         		}
         		catch(IOException e){
+                    logger.error("FilePerKeyIterator next() IOException : " + e + " , " + e.getMessage());
         			return null;
         		}
         	}
+            logger.debug("FilePerKeyIterator next() file is directory");
         	return null;
         }
 
@@ -72,17 +81,19 @@ public class FilePerKeyKVDB implements IKVDB {
 
 	protected String dataDir;
 
-
+    protected static Logger logger = Logger.getRootLogger();
 
 	public FilePerKeyKVDB(String dataDir) {
 		
 		File f = new File(dataDir);
 
         if(!f.exists()){
+            logger.debug("FilePerKeyKVDB() creating dataDir : " + dataDir);
             f.mkdir();
         }
 		if (!f.exists() || !f.isDirectory()) {
 			// throw new InvalidPathException("KVDB data directory path \"" + dataDir + "\" invalid.");
+            logger.error("FilePerKeyKVDB() error creating dataDir : " + dataDir);
             return;
 		}
 
@@ -101,6 +112,7 @@ public class FilePerKeyKVDB implements IKVDB {
     		if(f.isFile()){
     			return true;
     		}
+            logger.error("FilePerKeyKVDB() key : " + key + " -> file exists but not isFile()");
     		// throw new InvalidPathException("The key data file " + this.dataDir + key + " is a directory.");
     	}
     	return false;
@@ -115,13 +127,12 @@ public class FilePerKeyKVDB implements IKVDB {
                 try{
                     String allValue = new String(Files.readAllBytes(Paths.get(this.dataDir + key)));
                     return allValue;
-                    // byte[] valueBytes = Files.readAllBytes(Paths.get(this.dataDir + key));
-                    // return Arrays.toString(valueBytes);
                 }
                 catch(IOException e){
-
+                    logger.debug("get(), key : " + key + ", exception : " + e + ", message : " + e.getMessage());
                 }
     		}
+            logger.error("get() : " + key + " -> file exists but not isFile()");
     		// throw new InvalidPathException("The key data file " + this.dataDir + key + " is a directory.");
     	}
     	throw new KeyDoesntExistException("The key " + key + " does not exist on disk.");
@@ -146,6 +157,7 @@ public class FilePerKeyKVDB implements IKVDB {
                 String existingValue = Arrays.toString(valueBytes);
                 if(Objects.equals(existingValue, value)){
                     // throw new Exception("KEY VALUE DID NOT CHANGE");
+                    logger.debug("put() key : " + key + ", value : " + value + " -> did not change");
                 }
                 else{
                     Writer fileWriter = new FileWriter(this.dataDir + key);
@@ -158,16 +170,11 @@ public class FilePerKeyKVDB implements IKVDB {
             catch(IOException e){
                 throw e;
             }
-    		
-	        System.out.println(this.dataDir + key);
-    		Writer fileWriter = new FileWriter(this.dataDir + key);
-    		fileWriter.write(value);
-    		fileWriter.close();
-    		return false; // was updated
     	}
     	Writer fileWriter = new FileWriter(this.dataDir + key);
 		fileWriter.write(value);
 		fileWriter.close();
+        logger.debug("put() key : " + key + ", value : " + value + " -> changed");
 		return true; // was new key
     }
     
@@ -180,11 +187,13 @@ public class FilePerKeyKVDB implements IKVDB {
     		throw new KeyDoesntExistException("The key " + key + " does not exist on disk.");
     	}
     	if(f.isDirectory()){
+            logger.error("delete() key : " + key + " -> is directory");
 			// throw new InvalidPathException("The key data file " + this.dataDir + key + " is a directory.");
 		}
 		if(f.delete()){
         	return;
         }
+        logger.error("delete() key : " + key + " -> f.delete() did not return true");
         // throw new Exception("Error deleting key file " + this.dataDir + key);
     }
 
@@ -195,6 +204,7 @@ public class FilePerKeyKVDB implements IKVDB {
     	File f = new File(this.dataDir);
     	if (!f.exists() || !f.isDirectory()) {
 			// throw new InvalidPathException("KVDB data directory path \"" + dataDir + "\" invalid.");
+            logger.error("clearStorage() -> dataDir " + this.dataDir + " invalid");
 		}
     	for (File keyFile : f.listFiles()) {
     		if(keyFile.isFile()){
@@ -211,7 +221,7 @@ public class FilePerKeyKVDB implements IKVDB {
     public Iterator<Map.Entry<String, String>> iterator() {
     	File f = new File(this.dataDir);
     	if (!f.exists() || !f.isDirectory()) {
-			// throw new InvalidPathException("KVDB data directory path \"" + dataDir + "\" invalid.");
+			logger.error("clearStorage() -> dataDir " + this.dataDir + " invalid");
 		}
 
 		return new FilePerKeyIterator(dataDir);
