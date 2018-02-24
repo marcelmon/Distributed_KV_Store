@@ -27,27 +27,73 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 	
 	public static class RPCRecord {
 		public RPCMethod method;
-		public Object[] args;
+		public String[] args;
 		
 		public byte[] getBytes() {
-			byte[] buffer = new byte[1];
+			// Format is: <RPCMethod 1> <args.length 1> <args[0].length 1> <args[0] N> ... <args[i].length 1> <args[i] N>
+			
+			if (args.length > 255) {
+				throw new RuntimeException("More than 255 args in an RPC!"); //fatal
+			}
+			
+			int bufferlen = 2; // RPCMethod, number of args
+			for (String s : args)
+				bufferlen += 1 + s.length();
+			
+			byte[] buffer = new byte[bufferlen];
+			
 			buffer[0] = (byte) method.ordinal();
-			//TODO manage args
+			buffer[1] = (byte) args.length;
+			int cursor = 2;
+			for (String s : args) {
+				if (s.length() > 255) {
+					// should have already been truncated so fatal
+					throw new RuntimeException("Unexpected long RPCRecord arg: " + s); 
+				}
+				buffer[cursor] = (byte) s.length();
+				System.arraycopy(s.getBytes(), 0, buffer, cursor+1, s.length());
+				cursor += 1 + s.length();
+			}
+			
 			return buffer;
 		}
 		
-		protected void fromBytes(byte[] bytes) {
+		protected void fromBytes(byte[] bytes) throws Exception {
+			if (bytes.length < 2) {
+				throw new Exception("Invalid byte representation of an RPCRecord");
+			}
+			
 			method = RPCMethod.values()[bytes[0]];
-			//TODO manage args
+			int numargs = bytes[1];
+			args = new String[numargs];
+			int bytecursor = 2;
+			int argcursor = 0;
+			while (argcursor < numargs) {
+				int arglen = bytes[bytecursor];
+				byte[] rawarg = new byte[arglen];
+				System.arraycopy(bytes, bytecursor+1, rawarg, 0, arglen);
+				args[argcursor] = new String(rawarg);
+				argcursor++;
+				bytecursor += 1 + arglen;
+			}
 		}
 		
-		public RPCRecord(byte[] bytes) {
+		public RPCRecord(byte[] bytes) throws Exception {
 			fromBytes(bytes);
 		}
 		
-		public RPCRecord(RPCMethod method, Object... args) {
+		public RPCRecord(RPCMethod method, String... args) {
+			// TODO check that the number of arguments is correct for the method
+			
 			this.method = method;
 			this.args = args;
+			
+			// Truncate args if too long:
+			for (String a : this.args) {
+				if (a.length() > 255) {
+					a = a.substring(0,  255);
+				}
+			}
 		}
 	}
 	
@@ -93,7 +139,7 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 	}
 	
 	@Override
-	public void call(String target, RPCMethod method, Object... args) throws InvalidArgsException, Exception {
+	public void call(String target, RPCMethod method, String... args) throws InvalidArgsException, Exception {
 		RPCRecord rec = new RPCRecord(method, args);
 		zk.create(rpcGroup + "/" + target + "-", rec.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL);
 	}
@@ -188,10 +234,13 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 						listener.unlockWrite();
 						break;
 					case MoveData:
-						//TODO 
-						throw new RuntimeException("Unimplemented rpc method: movedata");
+						if (rec.args.length != 3)  {
+							throw new Exception("Invalid number of args for RPCMethod.MoveData");
+						}
+						listener.moveData(new String[] {rec.args[0], rec.args[1]}, rec.args[2]);
+						break;
 					default:
-						throw new Exception("Unknown RPC method encountered");
+						throw new Exception("Unknown RPC method encountered: " + rec.method);
 				}				
 				
 				// Wait until delete confirmation to ensure we don't double-dip if this method returns

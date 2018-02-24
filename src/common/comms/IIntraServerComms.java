@@ -44,7 +44,7 @@ public interface IIntraServerComms {
 	/**
 	 * Performs a remote procedure call of the method defined by "type" on the KVServer identified by target.
 	 */
-	public void call(String target, RPCMethod method, Object... args) throws InvalidArgsException, Exception;
+	public void call(String target, RPCMethod method, String... args) throws InvalidArgsException, Exception;
 	
 	/**
 	 * Registers the given server as receiving remote procedure calls directed to it. It will only begin
