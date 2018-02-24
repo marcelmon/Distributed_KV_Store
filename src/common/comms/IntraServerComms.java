@@ -58,6 +58,21 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 			return buffer;
 		}
 		
+		protected boolean validateArgs() {
+			switch (method) {
+				case Start:
+				case Stop:
+				case LockWrite:
+				case UnlockWrite:
+					return args.length == 0;
+				case MoveData:
+					return args.length == 3;
+				default:
+					// fatal because this means the application is being used incorrectly
+					throw new RuntimeException("Uncountered unknown RPCMethod: " + method); 
+			}
+		}
+		
 		protected void fromBytes(byte[] bytes) throws Exception {
 			if (bytes.length < 2) {
 				throw new Exception("Invalid byte representation of an RPCRecord");
@@ -76,13 +91,17 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 				argcursor++;
 				bytecursor += 1 + arglen;
 			}
+			
+			if (!validateArgs()) {
+				throw new Exception("Args failed to validate in fromBytes(): " + bytes.toString());
+			}
 		}
 		
 		public RPCRecord(byte[] bytes) throws Exception {
 			fromBytes(bytes);
 		}
 		
-		public RPCRecord(RPCMethod method, String... args) {
+		public RPCRecord(RPCMethod method, String... args) throws Exception {
 			// TODO check that the number of arguments is correct for the method
 			
 			this.method = method;
@@ -93,6 +112,10 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 				if (a.length() > 255) {
 					a = a.substring(0,  255);
 				}
+			}
+			
+			if (!validateArgs()) {
+				throw new Exception("Invalid args for call to: " + method);
 			}
 		}
 	}

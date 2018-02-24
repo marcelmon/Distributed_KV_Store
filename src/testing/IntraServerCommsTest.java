@@ -395,9 +395,14 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 	
 	@Test
 	public void testSerializeRPCRecordArgs() throws Exception {
-		RPCRecord rec = new RPCRecord(RPCMethod.MoveData, "a", "bcd");
+		RPCRecord rec = new RPCRecord(RPCMethod.MoveData, "a", "bcd", "tgt");
 		byte[] bytes = rec.getBytes();
-		byte[] expected = new byte[] {(byte) RPCMethod.MoveData.ordinal(), 2, 1, 'a', 3, 'b', 'c', 'd'};
+		byte[] expected = new byte[] {
+				(byte) RPCMethod.MoveData.ordinal(), 
+				3, 
+				1, 'a', 
+				3, 'b', 'c', 'd', 
+				3, 't', 'g', 't'};
 //		for (byte b : bytes) {
 //			System.out.println(b);
 //		}
@@ -406,12 +411,18 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 	
 	@Test
 	public void testDeserializeRPCRecordArgs() throws Exception {
-		byte[] bytes = new byte[] {(byte) RPCMethod.MoveData.ordinal(), 2, 1, 'a', 3, 'b', 'c', 'd'};
+		byte[] bytes = new byte[] {
+				(byte) RPCMethod.MoveData.ordinal(), 
+				3, 
+				1, 'a', 
+				3, 'b', 'c', 'd', 
+				3, 't', 'g', 't'};
 		RPCRecord rec = new RPCRecord(bytes);
 		assertTrue(rec.method.equals(RPCMethod.MoveData));
-		assertTrue(rec.args.length == 2);
+		assertTrue(rec.args.length == 3);
 		assertTrue(rec.args[0].equals("a"));
 		assertTrue(rec.args[1].equals("bcd"));
+		assertTrue(rec.args[2].equals("tgt"));
 	}
 	
 	@Test
