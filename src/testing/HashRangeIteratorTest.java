@@ -13,6 +13,8 @@ import common.messages.Message.StatusType;
 
 import java.security.MessageDigest;
 
+import java.util.Arrays;
+
 public class HashRangeIteratorTest extends TestCase {
 	protected ICache[] caches;
 	protected int desiredCapacity;
@@ -20,22 +22,22 @@ public class HashRangeIteratorTest extends TestCase {
 	@Override
 	public void setUp() {
 		desiredCapacity = 1;
-		caches = new ICache[1];
+		caches = new ICache[5];
 		caches[0] = new FIFOCache(desiredCapacity);
 
-		// caches[0] = new MemOnlyCache(desiredCapacity);
+		caches[0] = new MemOnlyCache(desiredCapacity);
 
-		// caches[1] = new LFUCache(desiredCapacity);
-		// caches[1].clearPersistentStorage();
+		caches[1] = new LFUCache(desiredCapacity);
+		caches[1].clearPersistentStorage();
 
-		// caches[2] = new LRUCache(desiredCapacity);
-		// caches[2].clearPersistentStorage();
+		caches[2] = new LRUCache(desiredCapacity);
+		caches[2].clearPersistentStorage();
 
-		// caches[3] = new FIFOCache(desiredCapacity);
-		// caches[3].clearPersistentStorage();
+		caches[3] = new FIFOCache(desiredCapacity);
+		caches[3].clearPersistentStorage();
 
-		// caches[4] = new NoCache();
-		// caches[4].clearPersistentStorage();
+		caches[4] = new NoCache();
+		caches[4].clearPersistentStorage();
 
 	}
 	
@@ -144,13 +146,81 @@ public class HashRangeIteratorTest extends TestCase {
 			}
 		}
 
-
-			
-
-
-			
-
-
 	}
+
+
+
+	/*
+		Picks the hashed value for 'a'
+		Adds 1 to use as maximum hash value (clockwise value)
+
+		Adds 2 to use as minimum hash value (counter clockwise value).
+		The result should contain all hashed values.
+	*/
+	@Test
+	public void testGetAllHashedValuesByCoveringCenter() throws Exception {
+
+		String[] keys = {"a", "b", "c"};
+		String[] values = {"1", "2", "3"};
+		
+
+		for (int i = 0; i < caches.length; ++i) {
+			
+			ArrayList<byte[]> allHashedKeys = new ArrayList<byte[]>();
+			caches[i].clearPersistentStorage();
+			
+	        
+			for (int j = 0; j < keys.length; ++j) {
+
+				MessageDigest md = MessageDigest.getInstance("MD5");
+		        byte[] keyHash = md.digest(keys[j].getBytes());
+
+		        caches[i].put(keys[j], values[j]);
+		        allHashedKeys.add(keyHash);
+		    }
+
+	        for (int k = 0; k < 3; ++k) {
+				byte[] targetHash = allHashedKeys.get(k);
+				byte[] targetHashPlusOne = addOne(targetHash.clone());
+				byte[] targetHashPlusTwo = addOne(targetHashPlusOne.clone());
+
+				ArrayList<Map.Entry<String, String>> returnKeys = new ArrayList<Map.Entry<String, String>>();
+
+				Iterator<Map.Entry<String, String>> hashRangeIterator = caches[i].getHashRangeIterator(targetHashPlusTwo, targetHashPlusOne);
+
+
+				while(hashRangeIterator.hasNext() == true){
+					returnKeys.add(hashRangeIterator.next());
+				}
+
+				// all keys should be returned
+				assertTrue(returnKeys.size() == keys.length);
+
+				// all keys returned should match those in array and should have the right value
+				// also check there are no duplicate keys
+				ArrayList<String> previousKeys = new ArrayList<String>();
+				for (int j = 0; j < returnKeys.size(); ++j) {
+
+
+					SimpleEntry<String, String> retEntry = (SimpleEntry<String, String>) returnKeys.get(j);
+
+					assertFalse(previousKeys.contains(retEntry.getKey()));
+					previousKeys.add(retEntry.getKey());
+
+					int keyArrayIndex = Arrays.asList(keys).indexOf(retEntry.getKey());
+					
+					assertTrue(keyArrayIndex >= 0);
+					assertTrue(values[keyArrayIndex].equals(retEntry.getValue()));
+
+				}
+					
+			}
+		}
+	}
+
+			
+
+
+	
 	
 }

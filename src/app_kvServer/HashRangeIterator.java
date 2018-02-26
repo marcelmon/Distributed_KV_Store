@@ -108,6 +108,9 @@ class HashRangeIterator implements Iterator<Map.Entry<String, String>> {
         return false;
     }
 
+    /*
+        Assumes that a bigger byte array is a bigger number
+    */
     public static int firstBiggerThanSecond(byte[] first, byte[] second) {
         if(first.length > second.length) {
             return 1;

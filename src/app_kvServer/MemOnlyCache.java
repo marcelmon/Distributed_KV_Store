@@ -93,4 +93,10 @@ public class MemOnlyCache implements ICache {
 		return map.entrySet().iterator();
 	}
 
+
+	@Override 
+	public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash) {
+		return new HashRangeIterator(minHash, maxHash, this, null);
+	}
+
 }
