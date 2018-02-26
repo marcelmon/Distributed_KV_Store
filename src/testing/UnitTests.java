@@ -20,20 +20,29 @@ public class UnitTests {
 		}
 	}
 	
+	public static void addUnitTests(TestSuite clientSuite) {
+		clientSuite.addTestSuite(BulkMessageTest.class);
+		clientSuite.addTestSuite(CacheTests.class);
+		clientSuite.addTestSuite(CommModTest.class);
+		//clientSuite.addTestSuite(CommModPerfTest.class);
+		//clientSuite.addTestSuite(ConnectionTest.class);
+		clientSuite.addTestSuite(ConsistentHasherTest.class);
+		//clientSuite.addTestSuite(InteractionTest.class);
+		clientSuite.addTestSuite(IntraServerCommsTest.class);
+		clientSuite.addTestSuite(KVDBTests.class);
+		clientSuite.addTestSuite(KVMessageTest.class);
+		clientSuite.addTestSuite(MessageTest.class);
+		clientSuite.addTestSuite(SocketTest.class);
+		clientSuite.addTestSuite(StoreServerTests.class);		
+		clientSuite.addTestSuite(ZookeeperTest.class);
+		//clientSuite.addTestSuite(ZookeeperExtTest.class);
+		
+	}
 	
 	public static Test suite() {
 		TestSuite clientSuite = new TestSuite("Storage Server Unit Test-Suite");
 
-		clientSuite.addTestSuite(MessageTest.class);
-		clientSuite.addTestSuite(KVMessageTest.class);
-		clientSuite.addTestSuite(BulkMessageTest.class);
-		clientSuite.addTestSuite(SocketTest.class);
-		clientSuite.addTestSuite(CommModTest.class);
-		clientSuite.addTestSuite(KVDBTests.class);
-		clientSuite.addTestSuite(CacheTests.class);
-		clientSuite.addTestSuite(StoreServerTests.class);		
-		clientSuite.addTestSuite(ZookeeperTest.class);
-		clientSuite.addTestSuite(ConsistentHasherTest.class);
+		addUnitTests(clientSuite);
 		
 		return clientSuite;
 	}

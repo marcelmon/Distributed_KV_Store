@@ -79,6 +79,8 @@ public interface IConsistentHasher {
 	
 	public void fromServerList(List<ServerRecord> servers);
 	
+	public void fromServerListString(List<String> servers) throws StringFormatException;
+	
 	public ServerRecord[] getServerList();
 	
 	// Normal use methods:
