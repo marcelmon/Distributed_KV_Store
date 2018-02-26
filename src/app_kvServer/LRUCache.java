@@ -11,6 +11,11 @@ import java.util.Objects;
 
 import java.util.Map;
 
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
+
 public class LRUCache implements ICache {
     public class LRUCacheLinkedHashMap extends LinkedHashMap<String, String> {
 
@@ -18,15 +23,19 @@ public class LRUCache implements ICache {
 
         public LRUCacheLinkedHashMap(int capacity) { // access order is true for LRU, false for insertion-order(FIFO)
             super(capacity, 0.75f, true); // 0.75 is loadFactor, true is accessOrder
-            this.capacity = capacity;   
+            this.capacity = capacity;
+            logger.debug("LRUCacheLinkedHashMap(), capacity : " + capacity);
         }
 
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
-            return this.size() > this.capacity;
+            boolean result = this.size() > this.capacity;
+            logger.debug("LRUCacheLinkedHashMap removeEldestEntry() -> result : " + result);
+            return result;
         }
     }
 
+    protected static Logger logger = Logger.getRootLogger();
     
     protected final int capacity;
     
@@ -53,10 +62,10 @@ public class LRUCache implements ICache {
     }
 
     @Override
-    /**
-     * This class doesn't provide persistent storage. 
-     */
     public boolean inStorage(String key) {
+        if (!validateKey(key)) {
+            return false; 
+        }
         return kvdb.inStorage(key);
     }
 
@@ -68,12 +77,14 @@ public class LRUCache implements ICache {
     @Override
     public synchronized String get(String key) throws KeyDoesntExistException, Exception {
 	    if (!validateKey(key)) {
-		    throw new Exception("Attempted to get an empty key");
+		    throw new Exception("Invalid key");
 	    }
-     if (map.containsKey(key)) {
+        if (map.containsKey(key)) {
+            logger.debug("get() cache hit");
             return map.get(key);            
         } else {
             if(kvdb.inStorage(key)){
+                logger.debug("get() stored key found");
                 try{
                     String value = kvdb.get(key);
                     map.put(key, value);
@@ -93,21 +104,22 @@ public class LRUCache implements ICache {
      */
     @Override
     public synchronized boolean put(String key, String value) throws Exception, Exception {
-	    System.out.println("LRU put:" + key + "," + value);
 		if (!validateKey(key)) {
 			throw new Exception("Attempted to put an empty key");
 		}
-        
         if(map.containsKey(key)){
             if(Objects.equals(map.get(key), value)){
+                logger.debug("put() cached key value");
                 // no update
                 return false;
             }
             // else the cached value is different
+            logger.debug("put() cached key update value");
             map.put(key, value);
             kvdb.put(key, value);
             return false; // tuple updated
         }
+        logger.debug("put() cached miss key");
         map.put(key, value); // map.put returns null if no previous mapping
         kvdb.put(key, value);
         return true;
@@ -116,14 +128,12 @@ public class LRUCache implements ICache {
     @Override
     public synchronized void delete(String key) throws KeyDoesntExistException, Exception {
 	    if (!validateKey(key)) {
-		throw new Exception("Attempted to delete an empty key");
+            throw new Exception("Attempted to delete an empty key");
 	    }
-
         if(!kvdb.inStorage(key)){
-            map.remove(key); // for good measure (but probably don't need due to locking)
+            map.remove(key);
             throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");
         }
-        
         try {
             if(!kvdb.inStorage(key)){
                 throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");

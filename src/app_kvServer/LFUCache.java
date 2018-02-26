@@ -9,12 +9,19 @@ import java.time.Duration;
 import java.io.*;
 import java.lang.Exception;
 
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
+
 public class LFUCache implements ICache {
     protected LinkedHashMap<String, String> map;  // the cache
     protected HashMap<String, Integer> usageCounter; // the hit counter on members of cache 
     protected final int capacity;
     protected FilePerKeyKVDB kvdb;
 
+    protected static Logger logger = Logger.getRootLogger();
+    
     public LFUCache(int capacity) {
     	this.capacity = capacity;
         map = new LinkedHashMap<>(capacity);
@@ -137,9 +144,11 @@ public class LFUCache implements ICache {
     @Override
     public synchronized String get(String key) throws KeyDoesntExistException, StorageException {   	
         if (map.containsKey(key)) {				// cache hit
+            logger.debug("get() cache hit");
         	return getFromCache(key);
         } else {								// cache miss
             if (kvdb.inStorage(key)){			// storage hit
+                logger.debug("get() stored key found");
             	try {
             		evictAndReplace(key);
             	} catch (Exception e) {
@@ -159,7 +168,6 @@ public class LFUCache implements ICache {
      */
     @Override
     public synchronized boolean put(String key, String value) throws Exception {
-        System.out.println("LFU Cache put:" + key + "," + value);
         boolean inserted = this.putIntoCache(key, value);
         return inserted;
     }

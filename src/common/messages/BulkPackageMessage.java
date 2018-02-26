@@ -67,18 +67,18 @@ public class BulkPackageMessage extends Message {
 			String value = (String) t.getValue();
 			int keylen = key.length();
 			int valuelen = value.length();
-			if (keylen >= 255) {
+			if (keylen > 255) {
 				// TODO make non fatal
 				throw new RuntimeException("Key is too long!");
 			}
-			if (valuelen >= 255) {
+			if (valuelen > 255) {
 				// TODO make non fatal
 				throw new RuntimeException("Value is too long!");
 			}
 			len += 2 + keylen + valuelen; // 2 is for key and value lengths  
 		}
 		
-		if (len >= 255) {
+		if (len > Integer.MAX_VALUE) {
 			//TODO make non fatal
 			throw new RuntimeException("Bulk package too long!");
 		}		
@@ -93,6 +93,8 @@ public class BulkPackageMessage extends Message {
 				1,
 				sizeofInt);
 		
+//		System.out.println("len=" + len);
+		
 		int cursor = 1+sizeofInt;
 		for (Map.Entry<?, ?> t : tuples) {
 			String key = (String) t.getKey();
@@ -101,6 +103,9 @@ public class BulkPackageMessage extends Message {
 			int vl = value.length();
 			output[cursor] = (byte) kl;
 			output[cursor+1] = (byte) vl;
+			
+//			System.out.println(kl);
+//			System.out.println(vl);
 			
 			// write key
 			System.arraycopy(
@@ -121,17 +126,17 @@ public class BulkPackageMessage extends Message {
 			cursor += 2 + kl + vl;
 		}
 		
-		for (byte b : output) {
-			System.out.println("o:" + b);
-		}
+//		for (byte b : output) {
+//			System.out.println("o:" + (b & 0xFF));
+//		}
 		
 		return output;
 	}
 	
 	protected void fromTLV(byte[] buffer) {
-		for (byte b : buffer) {
-			System.out.println("b:" + b);
-		}
+//		for (byte b : buffer) {
+//			System.out.println("b:" + b);
+//		}
 		
 		byte tag = buffer[0];
 		byte[] rawlen = new byte[sizeofInt];
@@ -143,19 +148,20 @@ public class BulkPackageMessage extends Message {
 				sizeofInt);
 		ByteBuffer bb = ByteBuffer.allocate(sizeofInt).wrap(rawlen);
 		// bb.order(ByteOrder.BIG_ENDIAN);
-		int len = bb.getInt(0);	
+		int len = bb.getInt(0);
+//		System.out.println("len:" + len);
 		
 		ArrayList<AbstractMap.SimpleEntry<String, String>> lTuples = 
 				new ArrayList<AbstractMap.SimpleEntry<String, String>>();
 		
 		int cursor = 1+sizeofInt;
 		while (cursor < len+1+sizeofInt) { 
-			System.out.println(cursor + "/" + len);
-			int kl = buffer[cursor];
-			int vl = buffer[cursor+1];
+//			System.out.println(cursor + "/" + (len+1+sizeofInt));
+			int kl = buffer[cursor] & 0xFF;  // unsigned
+			int vl = buffer[cursor+1] & 0xFF; // unsigned
 			
-			System.out.println("kl=" + kl);
-			System.out.println("vl=" + vl);
+//			System.out.println("kl=" + kl);
+//			System.out.println("vl=" + vl);
 			
 			// Read key
 			byte[] rawkey = new byte[kl];
@@ -167,6 +173,8 @@ public class BulkPackageMessage extends Message {
 					kl);   //write len
 			String key = new String(rawkey);
 			
+//			System.out.println("key=" + key);
+			
 			// Read value
 			byte[] rawvalue = new byte[vl];
 			System.arraycopy(
@@ -177,7 +185,7 @@ public class BulkPackageMessage extends Message {
 					vl);   //write len
 			String value = new String(rawvalue);
 			
-//			System.out.println(key + ":" + value);
+//			System.out.println("value=" + value);
 			
 			// Add to list:
 			lTuples.add(new AbstractMap.SimpleEntry<String, String>(key, value));
