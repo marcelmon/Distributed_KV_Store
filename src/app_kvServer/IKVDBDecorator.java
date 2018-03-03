@@ -79,4 +79,9 @@ public class IKVDBDecorator implements IKVDB{
         return kvdb.iterator();
     }
 
+    public Iterator<String> keyIterator() {
+        logger.debug(kvdb.getClass() + ", keyIterator()");
+        return kvdb.keyIterator();
+    }
+
 }
