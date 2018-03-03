@@ -125,5 +125,8 @@ public class NoCache implements ICache {
 		// return kvdb.iterator(); // no cache to iterate over (could provide the lower level iterator)
 	}
 
-
+	@Override 
+	public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash) {
+		return new HashRangeIterator(minHash, maxHash, null, kvdb);
+	}
 }

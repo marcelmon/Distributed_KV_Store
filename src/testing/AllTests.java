@@ -45,6 +45,9 @@ public class AllTests {
 		UnitTests.addUnitTests(clientSuite);
 		addExtendedTests(clientSuite);
 		
+
+		clientSuite.addTestSuite(HashRangeIteratorTest.class);
+		
 		return clientSuite;
 	}
 	

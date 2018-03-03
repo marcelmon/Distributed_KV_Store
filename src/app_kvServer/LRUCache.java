@@ -177,4 +177,9 @@ public class LRUCache implements ICache {
     }
 
 
+    @Override 
+    public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash) {
+        return new HashRangeIterator(minHash, maxHash, this, kvdb);
+    }
+    
 }

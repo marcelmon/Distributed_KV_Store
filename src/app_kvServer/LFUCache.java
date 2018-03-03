@@ -226,4 +226,10 @@ public class LFUCache implements ICache {
 		kvdb.loadData(iterator());
 	}
 
+
+    @Override 
+    public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash) {
+        return new HashRangeIterator(minHash, maxHash, this, kvdb);
+    }
+
 }
