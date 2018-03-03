@@ -138,4 +138,10 @@ public class ICacheDecorator implements ICache {
 		logger.debug(cache.getClass() + ", writeThrough()");
 	}
 
+
+	public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash) {
+		logger.debug(cache.getClass() + ", getHashRangeIterator()");
+		return cache.getHashRangeIterator(minHash, maxHash);
+	}
+
 }
