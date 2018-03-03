@@ -194,6 +194,8 @@ public class KVServer implements IKVServer, ICommListener {
 		}
 	}
 
+	
+
 	@Override
 	public synchronized void OnKVMsgRcd(KVMessage msg, OutputStream client) {
 		switch (msg.getStatus()) {
@@ -222,21 +224,41 @@ public class KVServer implements IKVServer, ICommListener {
 			}
 			break;
 		case PUT:
+
+			// testWriteLock will check if there is a write lock and increment pendingPuts if no writeLock held
+			if(!testWriteLock()){
+				try {
+					// reply that there is a write lock
+					KVMessage resp = new KVMessage(StatusType.SERVER_WRITE_LOCK, msg.getKey(), null);
+					server.SendMessage(resp, client);
+				} catch (KVMessage.FormatException e) {
+					System.out.println("Serious exception");
+				} catch (Exception e) {
+					//TODO log - this is serious
+					System.out.println("Serious exception");
+				}
+				break;
+			}
+
 //			System.out.println("PUT");
 			if (msg.getValue().isEmpty()) {     // deletion
 				try {
 					try {
 						cache.delete(msg.getKey());
+						decrementPendingPuts();
 						KVMessage resp = new KVMessage(StatusType.DELETE_SUCCESS, msg.getKey(), null);
 						server.SendMessage(resp, client);
 					} catch (ICache.KeyDoesntExistException e) {
+						decrementPendingPuts();
 						KVMessage resp = new KVMessage(StatusType.DELETE_ERROR, msg.getKey(), null);
 						server.SendMessage(resp, client);
 					}
 				} catch (KVMessage.FormatException e) {
+					decrementPendingPuts();
 					//TODO log - this is unexpected!
 					System.out.println("Format exception");
 				} catch (Exception e) {
+					decrementPendingPuts();
 					//TODO log - this is serious
 					System.out.println("Serious exception");
 				}
@@ -245,17 +267,18 @@ public class KVServer implements IKVServer, ICommListener {
 					boolean insert = false;
 					boolean failure = false;
 					try { 
-    					    insert = cache.put(msg.getKey(), msg.getValue());
+    					insert = cache.put(msg.getKey(), msg.getValue());
 					} catch (Exception e) {
 						failure = true;
 					}
+					decrementPendingPuts();
 					KVMessage resp = null;
 					if (!failure) {
-					if (insert) {
-						resp = new KVMessage(StatusType.PUT_SUCCESS, msg.getKey(), null);
-					} else {
-						resp = new KVMessage(StatusType.PUT_UPDATE, msg.getKey(), null);
-					}
+						if (insert) {
+							resp = new KVMessage(StatusType.PUT_SUCCESS, msg.getKey(), null);
+						} else {
+							resp = new KVMessage(StatusType.PUT_UPDATE, msg.getKey(), null);
+						}
 					} else {
 						resp = new KVMessage(StatusType.PUT_ERROR, msg.getKey(), null);
 					}
@@ -285,14 +308,87 @@ public class KVServer implements IKVServer, ICommListener {
 	    // TODO
 	}
 
+
+	protected boolean writeLock;
+	protected int pendingPuts;
+
+	/*
+		Used by calls to this class in OnKVMsgRcd.
+		See if there is a write lock currently and if not then increment pendingPuts and return true
+		Return false otherwise
+	*/
+	public synchronized boolean testWriteLock(){
+		if(!writeLock){
+			pendingPuts++;
+			return true;
+		}
+		return false;
+	}
+
+	// can be used by external service to check if the lock is currently active
+	public boolean isWriteLocked(){
+		return writeLock;
+	}
+
+	private Object pendingPutsLock = new Object();
+
+	// used only for unit testing to manually set pending ++
+	public void incrementPendingPuts(){
+		synchronized(pendingPutsLock){
+			pendingPuts++;
+		}
+	}
+
+	public void decrementPendingPuts(){
+		// the lockWrite() will set pending puts back to 0 if there's a timeout
+		// check this didn't happen in the case a thread takes too long
+		// need to have better error/failure handling here
+		synchronized(pendingPutsLock){
+			if(pendingPuts > 0){ 
+				pendingPuts--;
+			}
+		}	
+	}
+
+
+	// currently only used for unit testing, returns integer value
+	public int getPendingPuts(){
+		return pendingPuts;
+	}
+
+	
+
+	public synchronized void getLockWrite(){
+		writeLock = true;
+	}
+
     @Override
     public void lockWrite() {
-        // TODO
+		getLockWrite();
+        int totalTime = 0;
+        int maxTime = 10000; // millis, after this timeout, assume some failure and set pendingPuts = 0
+
+        long startTimeMillis = System.currentTimeMillis();
+        long finalTimeMillis = startTimeMillis + (long) maxTime;
+        // wait for any threads to finish or the timeout
+        while(pendingPuts > 0 && System.currentTimeMillis() <= finalTimeMillis){
+        	try{
+        		Thread.sleep(10);
+        	} catch (InterruptedException e){
+        		System.out.println("Thread sleep Exception");
+        	}
+        }
+        if(pendingPuts > 0){
+        	// LOG THIS
+        	pendingPuts = 0;
+        }
+        
+        return;
     }
 
     @Override
-    public void unlockWrite() {
-        // TODO
+    public synchronized void unlockWrite() {
+		writeLock = false;
     }
 
     @Override
@@ -310,7 +406,6 @@ public class KVServer implements IKVServer, ICommListener {
 	@Override
 	public void OnTuplesReceived(Entry<?, ?>[] tuples) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override

@@ -21,6 +21,9 @@ public class ICacheDecorator implements ICache {
         logger.debug("ICacheDecorator:" + cache.getClass());
     }
 
+    public ICache getCache(){
+    	return cache;
+    }
 	/**
 	 * Returns true if the given key is valid (is non-empty, <= 20 bytes long and without whitespace)
 	 * @param key
