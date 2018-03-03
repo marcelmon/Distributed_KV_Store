@@ -102,4 +102,12 @@ public interface ICache {
 	 */
 	public void writeThrough() throws Exception;
 
+
+	/*
+	 * Get an iterator that will produce key values in the range. 
+	 * Should also get from the database.
+	*/
+	public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash);
+
+
 }
