@@ -4,13 +4,21 @@ import java.util.Map;
 import java.util.Collection;
 
 import ecs.IECSNode;
+import app_kvECS.ISSHLauncher;
 
 public class ECSClient implements IECSClient {
 
     @Override
-    public boolean start() {
+    public boolean start() throws Exception {
         // TODO
-        return false;
+        try {
+            SSHLauncher SSH_server = new SSHLauncher();
+            SSH_server.launchSSH();
+        } catch (Exception e) {
+            throw new Exception(e.getMessage());
+        }
+
+        return true;
     }
 
     @Override
@@ -69,5 +77,14 @@ public class ECSClient implements IECSClient {
 
     public static void main(String[] args) {
         // TODO
+        // SSHLauncher SSH_server = new SSHLauncher();
+        // SSH_server.launchSSH();
+        try {
+            ECSClient ecsclient = new ECSClient();
+            ecsclient.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+			System.exit(1);
+        }
     }
 }
