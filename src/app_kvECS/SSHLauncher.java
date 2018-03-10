@@ -1,8 +1,8 @@
 package app_kvECS;
 
-import SSHScript.sh;
+import java.io.IOException;
 
-public class SSHLaucher implements ISSHLauncher {
+public class SSHLauncher implements ISSHLauncher {
     // lauch a SSH connection
     public boolean launchSSH() {
         Process proc;
@@ -14,7 +14,7 @@ public class SSHLaucher implements ISSHLauncher {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        
+
         return true;
     }
 }
