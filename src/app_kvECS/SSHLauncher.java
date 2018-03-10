@@ -4,13 +4,13 @@ import java.io.IOException;
 
 public class SSHLauncher implements ISSHLauncher {
     // lauch a SSH connection
-    public boolean launchSSH() throws Exception {
+    public boolean launchSSH(String hostname, int port) throws Exception {
         Process proc;
-        String script = "SSHScript.sh";
+        // String script = "SSHScript.sh";
         
         Runtime run = Runtime.getRuntime();
         try {
-            proc = run.exec(script);
+            proc = run.exec("ssh -n " + hostname + " nohup java -jar ../../m2-server.jar " + port + " ERROR &");
         } catch (IOException e) {
             proc = null;
             throw new Exception(e.getMessage());
