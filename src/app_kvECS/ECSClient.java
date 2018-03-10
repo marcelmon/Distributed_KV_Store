@@ -1,5 +1,8 @@
 package app_kvECS;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Collection;
 
@@ -29,9 +32,11 @@ public class ECSClient implements IECSClient {
 				this.handleCommand(cmdLine);
 			} catch (IOException e) {
 				stop = true;
-				printError("CLI does not respond - Application terminated ");
+                printError("CLI does not respond - Application terminated ");
+                return false;
 			}
-		}
+        }
+        return true;
     }
 
     private void handleCommand(String cmdLine) {
@@ -176,7 +181,11 @@ public class ECSClient implements IECSClient {
 		sb.append("\t\t\t\t exits the program");
 		System.out.println(sb.toString());
 	}
-
+    
+	private void printError(String error){
+		System.out.println(PROMPT + "Error! " +  error);
+    }
+    
     @Override
     public boolean stop() {
         // TODO
