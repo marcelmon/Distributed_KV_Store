@@ -3,11 +3,16 @@ package app_kvECS;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.File;
 import java.util.Map;
 import java.util.Collection;
+import java.util.Scanner;
+import java.util.ArrayList;
 
-import ecs.IECSNode;
+import ecs.*;
 import app_kvECS.ISSHLauncher;
+import common.comms.IIntraServerComms.RPCMethod;
+import common.comms.*;
 
 public class ECSClient implements IECSClient {
 
@@ -16,9 +21,16 @@ public class ECSClient implements IECSClient {
     private BufferedReader stdin;
     
     private boolean stop = false;
-    
-	private String serverAddress;
-	private int serverPort;
+	
+	// non-static variable ecs_config cannot be referenced from a static context (error prompt without static, WHYYY???)
+	// private static String[] ecs_config = new String[8]; // assume there is 8 servers in the ecs.config
+
+	// non-static variable ecs_config cannot be referenced from a static context (error prompt without static, WHYYY???)
+	private static ArrayList<String> ecs_config = new ArrayList<String>();
+	private int nxtsertoadd = 0; // next server to be added
+	private int nxtnodetoadd = 0; // next node to be added
+
+	private Collection<IECSNode> addedNode = new ArrayList<IECSNode>();
 
     @Override
     public boolean start() throws Exception {
@@ -42,122 +54,36 @@ public class ECSClient implements IECSClient {
     private void handleCommand(String cmdLine) {
 		String[] tokens = cmdLine.split("\\s+");
 
-		// if(tokens[0].equals("quit")) {	
-		// 	stop = true;
-		// 	disconnect();
-		// 	System.out.println(PROMPT + "Application exit!");
+		if(tokens[0].equals("shutdown")) {	
+			stop = true;
+			shutdown();
+			System.out.println(PROMPT + "Application shutdown!");
 		
-		// } else if (tokens[0].equals("connect")){
-		// 	if(tokens.length == 3) {
-		// 		try{
-		// 			serverAddress = tokens[1];
-		// 			serverPort = Integer.parseInt(tokens[2]);
-		// 			newConnection(serverAddress, serverPort);
-		// 		} catch(NumberFormatException nfe) {
-		// 			printError("No valid address. Port must be a number!");
-		// 			logger.info("Unable to parse argument <port>", nfe);
-		// 		} catch (UnknownHostException e) {
-		// 			printError("Unknown Host!");
-		// 			logger.info("Unknown Host!", e);
-		// 		} catch (IOException e) {
-		// 			printError("Could not establish connection!");
-		// 			logger.warn("Could not establish connection!", e);
-		// 		} catch (Exception e) {
-        //             // e.getMessage();
-		// 			printError(e.getMessage());
-        //         }
-		// 	} else {
-		// 		printError("Invalid number of parameters!");
-		// 	}
-
-		// } else if(tokens[0].equals("disconnect")) {
-		// 	disconnect();
-			
-		// } else if(tokens[0].equals("logLevel")) {
-		// 	if(tokens.length == 2) {
-		// 		String level = setLevel(tokens[1]);
-		// 		if(level.equals(LogSetup.UNKNOWN_LEVEL)) {
-		// 			printError("No valid log level!");
-		// 			printPossibleLogLevels();
-		// 		} else {
-		// 			System.out.println(PROMPT + 
-		// 					"Log level changed to level " + level);
-		// 		}
-		// 	} else {
-		// 		printError("Invalid number of parameters!");
-		// 	}
-			
-		// } else if(tokens[0].equals("help")) {
-		// 	printHelp();
-		// } else if(tokens[0].equals("put")) {
-		// 	if(tokens.length >= 2) {
-		// 		if(client != null){
-		// 			try {
-		// 				String key = tokens[1];
-		// 				StringBuilder msg = new StringBuilder();
-		// 				for(int i = 2; i < tokens.length; i++) {
-		// 					msg.append(tokens[i]);
-		// 					if (i != tokens.length -1 ) {
-		// 						msg.append(" ");
-		// 					}
-		// 				}
-		// 				KVMessage kvmsg = client.put(key, msg.toString());
-		// 				StatusType statusType = kvmsg.getStatus();
-						
-		// 				if(statusType == StatusType.PUT_SUCCESS) {
-		// 					System.out.println(PROMPT + "Put " + key + " succeeded.");
-		// 					System.out.println(PROMPT + "Value: " + msg.toString());
-		// 				} else if(statusType == StatusType.PUT_ERROR) {
-		// 					printError("Put failed.");
-		// 				} else if(statusType == StatusType.PUT_UPDATE) {
-		// 					System.out.println(PROMPT + "Update " + key + " succeeded.");
-		// 					System.out.println(PROMPT + "Value: " + msg.toString());
-		// 				} else if(statusType == StatusType.DELETE_SUCCESS) {
-		// 					System.out.println(PROMPT + "Delete " + key + " succeeded.");
-		// 				} else if(statusType == StatusType.DELETE_ERROR) {
-		// 					printError("Delete failed.");
-		// 				} else {
-		// 					printError("Nothing happened.");
-		// 				}
-		// 			} catch (Exception e) {
-		// 				printError(e.getMessage());
-		// 			}
-		// 		} else {
-		// 			printError("Not connected!");
-		// 		}
-		// 	} else {
-		// 		printError("Invalid number of parameters!");
-		// 	}
-		// } else if(tokens[0].equals("get")) {
-		// 	if(tokens.length == 2) {
-		// 		if(client != null){
-		// 			try {
-		// 				String key = tokens[1];
-		// 				KVMessage kvmsg = client.get(key);
-		// 				StatusType statusType = kvmsg.getStatus();
-
-		// 				if(statusType == StatusType.GET_SUCCESS) {
-		// 					System.out.println(PROMPT + "Get " + key + " succeeded.");
-		// 					System.out.println(PROMPT + "Value: " + kvmsg.getValue());
-		// 				} else if(statusType == StatusType.GET_ERROR) {
-		// 					printError("Get failed.");
-		// 				} else {
-		// 					printError("Nothing happened.");
-		// 				}
-		// 			} catch (Exception e) {
-		// 					printError("Get failed.");
-		// 					// printError(e.getMessage());
-		// 			}
-		// 		} else {
-		// 			printError("Not connected!");
-		// 		}
-		// 	} else {
-		// 		printError("Invalid number of parameters!");
-		// 	}
-		// }else {
-		// 	printError("Unknown command");
-		// 	printHelp();
-		// }
+		} else if (tokens[0].equals("stop")) {
+			stop();
+			System.out.println(PROMPT + "Application stop!");
+		} else if (tokens[0].equals("addNode")) {
+			if(tokens.length == 3) {
+				IECSNode temp;
+				temp = addNode(tokens[1], Integer.parseInt(tokens[2]));
+				addedNode.add(temp);
+				System.out.println(PROMPT + "Node Added!");
+			} else {
+				printError("Invalid number of parameters!");
+			}
+		} else if (tokens[0].equals("addNodes")) {
+			if(tokens.length == 4) {
+				Collection<IECSNode> temp = new ArrayList<IECSNode>();
+				temp = addNodes(Integer.parseInt(tokens[1]),tokens[2], Integer.parseInt(tokens[3]));
+				addedNode.addAll(temp);
+				System.out.println(PROMPT + "Nodes Added!");
+			} else {
+				printError("Invalid number of parameters!");
+			}
+		} else {
+			printError("Unknown command");
+			printHelp();
+		}
     }
     
 	private void printHelp() {
@@ -200,20 +126,57 @@ public class ECSClient implements IECSClient {
 
     @Override
     public IECSNode addNode(String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
+		// TODO
+		Collection<IECSNode> temp =addNodes(1, cacheStrategy, cacheSize);
+		return temp.iterator().next();
     }
 
     @Override
     public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
+		// TODO
+		
+		// instead of randomly, just open first "count"-numbers of servers.
+		for (int i = 0; i < count; i++) {
+			if (nxtsertoadd >= ecs_config.size()) {
+				System.out.println("Error: Ran out of services.");
+				return null;
+			}
+			String[] tokens = ecs_config.get(nxtsertoadd).split("\\s+");
+			if (tokens.length > 3) {
+				System.out.println("Error: ecs.config error <name> <hostname> <port>");
+				return null;
+			}
+
+			try {
+				SSHLauncher SSH_server = new SSHLauncher();
+				SSH_server.launchSSH(tokens[1],Integer.parseInt(tokens[2]));
+
+				IntraServerComms comm = new IntraServerComms(tokens[0],tokens[1],Integer.parseInt(tokens[2]));
+				comm.call(tokens[1] + ":" + tokens[2],RPCMethod.Start,"");
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+			}
+
+			nxtsertoadd++;
+		}
+
+		return setupNodes(count, cacheStrategy, cacheSize);
     }
 
     @Override
     public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
+		// TODO
+		Collection<IECSNode> result = new ArrayList<IECSNode>();
+		
+		for (int i = 0; i < count; i++) {
+			String[] tokens = ecs_config.get(nxtnodetoadd).split("\\s+");
+
+			IECSNode node = new ECSNode(tokens[0],tokens[1],Integer.parseInt(tokens[2]));
+			result.add(node);
+
+			nxtnodetoadd++;
+		}
+        return result;
     }
 
     @Override
@@ -224,7 +187,25 @@ public class ECSClient implements IECSClient {
 
     @Override
     public boolean removeNodes(Collection<String> nodeNames) {
-        // TODO
+		// TODO
+		while (!nodeNames.isEmpty()) {
+			String temp = nodeNames.iterator().next();
+			for (IECSNode i: addedNode) {
+				if (temp.equals(i.getNodeName())) {
+					try {
+						IntraServerComms comm = new IntraServerComms(i.getNodeName(),i.getNodeHost(),i.getNodePort());
+						comm.call(i.getNodeHost() + ":" + Integer.toString(i.getNodePort()),RPCMethod.Stop,"");
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
+					}
+
+					addedNode.remove(i);
+					break;
+				}
+			}
+			nodeNames.remove(temp);
+		}
+
         return false;
     }
 
@@ -244,7 +225,16 @@ public class ECSClient implements IECSClient {
         // TODO
         // SSHLauncher SSH_server = new SSHLauncher();
         // SSH_server.launchSSH();
+        if (args.length != 2) {
+			System.exit(1);
+        }
+
         try {
+			Scanner s = new Scanner(new File(args[1]));
+			while (s.hasNextLine()) {
+				ecs_config.add(s.nextLine());
+			}
+
             // new LogSetup("logs/client/client.log", Level.OFF);
             ECSClient ecsclient = new ECSClient();
             ecsclient.start();
