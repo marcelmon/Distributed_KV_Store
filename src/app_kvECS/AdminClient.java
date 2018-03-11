@@ -65,11 +65,11 @@ public class AdminClient  {
 		sb.append(PROMPT);
 		sb.append("::::::::::::::::::::::::::::::::");
 		sb.append("::::::::::::::::::::::::::::::::\n");
-		sb.append(PROMPT).append("addNode <cache strategy> <cache size>\n");
-		sb.append(PROMPT).append("addNodes <count> <cache strategy> <cache size>\n");
-		sb.append(PROMPT).append("start\n");
-		sb.append(PROMPT).append("stop\n");
-		sb.append(PROMPT).append("shutdown\n");
+		sb.append(PROMPT).append("init\n");
+		sb.append(PROMPT).append("startone <host>:<port>\n");
+		sb.append(PROMPT).append("startall\n");
+		sb.append(PROMPT).append("stopone <host>:<port>\n");
+		sb.append(PROMPT).append("stopall\n");
 		sb.append(PROMPT).append("quit\n");
 		System.out.println(sb.toString());
 	}
