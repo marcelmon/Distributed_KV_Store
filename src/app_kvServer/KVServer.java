@@ -1221,108 +1221,111 @@ public class KVServer implements IKVServer, ICommListener {
 		return null;
 	}
 
-	public synchronized void OnTuplesReceived(Entry<?, ?>[] tuples, OutputStream client) {
+	/*
+		REMOVED FOR NOW WILL USE LATER MAYBE TO ALLOW COMMUNICATION WITH BACK TO SENDER
+	*/
+	// public synchronized void OnTuplesReceived(Entry<?, ?>[] tuples, OutputStream client) {
 
-		System.out.println("OnTuplesReceived() " + name + ":" + desired_port + " And tuple size : " + tuples.length);
+	// 	System.out.println("OnTuplesReceived() " + name + ":" + desired_port + " And tuple size : " + tuples.length);
 			
-		if(useECSOnly){
+	// 	if(useECSOnly){
 
-			for (int i = 0; i < tuples.length; ++i) {
-				try{
-					cache.put((String) tuples[i].getKey(), (String) tuples[i].getValue());
-				} catch (Exception e){
+	// 		for (int i = 0; i < tuples.length; ++i) {
+	// 			try{
+	// 				cache.put((String) tuples[i].getKey(), (String) tuples[i].getValue());
+	// 			} catch (Exception e){
 
-				}
-			}
+	// 			}
+	// 		}
 
-			return;
+	// 		return;
 
-		}
+	// 	}
 
-		if(deleteTimeoutThread != null && deleteTimeoutThread.isAlive()){
-			deleteTimeoutRunnable.addMoreTime(10000);
-		}
+	// 	if(deleteTimeoutThread != null && deleteTimeoutThread.isAlive()){
+	// 		deleteTimeoutRunnable.addMoreTime(10000);
+	// 	}
 
-		Byte[] minHashValue = null;
-		Byte[] maxHashValue = null;
+	// 	Byte[] minHashValue = null;
+	// 	Byte[] maxHashValue = null;
 		
-		HashComparator comp = new HashComparator();
-		// if we get a transfer received ack then we keep the hashed values
-		// if we get a transfer received nack at any point then we delete the data in hash range of client
+	// 	HashComparator comp = new HashComparator();
+	// 	// if we get a transfer received ack then we keep the hashed values
+	// 	// if we get a transfer received nack at any point then we delete the data in hash range of client
 		
-		for (int i = 0; i < tuples.length; ++i) {
-			try{
-				cache.put((String) tuples[i].getKey(), (String) tuples[i].getValue());
-			} catch (Exception e){
+	// 	for (int i = 0; i < tuples.length; ++i) {
+	// 		try{
+	// 			cache.put((String) tuples[i].getKey(), (String) tuples[i].getValue());
+	// 		} catch (Exception e){
 
-			}
+	// 		}
 			
-			byte[] hashedKey = getHashedValue( ((String) tuples[i].getKey()).getBytes());
-			Byte[] byteHashedKey = new Byte[hashedKey.length];
-			for (int j = 0; j < hashedKey.length ; ++j ) byteHashedKey[j] = hashedKey[j];
-			if(minHashValue == null){
-				minHashValue = byteHashedKey;
-				maxHashValue = byteHashedKey;
-			}
-			else{
-				ConsistentHasher.ServerRecord hashedRecord = new ConsistentHasher.ServerRecord(byteHashedKey);
-				ConsistentHasher.ServerRecord minHashedRecord = new ConsistentHasher.ServerRecord(minHashValue);
-				ConsistentHasher.ServerRecord maxHashedRecord = new ConsistentHasher.ServerRecord(maxHashValue);
+	// 		byte[] hashedKey = getHashedValue( ((String) tuples[i].getKey()).getBytes());
+	// 		Byte[] byteHashedKey = new Byte[hashedKey.length];
+	// 		for (int j = 0; j < hashedKey.length ; ++j ) byteHashedKey[j] = hashedKey[j];
+	// 		if(minHashValue == null){
+	// 			minHashValue = byteHashedKey;
+	// 			maxHashValue = byteHashedKey;
+	// 		}
+	// 		else{
+	// 			ConsistentHasher.ServerRecord hashedRecord = new ConsistentHasher.ServerRecord(byteHashedKey);
+	// 			ConsistentHasher.ServerRecord minHashedRecord = new ConsistentHasher.ServerRecord(minHashValue);
+	// 			ConsistentHasher.ServerRecord maxHashedRecord = new ConsistentHasher.ServerRecord(maxHashValue);
 				
 
-				if(comp.compare(hashedRecord, minHashedRecord) < 0){
-					minHashValue = byteHashedKey;
-				}
-				if(comp.compare(hashedRecord, maxHashedRecord) > 0){
-					maxHashValue = byteHashedKey;
-				}
-			}
-		}
+	// 			if(comp.compare(hashedRecord, minHashedRecord) < 0){
+	// 				minHashValue = byteHashedKey;
+	// 			}
+	// 			if(comp.compare(hashedRecord, maxHashedRecord) > 0){
+	// 				maxHashValue = byteHashedKey;
+	// 			}
+	// 		}
+	// 	}
 
 
 
-		if(deleteTimeoutThread == null){
-			long totalWaitMillis = 10000;
-			deleteTimeoutRunnable = new DeleteTimeout(totalWaitMillis, this.lockWrite, maxHashValue, minHashValue, this.cache);
-			deleteTimeoutThread = new Thread(deleteTimeoutRunnable);
-			deleteTimeoutThread.start();
-			// send a reply for each set of received tuples, the sender will count them or just run sequentially
+	// 	if(deleteTimeoutThread == null){
+	// 		long totalWaitMillis = 10000;
+	// 		deleteTimeoutRunnable = new DeleteTimeout(totalWaitMillis, this.lockWrite, maxHashValue, minHashValue, this.cache);
+	// 		deleteTimeoutThread = new Thread(deleteTimeoutRunnable);
+	// 		deleteTimeoutThread.start();
+	// 		// send a reply for each set of received tuples, the sender will count them or just run sequentially
 
-			KVMessage transferComplete = null;
-			try{
-				transferComplete = new KVMessage(StatusType.TRANSFER_COMPLETE, "", null);
-			} catch (Message.FormatException e){
+	// 		KVMessage transferComplete = null;
+	// 		try{
+	// 			transferComplete = new KVMessage(StatusType.TRANSFER_COMPLETE, "", null);
+	// 		} catch (Message.FormatException e){
 
-			}
-			try{
-				client.write(transferComplete.getBytes());
-			}catch(IOException e){
+	// 		}
+	// 		try{
+	// 			client.write(transferComplete.getBytes());
+	// 		}catch(IOException e){
 				
-			}
+	// 		}
 			
-		}
-		else if(deleteTimeoutThread.isAlive()){
-			deleteTimeoutRunnable.addMoreTime(10000);
-			deleteTimeoutRunnable.updateMinHashVal(minHashValue);
-			deleteTimeoutRunnable.updateMaxHashVal(maxHashValue);
-			// send a reply for each set of received tuples, the sender will count them or just run sequentially
-			KVMessage transferComplete = null;
-			try{
-				transferComplete = new KVMessage(StatusType.TRANSFER_COMPLETE, "", null);
-			} catch (Message.FormatException e){
+	// 	}
+	// 	else if(deleteTimeoutThread.isAlive()){
+	// 		deleteTimeoutRunnable.addMoreTime(10000);
+	// 		deleteTimeoutRunnable.updateMinHashVal(minHashValue);
+	// 		deleteTimeoutRunnable.updateMaxHashVal(maxHashValue);
+	// 		// send a reply for each set of received tuples, the sender will count them or just run sequentially
+	// 		KVMessage transferComplete = null;
+	// 		try{
+	// 			transferComplete = new KVMessage(StatusType.TRANSFER_COMPLETE, "", null);
+	// 		} catch (Message.FormatException e){
 				
-			}
-			try{
-				client.write(transferComplete.getBytes());
-			}catch(IOException e){
+	// 		}
+	// 		try{
+	// 			client.write(transferComplete.getBytes());
+	// 		}catch(IOException e){
 
-			}
-		}
-		else{
-			// hash thing already deleted?? hmmmm
-		}
+	// 		}
+	// 	}
+	// 	else{
+	// 		// hash thing already deleted?? hmmmm
+	// 	}
 
-	}
+	// }
 
 
 
