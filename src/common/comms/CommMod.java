@@ -59,11 +59,15 @@ public class CommMod implements ICommMod {
     						Message msg = Message.getInstance(StatusType.values()[tag]);
     						msg.fromInputStream(bufInput);
     						if (listener != null) {
+
     							// TODO differentiate between Message types here
     							if (msg instanceof KVMessage)
     								listener.OnKVMsgRcd((KVMessage)msg, client.getOutputStream());
     							else if (msg instanceof BulkPackageMessage)
     								listener.OnTuplesReceived(((BulkPackageMessage) msg).getTuples());
+
+    								// the output stream is to send back that the data is finished loading
+    								// listener.OnTuplesReceived(((BulkPackageMessage) msg).getTuples(), client.getOutputStream());
     							else if (msg instanceof BulkRequestMessage) {
     								System.out.println("receiving request...");
     								BulkRequestMessage brm = (BulkRequestMessage) msg;
@@ -231,9 +235,10 @@ public class CommMod implements ICommMod {
 		if (!(tuples[0].getValue() instanceof String)) {
 			throw new Exception("Provided tuples don't have String keys!");
 		}
-		
+			
 		OutputStream output = clientSocket.getOutputStream();
 		BulkPackageMessage msg = new BulkPackageMessage(tuples);
+
 		output.write(msg.getBytes());
 		// no response
 	}
@@ -256,5 +261,6 @@ public class CommMod implements ICommMod {
 	public void SendTuples(Map.Entry<?, ?>[] tuples, OutputStream client) throws Exception {
 		// TODO Auto-generated method stub
 	}
+
 
 }

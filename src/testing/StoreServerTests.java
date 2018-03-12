@@ -12,17 +12,22 @@ public class StoreServerTests extends TestCase {
 	@Override
 	public void setUp() throws Exception {
 		// Make sure to clear the physical storage:
-		KVServer serv = new KVServer("", 3000, "", 0, 10, "LFU"); //TODO fix when zookeeper implemented
+		KVServer serv = new KVServer("localhost", 3000, "localhost", 2181, 10, "LFU"); //TODO fix when zookeeper implemented
 		serv.run();
 		serv.clearStorage();
 		serv.close();
+		serv = null;
 	}
 	
 	@Test
 	public void testInsert() {
 		try {
-			new KVServer("", 12343, "", 0, 10, "").run(); //TODO fix when zookeeper implemented
-			
+			System.out.println("HERE 0.1\n\n\n\n\n");
+			KVServer serv = new KVServer("localhost", 12343, "localhost", 2181, 10, "FIFO"); //TODO fix when zookeeper implemented
+			serv.run();
+			serv.clearStorage();
+			serv.start();
+			Thread.sleep(300);
 			KVStore store = new KVStore("localhost", 12343);
 			store.put("a", "b");
 			KVMessage resp = store.get("a");
@@ -30,7 +35,11 @@ public class StoreServerTests extends TestCase {
 			// System.out.println("Resp: " + resp.getKey());
 			// System.out.println("Resp: " + resp.getValue());
 			assertTrue(resp.getValue().equals("b"));
+
+			serv.close();
+			serv = null;
 		} catch (Exception e) {
+			System.out.println("testInsert() exception " + e.getMessage() + e.getMessage());
 			fail("Unknown error: " + e.getMessage());
 		}
 	}
@@ -38,8 +47,13 @@ public class StoreServerTests extends TestCase {
 	@Test
 	public void testMultiInsert() {
 		final int port = 12342;
+		KVServer serv = null;
 		try {
-			new KVServer("", port, "", 0, 10, "LFU").run(); //TODO fix when zookeeper implemented
+			serv = new KVServer("localhost", port, "localhost", 2181, 10, "LFU"); //TODO fix when zookeeper implemented
+			
+			serv.run(); //TODO fix when zookeeper implemented
+			serv.start();
+			Thread.sleep(300);
 		} catch (Exception e) {
 			fail("Failed to run server: " + e.getMessage());
 		}
@@ -76,6 +90,9 @@ public class StoreServerTests extends TestCase {
 		for (int i = 0; i < N; i++) {
 			stores[i].disconnect();
 		}
+
+		serv.close();
+		serv = null;
 	}
 	
 	@Test
@@ -83,8 +100,10 @@ public class StoreServerTests extends TestCase {
 		final int port = 2600;
 		
 		// Generate a server:
-		KVServer server0 = new KVServer("", port, "", 0, 10, "LFU"); //TODO fix when zookeeper implemented
+		KVServer server0 = new KVServer("localhost", port, "localhost", 2181, 10, "LFU");
 		server0.run(); // in new thread
+		server0.start();
+		Thread.sleep(300);
 		assertFalse(server0.inCache("A"));
 		assertFalse(server0.inStorage("A"));
 		
@@ -97,6 +116,9 @@ public class StoreServerTests extends TestCase {
 		KVMessage exp = new KVMessage(StatusType.GET_ERROR, "A", null);
 		assertFalse(resp == null);
 		assertTrue(resp.equals(exp));
+
+		server0.close();
+		server0 = null;
 	}
 	
 	@Test
@@ -104,45 +126,11 @@ public class StoreServerTests extends TestCase {
 		final int port = 2500;
 		
 		// Generate a server:
-		KVServer server0 = new KVServer("", port, "", 0, 10, "LFU"); //TODO fix when zookeeper implemented
+		KVServer server0 = new KVServer("localhost", port, "localhost", 2181, 10, "LFU"); //TODO fix when zookeeper implemented
 		server0.run(); // in new thread
-		
-		// Store writes to server:
-		KVStore store0 = new KVStore("localhost", port);
-		store0.put("A", "B");
-		store0.disconnect();
-		
-		// Check that the server has the value in cache but not in storage:
-		assertTrue(server0.inCache("A"));
-		assertFalse(server0.inStorage("A"));
-		
-		// Kill the server:
-		server0.kill();
-		server0 = null;
-		
-		// Generate a new server (which should have the same db)
-		// Notably, the original server may still be on port so we increment
-		KVServer server1 = new KVServer("", port+1, "", 0, 10, "LFU"); //TODO fix when zookeeper implemented
-		server1.run();
-		
-		// Store reads from server:
-		KVStore store1 = new KVStore("localhost", port+1);
-		KVMessage resp = store1.get("A");
-		store1.disconnect();
-		
-		// We should have lost the value:
-		assertFalse(resp == null);
-		assertTrue(resp.getStatus().equals(StatusType.GET_ERROR));
-	}
-	
-	@Test
-	public void testClose() throws Exception {
-		final int port = 2100;
-		
-		// Generate a server:
-		KVServer server0 = new KVServer("", port, "", 0, 10, "LFU"); //TODO fix when zookeeper implemented
-		server0.run(); // in new thread
-		
+		server0.start();
+		Thread.sleep(300);
+
 		// Store writes to server:
 		KVStore store0 = new KVStore("localhost", port);
 		store0.put("A", "B");
@@ -154,15 +142,68 @@ public class StoreServerTests extends TestCase {
 		
 		// Kill the server:
 		server0.close();
+		server0.kill();
 		server0 = null;
 		
 		// Generate a new server (which should have the same db)
 		// Notably, the original server may still be on port so we increment
-		KVServer server1 = new KVServer("", port+1, "", 0, 10, "LFU"); //TODO fix when zookeeper implemented
+		KVServer server1 = new KVServer("localhost", port+1, "localhost", 2181, 10, "LFU"); //TODO fix when zookeeper implemented
 		server1.run();
 		
+		server1.start();
+		Thread.sleep(300);
 		// Store reads from server:
 		KVStore store1 = new KVStore("localhost", port+1);
+		KVMessage resp = store1.get("A");
+		store1.disconnect();
+		
+		// We should have lost the value:
+		assertFalse(resp == null);
+		assertTrue(resp.getStatus().equals(StatusType.GET_ERROR));
+
+
+		server1.close();
+		server1 = null;
+	}
+	
+	@Test
+	public void testClose() throws Exception {
+		final int port = 2100;
+		
+		// Generate a server:
+		KVServer server0 = new KVServer("localhost", port, "localhost", 2181, 10, "LFU"); //TODO fix when zookeeper implemented
+		server0.run(); // in new thread
+		server0.start();
+		Thread.sleep(300);
+		// Store writes to server:
+		KVStore store0 = new KVStore("localhost", port);
+		store0.put("A", "B");
+		
+		Thread.sleep(100);
+		
+		KVMessage get11 = store0.get("A");
+		assertTrue(get11.getStatus().equals(StatusType.GET_SUCCESS));
+		assertTrue(get11.getValue().equals("B"));
+
+		store0.disconnect();
+		// Check that the server has the value in cache but not in storage:
+		assertTrue(server0.inCache("A"));
+		assertFalse(server0.inStorage("A"));
+		
+		// Kill the server:
+		server0.close();
+		server0 = null;
+		Thread.sleep(100);
+		
+		// Generate a new server (which should have the same db)
+		// Notably, the original server may still be on port so we increment
+		// EDIT: using same port because directory is data_dir_localhost:port
+		KVServer server1 = new KVServer("localhost", port, "localhost", 2181, 10, "LFU"); //TODO fix when zookeeper implemented
+		server1.run();
+		server1.start();
+		Thread.sleep(300);
+		// Store reads from server:
+		KVStore store1 = new KVStore("localhost", port);
 		KVMessage resp = store1.get("A");
 		store1.disconnect();
 		
@@ -170,5 +211,8 @@ public class StoreServerTests extends TestCase {
 		assertFalse(resp == null);
 		KVMessage exp = new KVMessage(StatusType.GET_SUCCESS, "A", "B");
 		assertTrue(resp.equals(exp));
+
+		server1.close();
+		server1 = null;
 	}
 }

@@ -59,7 +59,13 @@ public class ZookeeperTest extends TestCase implements Watcher {
 		assertTrue(zoo.exists(key, true) == null);
 		eventQueue.clear();
 		assertTrue(zoo.create(key, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL) != null);
-		Thread.sleep(500); // some time for zookeeper to update
+		Thread.sleep(500); // some time for zookeeper to 
+		if(eventQueue.size() != 1){
+			System.out.println("EVENT QUEUE SIZE 1 : " + eventQueue.size() + "\n\n\n\n====\n\n\n\n");
+			for (WatchedEvent e : eventQueue) {
+				System.out.println("WATCHED EVENTS : " + e);
+			}
+		}
 		assertTrue(eventQueue.size() == 1);
 		assertTrue(eventQueue.get(0).getType().equals(Watcher.Event.EventType.NodeCreated));
 		assertTrue(eventQueue.get(0).getPath().equals(key));

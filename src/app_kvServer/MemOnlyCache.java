@@ -3,13 +3,18 @@ package app_kvServer;
 import java.util.*;
 import java.util.Map.Entry;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 public class MemOnlyCache implements ICache {
 	protected HashMap<String, String> map;
 	protected final int capacity;
-	
+	protected static Logger logger = Logger.getRootLogger();
+
 	public MemOnlyCache(int capacity) {
 		map = new HashMap<>(capacity);
 		this.capacity = capacity;
+		logger.debug("MemOnlyCache() - capacity : " + capacity);
 	}
 	
 	@Override

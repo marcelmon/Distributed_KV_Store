@@ -13,13 +13,14 @@ public class ConnectionTest extends TestCase {
 
 	@Override
 	public void setUp() throws Exception {
-		server = new KVServer("", 50000, "localhost", 2181, 10, "LFU"); // TODO put proper args when zookeeper implemented
+		server = new KVServer("localhost", 50000, "localhost", 2181, 10, "LFU"); // TODO put proper args when zookeeper implemented
 		server.run();
 	}
 	
 	@Override
 	public void tearDown() {
 		server.close();
+		server = null;
 	}
 	
 	public void testConnectionSuccess() {

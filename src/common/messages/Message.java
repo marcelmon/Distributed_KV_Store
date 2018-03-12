@@ -40,7 +40,11 @@ public abstract class Message {
 		SERVER_NOT_RESPONSIBLE,  /* Request not successful, server not responsible for key */
 		
 		BULK_REQUEST,   /* A request for multiple tuples (see TLVBulkMessage) */
-		BULK_PACKAGE    /* A collection of tuples being sent (see TLVBulkMessage) */
+		BULK_PACKAGE,   /* A collection of tuples being sent (see TLVBulkMessage) */
+
+		TRANSFER_COMPLETE, /* Sent when a process has finished processing a  BULK_PACKAGE*/
+		TRANSFER_COMPLETE_ACK, /* Sent back after receiving TRANSFER_COMPLETE and OK (no timeout) */
+		TRANSFER_COMPLETE_NACK /* Sent back after receiving TRANSFER_COMPLETE but NOT OK (was timeout) */
 	}
 	
 	public static Message getInstance(StatusType type) {
@@ -57,6 +61,9 @@ public abstract class Message {
 			case SERVER_STOPPED:
 			case SERVER_WRITE_LOCK:
 			case SERVER_NOT_RESPONSIBLE:
+			case TRANSFER_COMPLETE:
+			case TRANSFER_COMPLETE_ACK:
+			case TRANSFER_COMPLETE_NACK:
 				return new KVMessage();
 			case BULK_REQUEST:
 				return new BulkRequestMessage();

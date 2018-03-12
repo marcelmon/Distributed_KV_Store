@@ -7,12 +7,14 @@ import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 public class NoCache implements ICache {
 	
     protected FilePerKeyKVDB kvdb;
-
-
+    protected final String data_dir;
+    protected static Logger logger = Logger.getRootLogger();
     
 	public boolean validateKey(String key) {
 		boolean result = !key.isEmpty() && !key.contains(" ") && !(key.length() > 20);
@@ -23,9 +25,20 @@ public class NoCache implements ICache {
 
 	public NoCache() {
 
+		logger.debug("NoCache() - data_dir : data_dir");
 		kvdb = new FilePerKeyKVDB("data_dir");
-
+		this.data_dir = "data_dir";
 	}
+
+	public NoCache(String data_dir) {
+        
+		this.data_dir = "data_dir_" + data_dir;
+
+        logger.debug("NoCache() - data_dir : " + this.data_dir);
+
+        kvdb = new FilePerKeyKVDB(this.data_dir);
+
+    }
 
 	@Override
 	public int getCacheSize() {

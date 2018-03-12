@@ -81,7 +81,7 @@ public class ConsistentHasher implements IConsistentHasher {
 		return servers.toArray(new ServerRecord[0]);
 	}
 	
-	protected ServerRecord FindServer(ServerRecord query, boolean above) {
+	public ServerRecord FindServer(ServerRecord query, boolean above) {
 		HashComparator comp = new HashComparator();
 		
 		// See if it is below the bottom or above the top:

@@ -6,4 +6,4 @@ bin/*
 archive/
 *.log
 /bin/
-data_dir
+data_dir*

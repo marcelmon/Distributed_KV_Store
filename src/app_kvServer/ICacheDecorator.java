@@ -95,7 +95,7 @@ public class ICacheDecorator implements ICache {
 	/**
 	 * Delete the key-value pair.
 	 */
-	public void delete(String key) throws KeyDoesntExistException, Exception {
+	public void delete(String key) throws KeyDoesntExistException {
 		cache.delete(key);
 		logger.debug(cache.getClass() + ", delete()  key : " + key);
 	}
@@ -144,6 +144,7 @@ public class ICacheDecorator implements ICache {
 
 	public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash) {
 		logger.debug(cache.getClass() + ", getHashRangeIterator()");
+		System.out.println("getHashRangeIterator  "+ cache.getClass() + ", getHashRangeIterator()");
 		return cache.getHashRangeIterator(minHash, maxHash);
 	}
 

@@ -22,11 +22,26 @@ public class LFUCache implements ICache {
 
     protected static Logger logger = Logger.getRootLogger();
     
+    protected final String data_dir;
+
+    
     public LFUCache(int capacity) {
     	this.capacity = capacity;
         map = new LinkedHashMap<>(capacity);
         usageCounter = new HashMap<>(capacity);
         kvdb = new FilePerKeyKVDB("data_dir");
+
+        logger.debug("LFUCache() - data_dir :  data_dir, capacity : " + capacity );
+        this.data_dir = "data_dir";
+    }
+
+    public LFUCache(int capacity, String data_dir) {
+        this.capacity = capacity;
+        this.data_dir = "data_dir_" + data_dir;
+        map = new LinkedHashMap<>(capacity);
+        usageCounter = new HashMap<>(capacity);
+        kvdb = new FilePerKeyKVDB(this.data_dir);
+        logger.debug("LFUCache() - data_dir : " + this.data_dir + ", capacity : " + capacity );
     }
     
     @Override

@@ -9,7 +9,7 @@ public interface IIntraServerCommsListener {
     /**
      * ECS-related start, starts serving requests
      */
-    public void start();
+    public void start() throws Exception;
 
     /**
      * ECS-related stop, stops serving requests

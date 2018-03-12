@@ -42,11 +42,27 @@ public class LRUCache implements ICache {
     protected LRUCacheLinkedHashMap map;
     protected FilePerKeyKVDB kvdb;
 
+    protected final String data_dir;
+
     public LRUCache(int capacity) {
         this.capacity = capacity;
 
         map = new LRUCacheLinkedHashMap(capacity);
         kvdb = new FilePerKeyKVDB("data_dir");
+
+        data_dir = "data_dir";
+
+        logger.debug("LRUCache() - data_dir : data_dir, capacity : " + capacity );
+    }
+
+    public LRUCache(int capacity, String data_dir) {
+        this.capacity = capacity;
+        this.data_dir = "data_dir_" + data_dir;
+        map = new LRUCacheLinkedHashMap(capacity);
+        kvdb = new FilePerKeyKVDB(this.data_dir);
+
+
+        logger.debug("LRUCache() - data_dir : " + this.data_dir + ", capacity : " + capacity );
     }
     
     @Override
@@ -126,10 +142,7 @@ public class LRUCache implements ICache {
     }
 
     @Override
-    public synchronized void delete(String key) throws KeyDoesntExistException, Exception {
-	    if (!validateKey(key)) {
-            throw new Exception("Attempted to delete an empty key");
-	    }
+    public synchronized void delete(String key) throws KeyDoesntExistException {
         if(!kvdb.inStorage(key)){
             map.remove(key);
             throw new KeyDoesntExistException("Attempted to delete key \"" + key + "\" which doesn't exist");

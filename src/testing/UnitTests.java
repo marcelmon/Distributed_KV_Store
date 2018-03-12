@@ -21,6 +21,7 @@ public class UnitTests {
 	}
 	
 	public static void addUnitTests(TestSuite clientSuite) {
+		System.out.println("addUnitTests");
 		clientSuite.addTestSuite(BulkMessageTest.class);
 		clientSuite.addTestSuite(CacheTests.class);
 		clientSuite.addTestSuite(CommModTest.class);
@@ -37,6 +38,11 @@ public class UnitTests {
 		clientSuite.addTestSuite(ZookeeperTest.class);
 		//clientSuite.addTestSuite(ZookeeperExtTest.class);
 		
+		clientSuite.addTestSuite(HashRangeIteratorTest.class);
+		clientSuite.addTestSuite(LockWriteKVServerTest.class);
+
+		clientSuite.addTestSuite(KVServerBulkDataTransferAndConsistentHasherUpdateTest.class);
+				
 	}
 	
 	public static Test suite() {

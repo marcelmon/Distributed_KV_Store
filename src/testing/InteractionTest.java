@@ -17,16 +17,19 @@ public class InteractionTest extends TestCase {
 	@Override
 	public void setUp() throws Exception {
 		int port = 50000;
-		server = new KVServer("", port, "localhost", 2181, 10, "LFU"); // TODO put proper args when zookeeper implemented
+		server = new KVServer("localhost", port, "localhost", 2181, 10, "LFU"); // TODO put proper args when zookeeper implemented
 		kvClient = new KVStore("localhost", port);
 		server.run();
 		server.clearStorage();
+		server.start();
+		Thread.sleep(200);
 	}
 
 	@Override
 	public void tearDown() {
 		kvClient.disconnect();
 		server.close();
+		server = null;
 	}
 	
 	
@@ -42,7 +45,9 @@ public class InteractionTest extends TestCase {
 		} catch (Exception e) {
 			ex = e;
 		}
-
+		if(response.getStatus() != StatusType.PUT_SUCCESS){
+			System.out.println("PUT STATUS IS : " + response.getStatus() + "\n\n====\n=====\n====\n\n\n");
+		}
 		assertTrue(ex == null);
 		assertTrue(response.getStatus() == StatusType.PUT_SUCCESS);
 	}
@@ -84,7 +89,11 @@ public class InteractionTest extends TestCase {
 			ex = e;
 		}
 
+		if(response.getStatus() != StatusType.DELETE_SUCCESS){
+			System.out.println("DELETE RESP INTERACTIONTEST: "+ response.getStatus() + "\n\n\n========\n\n\n");
+		}
 		assertTrue(ex == null && response.getStatus() == StatusType.DELETE_SUCCESS);
+
 	}
 	
 	@Test

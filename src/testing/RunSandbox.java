@@ -15,7 +15,7 @@ public class RunSandbox {
 	static {
 		try {
 			new LogSetup("logs/testing/test.log", Level.ERROR);
-			new KVServer("", 50000, "localhost", 2181, 10, "FIFO");
+			new KVServer("localhost", 50000, "localhost", 2181, 10, "FIFO");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

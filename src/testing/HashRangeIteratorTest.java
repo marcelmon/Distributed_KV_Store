@@ -15,6 +15,7 @@ import java.security.MessageDigest;
 
 import java.util.Arrays;
 
+
 public class HashRangeIteratorTest extends TestCase {
 	protected ICache[] caches;
 	protected int desiredCapacity;
@@ -78,26 +79,6 @@ public class HashRangeIteratorTest extends TestCase {
 	}
 
 
-	public int firstBiggerThanSecond(byte[] first, byte[] second) {
-        if(first.length > second.length) {
-            return 1;
-        }
-        if(first.length < second.length) {
-            return -1;
-        }
-        for(int index = 0; index < first.length; ++index ) {
-            if( first[index] > second[index]) {
-                return 1;
-            }
-            if( first[index] < second[index]) {
-                return -1;
-            }
-        }
-        return 0;
-    }
-
-
-
 
     /*
 		Will check that, even with only 1 cached value, specifying +/- 1 of the hash value will always work.
@@ -119,7 +100,6 @@ public class HashRangeIteratorTest extends TestCase {
 
 				MessageDigest md = MessageDigest.getInstance("MD5");
 		        byte[] keyHash = md.digest(keys[j].getBytes());
-
 		        caches[i].put(keys[j], values[j]);
 		        allHashedKeys.add(keyHash);
 		    }
@@ -172,9 +152,9 @@ public class HashRangeIteratorTest extends TestCase {
 	        
 			for (int j = 0; j < keys.length; ++j) {
 
+
 				MessageDigest md = MessageDigest.getInstance("MD5");
 		        byte[] keyHash = md.digest(keys[j].getBytes());
-
 		        caches[i].put(keys[j], values[j]);
 		        allHashedKeys.add(keyHash);
 		    }

@@ -16,6 +16,7 @@ import java.util.NoSuchElementException;
 import java.security.MessageDigest;
 
 
+import java.util.Comparator;
 
 class HashRangeIterator implements Iterator<Map.Entry<String, String>> {
 
@@ -42,8 +43,30 @@ class HashRangeIterator implements Iterator<Map.Entry<String, String>> {
 
     private boolean multipleRanges = false;
 
-    public HashRangeIterator(byte[] counterClockwiseBound, byte[] clockwiseBound, ICache cache, IKVDB kvdb) {
 
+    public class HashByteComparator implements Comparator<byte[]> {
+        @Override
+        public int compare(byte[] arg0, byte[] arg1) {
+            if (arg0.length < arg1.length) {
+                return -1;
+            } else if (arg0.length > arg1.length) {
+                return 1;
+            }
+            
+            // same length
+            for (int i = 0; i < arg0.length; i++) {
+                if (arg0[i] < arg1[i]) {
+                    return -1;
+                } else if (arg0[i] > arg1[i]) {
+                    return 1;
+                }
+            }
+            return 0;
+        }       
+    }
+
+
+    public HashRangeIterator(byte[] counterClockwiseBound, byte[] clockwiseBound, ICache cache, IKVDB kvdb) {
 
         if(cache != null){
             hasCache = true;
@@ -59,41 +82,31 @@ class HashRangeIterator implements Iterator<Map.Entry<String, String>> {
 
         this.counterClockwiseBound = counterClockwiseBound;
         this.clockwiseBound = clockwiseBound;
-
     }
 
     public boolean isBetween(byte[] fileNameHash) {
-        if(firstBiggerThanSecond(counterClockwiseBound, clockwiseBound) > 0){
-            // PASSES THROUGH 0 degrees
+
+        HashByteComparator comp = new HashByteComparator();
+
+        if(comp.compare(counterClockwiseBound, clockwiseBound) > 0){
+
+            // PASSES THROUGH the center
             // Check if greater than counterClockwiseBound bound 
             // OR
             // If is less than clockwise bound
-            if(firstBiggerThanSecond(fileNameHash, counterClockwiseBound) > 0){
+            if(comp.compare(fileNameHash, clockwiseBound) < 0  || comp.compare(fileNameHash, counterClockwiseBound) > 0){
                 return true;
             }
-            if(firstBiggerThanSecond(clockwiseBound, fileNameHash) > 0){
-                return true;             
-            }
-
         }
-        else{
-            // not passing through 0 degrees
-            // needs to be greater than counterClockwiseBound
-            // AND
-            // Less than clockwise bound
-            // check that is above counterClockwiseBound
-            if(firstBiggerThanSecond(fileNameHash, counterClockwiseBound) > 0) {
-                // check that is below clockwiseBound
-                if(firstBiggerThanSecond(clockwiseBound, fileNameHash) > 0){
-                    return true;
-                }
-            }
+        // does not pass over center, need to be less than clockwise AND greater than coutner clockwise
+        else if(comp.compare(fileNameHash, clockwiseBound) < 0  && comp.compare(fileNameHash, counterClockwiseBound) > 0){
+            return true;
         }
         return false;
     }
 
     public boolean keyInRange(String key) {
-        byte[] fileNameHash;
+        byte[] fileNameHash = null;
         try{
             MessageDigest md = MessageDigest.getInstance("MD5");
             fileNameHash = md.digest(key.getBytes());
@@ -108,26 +121,6 @@ class HashRangeIterator implements Iterator<Map.Entry<String, String>> {
         return false;
     }
 
-    /*
-        Assumes that a bigger byte array is a bigger number
-    */
-    public static int firstBiggerThanSecond(byte[] first, byte[] second) {
-        if(first.length > second.length) {
-            return 1;
-        }
-        if(first.length < second.length) {
-            return -1;
-        }
-        for(int index = 0; index < first.length; ++index ) {
-            if( first[index] > second[index]) {
-                return 1;
-            }
-            if( first[index] < second[index]) {
-                return -1;
-            }
-        }
-        return 0;
-    }
 
     public boolean fastForwardCacheIterator() {
         if(hasCache == false){
@@ -153,7 +146,6 @@ class HashRangeIterator implements Iterator<Map.Entry<String, String>> {
 
     public boolean fastForwardKVDBIterator() {
         if(hasKVDB == false){
-
             return false;
         }
         while(kvdbIterator.hasNext()){
@@ -178,7 +170,6 @@ class HashRangeIterator implements Iterator<Map.Entry<String, String>> {
 
     @Override
     public boolean hasNext() {
-
         if(hasPendingKeyValue == true){
             return true;
         }
@@ -191,6 +182,7 @@ class HashRangeIterator implements Iterator<Map.Entry<String, String>> {
         if(fastForwardKVDBIterator()){
             return true;
         }
+
         return false;
     }
 

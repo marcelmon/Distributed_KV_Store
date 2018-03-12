@@ -45,14 +45,26 @@ public class FIFOCache implements ICache {
 
     protected static Logger logger = Logger.getRootLogger();
 
+    protected final String data_dir;
+
     public FIFOCache(int capacity) {
         
         this.capacity = capacity;
-
+        this.data_dir = "data_dir";
         map = new FIFOCacheLinkedHashMap(capacity);
         kvdb = new FilePerKeyKVDB("data_dir");
 
-        logger.debug("FIFOCache() : " + capacity);
+        logger.debug("FIFOCache() - data_dir : data_dir , capacity : " + capacity );
+    }
+
+    public FIFOCache(int capacity, String data_dir) {
+        this.data_dir = "data_dir_" + data_dir;
+        this.capacity = capacity;
+
+        map = new FIFOCacheLinkedHashMap(capacity);
+        kvdb = new FilePerKeyKVDB(this.data_dir);
+
+        logger.debug("FIFOCache() - data_dir : " + this.data_dir + " , capacity : " + capacity );
     }
     
     @Override

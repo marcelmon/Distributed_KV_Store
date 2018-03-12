@@ -21,6 +21,7 @@ public class AllTests {
 	}
 	
 	public static void addExtendedTests(TestSuite clientSuite) {
+		System.out.println("addExtendedTests");
 //		clientSuite.addTestSuite(BulkMessageTest.class);
 //		clientSuite.addTestSuite(CacheTests.class);
 //		clientSuite.addTestSuite(CommModTest.class);
@@ -46,7 +47,7 @@ public class AllTests {
 		addExtendedTests(clientSuite);
 		
 
-		clientSuite.addTestSuite(HashRangeIteratorTest.class);
+		
 		
 		return clientSuite;
 	}

@@ -74,7 +74,7 @@ public interface ICache {
 	/**
 	 * Delete the key-value pair.
 	 */
-	public void delete(String key) throws KeyDoesntExistException, Exception;
+	public void delete(String key) throws KeyDoesntExistException;
 
 	/**
 	 * Called to load the data into the cache from IKVDB.iterator()

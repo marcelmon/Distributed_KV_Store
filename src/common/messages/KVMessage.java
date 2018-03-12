@@ -73,6 +73,9 @@ public class KVMessage extends Message {
 			case SERVER_STOPPED:
 			case SERVER_WRITE_LOCK:
 			case SERVER_NOT_RESPONSIBLE:
+			case TRANSFER_COMPLETE:
+			case TRANSFER_COMPLETE_ACK:
+			case TRANSFER_COMPLETE_NACK:
 				return true;
 			default:
 				return false;

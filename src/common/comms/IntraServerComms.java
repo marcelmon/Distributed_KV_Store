@@ -25,6 +25,9 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 	protected IIntraServerCommsListener listener = null;
 	protected IConsistentHasher hasher = null;
 	
+	public IConsistentHasher getHasher() {
+		return hasher;
+	}
 	public static class RPCRecord {
 		public RPCMethod method;
 		public String[] args;
@@ -106,7 +109,6 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 			
 			this.method = method;
 			this.args = args;
-			
 			// Truncate args if too long:
 			for (String a : this.args) {
 				if (a.length() > 255) {
@@ -120,12 +122,34 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 		}
 	}
 	
+	protected boolean zkConnected;
+
 	public IntraServerComms(String zkAddr, String hostname, Integer port) throws Exception {	
 		init(hostname, port);
+		zkConnected = false; // ADDED FOR ZK NOT CONNECTED BUG
 		zk = new ZooKeeper(zkAddr, 100, this);
 		
 		hasher = new ConsistentHasher();
 		
+		Thread.sleep(300);
+		// // ADDED FOR ZK NOT CONNECTED BUG
+		// long startTimeMillis = System.currentTimeMillis();
+		// while(zkConnected == false){
+		// 	if(System.currentTimeMillis() > startTimeMillis + 10000){
+		// 		// throw new RuntimeException(hostname + ":" +port + " in IntraServerComms() - Timeout connecting to zookeeper.");
+		// 		System.out.println("=================\n==============\nRuntime Error " + hostname + ":" +port + " in IntraServerComms() - Timeout connecting to zookeeper.\n===================\n====================");
+		// 		break;
+		// 	}
+		// 	try{
+		// 		Thread.sleep(10);	
+		// 	} catch (InterruptedException e){
+		// 		throw new RuntimeException(hostname + ":" +port + " in IntraServerComms() - Interupt Exception.");
+		// 	}
+		// }
+		// // ADDED FOR ZK NOT CONNECTED BUG
+
+
+
 		// If cluster group doesn't exist, create it
 		if (zk.exists(clusterGroup, false) == null) {
 			zk.create(clusterGroup, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
@@ -233,15 +257,17 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 			}
 			if (spl[0].equals(me)) {
 				Stat stat = new Stat();
+
 				byte[] data = zk.getData(rpcGroup + "/" + c, false, stat);
-				
+					
 				// Remove the znode for this rpc call:
 				try {
 					zk.delete(rpcGroup + "/" + c, -1);
+					
 				} catch (KeeperException.NoNodeException e) {
 					// do nothing
 				}
-				
+
 				RPCRecord rec = new RPCRecord(data);
 				switch (rec.method) {
 					case Start:
@@ -282,6 +308,8 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 
 	@Override
 	public void process(WatchedEvent event) {
+		zkConnected = true; // ADDED FOR ZK NOT CONNECTED BUG
+
 		System.out.println("zk event: " + event);
 		
 		// Re-register for events
@@ -293,7 +321,7 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 				zk.exists(event.getPath(), true); // changes to self/data
 			}
 		} catch (KeeperException | InterruptedException e) {
-			throw new RuntimeException("An unknown error occurred with zookeeper");
+			throw new RuntimeException("An unknown error occurred with zookeeper - exception class :" + e.getClass()  + ", message: " + e.getMessage());
 		}
 		
 		if (listener != null) {
@@ -326,7 +354,8 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 					processRPC();
 				} catch (Exception e) {
 					// This could probably be made non-fatal
-					throw new RuntimeException("Unknown error occurred processing RPCs: " + e.getMessage());
+					System.out.println(me + " - Unknown error occurred processing RPCs: " + e.getMessage());
+					// throw new RuntimeException(me + " - Unknown error occurred processing RPCs: " + e.getMessage());
 				}
 			} else {
 				// TODO log error

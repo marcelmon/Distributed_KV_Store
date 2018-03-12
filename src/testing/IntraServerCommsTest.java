@@ -163,6 +163,9 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 		List<String> nodes_after = zk.getChildren("/cluster", false);
 		assertTrue(nodes_after.size() == 1);
 		assertTrue(nodes_after.get(0).equals("a:3000"));
+
+		isc.close();
+		isc = null;
 	}
 
 	@Test
@@ -187,6 +190,9 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 		// Check new state:
 		List<String> nodes_after_remove = zk.getChildren("/cluster", false);
 		assertTrue(nodes_after_remove.size() == 0);
+
+		isc.close();
+		isc = null;
 	}
 	
 	@Test
@@ -246,6 +252,10 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 		assertTrue(servers_subsequent[0].port.equals(2468));
 		assertTrue(servers_subsequent[1].hostname.equals("d"));
 		assertTrue(servers_subsequent[1].port.equals(1234));
+
+
+		comms.close();
+		comms = null;
 	}
 	
 	@Test
@@ -294,6 +304,9 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 		assertTrue(servers_final.length == 1);
 		assertTrue(servers_final[0].hostname.equals("initial"));
 		assertTrue(servers_final[0].port.equals(2468));
+
+		comms.close();
+		comms = null;
 	}
 	
 	@Test
@@ -316,7 +329,10 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 		assertTrue(queue.size() == 1);
 		String[] splnode = queue.get(0).split("-"); 
 		assertTrue(splnode.length == 2);
-		assertTrue(splnode[0].equals("f:1234"));		
+		assertTrue(splnode[0].equals("f:1234"));
+
+		comms.close();
+		comms = null;		
 	}
 	
 	@Test
@@ -342,6 +358,9 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 		assertTrue(listener.lockCnt == 0);
 		assertTrue(listener.unlockCnt == 0);
 		assertTrue(listener.movedataCnt == 0);
+
+		comms.close();
+		comms = null;
 	}
 	
 	@Test
@@ -371,6 +390,9 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 		// Ensure call isn't present anymore:
 		Thread.sleep(100);
 		assertTrue(zk.exists(actual, false) == null);
+
+		comms.close();
+		comms = null;
 	}
 	
 	@Test
@@ -427,16 +449,19 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 
 		// Create ISC:
 		RPCListener listener = new RPCListener();
-		IntraServerComms comms = new IntraServerComms(zkAddr, "i", 1234);
+
+		// CHANGED SO IT DOESN'T DELETE RPC MESSAGE
+		// IntraServerComms comms = new IntraServerComms(zkAddr, "i", 1234);
+		IntraServerComms comms = new IntraServerComms(zkAddr, "k", 1234);
 		comms.register(listener);
-		
+
 		// Ensure no calls already in queue:
 		assertTrue(zk.getChildren(rpcGroup, false).size() == 0);
 		
 		// Make call:
 		comms.call("i:1234", RPCMethod.MoveData, "arg0", "arg10", "localhost");
-		
-		// Ensure call is in the queue:
+	
+		// Ensure call is in the queue:  THIS ONLY WORKS IF NOT LISTENING ON i!!!!!!!
 		List<String> queue = zk.getChildren(rpcGroup, false);
 		assertTrue(queue.size() == 1);
 		String[] splnode = queue.get(0).split("-"); 
@@ -449,6 +474,9 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 		assertTrue(rec.args[0].equals("arg0"));
 		assertTrue(rec.args[1].equals("arg10"));
 		assertTrue(rec.args[2].equals("localhost"));
+
+		comms.close();
+		comms = null;
 	}
 	
 	@Test
@@ -480,5 +508,8 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 		assertTrue(listener.moveDataArgs.get(0)[1].equals("arg10"));
 		assertTrue(listener.moveDataTargets.size() == 1);
 		assertTrue(listener.moveDataTargets.get(0).equals("tgt"));
+
+		comms.close();
+		comms = null;
 	}
 }

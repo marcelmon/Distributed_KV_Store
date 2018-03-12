@@ -52,7 +52,7 @@ public class ZookeeperExtTest extends TestCase implements Watcher {
 		
 		// Open a new client:
 		zoo = new ZooKeeper(addr, 100, this);
-		
+		Thread.sleep(100);
 		// znode should be gone:
 		assertFalse(zoo.exists(key, false) != null);
 		
