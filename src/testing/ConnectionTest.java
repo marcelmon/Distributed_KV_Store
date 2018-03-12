@@ -15,6 +15,7 @@ public class ConnectionTest extends TestCase {
 	public void setUp() throws Exception {
 		server = new KVServer("localhost", 50000, "localhost", 2181, 10, "LFU"); // TODO put proper args when zookeeper implemented
 		server.run();
+		Thread.sleep(100);
 	}
 	
 	@Override

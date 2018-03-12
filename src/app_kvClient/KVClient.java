@@ -118,6 +118,12 @@ public class KVClient implements IKVClient {
 							System.out.println(PROMPT + "Delete " + key + " succeeded.");
 						} else if(statusType == StatusType.DELETE_ERROR) {
 							printError("Delete failed.");
+						} else if(statusType == StatusType.SERVER_STOPPED){
+							printError("Put failed - Server stopped.");
+						} else if(statusType == StatusType.SERVER_WRITE_LOCK){
+							printError("Put failed - Server write lock.");
+						} else if(statusType == StatusType.SERVER_NOT_RESPONSIBLE){
+							printError("Put failed - Server not responsible.");
 						} else {
 							printError("Nothing happened.");
 						}
@@ -143,6 +149,10 @@ public class KVClient implements IKVClient {
 							System.out.println(PROMPT + "Value: " + kvmsg.getValue());
 						} else if(statusType == StatusType.GET_ERROR) {
 							printError("Get failed.");
+						} else if(statusType == StatusType.SERVER_STOPPED){
+							printError("Get failed - Server stopped.");
+						} else if(statusType == StatusType.SERVER_NOT_RESPONSIBLE){
+							printError("Get failed - Server not responsible.");
 						} else {
 							printError("Nothing happened.");
 						}

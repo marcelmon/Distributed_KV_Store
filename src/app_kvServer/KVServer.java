@@ -277,6 +277,22 @@ public class KVServer implements IKVServer, ICommListener {
 
 		String logHeader = name+":"+desired_port +" OnKVMsgRcd () " + msg.getStatus();
 
+		if(isStarted == false){
+			try {
+				KVMessage resp = new KVMessage(StatusType.SERVER_STOPPED, "", null);
+				try{
+					server.SendMessage(resp, client);
+				} catch(Exception ee){
+					logger.error("Error! " + ee.getMessage());
+					throw new RuntimeException(ee.getMessage());
+				}
+			} catch (KVMessage.FormatException e){
+				e.printStackTrace();
+				logger.error("Error! " + e.getMessage());
+			}
+			return;
+		}
+
 		ConsistentHasher.ServerRecord targetServer = hasher.mapKey(msg.getKey());
 		if(msg.getStatus().equals(StatusType.GET) || msg.getStatus().equals(StatusType.PUT)){
 			if(targetServer == null){
