@@ -249,59 +249,60 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 		// Process through the RPC queue
 		List<String> calls = zk.getChildren(rpcGroup,  true); // reset watch
 		StackTraceElement[] st = Thread.currentThread().getStackTrace();
-		for (String c : calls) {			
-			// Does this refer to us?
-			String[] spl = c.split("-");
-			if (spl.length != 2) {
-				throw new Exception("Unexpected rpc node format.");
-			}
-			if (spl[0].equals(me)) {
-				Stat stat = new Stat();
 
-				byte[] data = zk.getData(rpcGroup + "/" + c, false, stat);
-					
-				// Remove the znode for this rpc call:
-				try {
-					zk.delete(rpcGroup + "/" + c, -1);
-					
-				} catch (KeeperException.NoNodeException e) {
-					// do nothing
+		if (listener != null) {
+			for (String c : calls) {			
+				// Does this refer to us?
+				String[] spl = c.split("-");
+				if (spl.length != 2) {
+					throw new Exception("Unexpected rpc node format.");
 				}
-
-				RPCRecord rec = new RPCRecord(data);
-				switch (rec.method) {
-					case Start:
-						listener.start();
-						break;
-					case Stop:
-						listener.stop();
-						break;
-					case LockWrite:
-						listener.lockWrite();
-						break;
-					case UnlockWrite:
-						listener.unlockWrite();
-						break;
-					case MoveData:
-						if (rec.args.length != 3)  {
-							throw new Exception("Invalid number of args for RPCMethod.MoveData");
-						}
-						listener.moveData(new String[] {rec.args[0], rec.args[1]}, rec.args[2]);
-						break;
-					default:
-						throw new Exception("Unknown RPC method encountered: " + rec.method);
-				}				
-				
-				// Wait until delete confirmation to ensure we don't double-dip if this method returns
-				// and then (in this thread) there is another call to processRPC() before zookeeper
-				// has deleted the thread
-				while (zk.exists(rpcGroup + "/" + c, false) != null) {
-					Thread.sleep(100);
-					//TODO have a timeout here
+				if (spl[0].equals(me)) {
+					Stat stat = new Stat();
+					byte[] data = zk.getData(rpcGroup + "/" + c, false, stat);
+					
+					// Remove the znode for this rpc call:
+					try {
+						zk.delete(rpcGroup + "/" + c, -1);
+					} catch (KeeperException.NoNodeException e) {
+						// do nothing
+					}
+					
+					RPCRecord rec = new RPCRecord(data);
+					switch (rec.method) {
+						case Start:
+							listener.start();
+							break;
+						case Stop:
+							listener.stop();
+							break;
+						case LockWrite:
+							listener.lockWrite();
+							break;
+						case UnlockWrite:
+							listener.unlockWrite();
+							break;
+						case MoveData:
+							if (rec.args.length != 3)  {
+								throw new Exception("Invalid number of args for RPCMethod.MoveData");
+							}
+							listener.moveData(new String[] {rec.args[0], rec.args[1]}, rec.args[2]);
+							break;
+						default:
+							throw new Exception("Unknown RPC method encountered: " + rec.method);
+					}				
+					
+					// Wait until delete confirmation to ensure we don't double-dip if this method returns
+					// and then (in this thread) there is another call to processRPC() before zookeeper
+					// has deleted the thread
+					while (zk.exists(rpcGroup + "/" + c, false) != null) {
+						Thread.sleep(100);
+						//TODO have a timeout here
+					}
+				} else {
+					// TODO log that we rejected this
+					System.out.println("Determined RPC \"" + c + "\" not aimed at \"" + me + "\"");
 				}
-			} else {
-				// TODO log that we rejected this
-				System.out.println("Determined RPC \"" + c + "\" not aimed at \"" + me + "\"");
 			}
 		}
 	}
