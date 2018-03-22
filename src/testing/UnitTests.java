@@ -28,21 +28,18 @@ public class UnitTests {
 		//clientSuite.addTestSuite(CommModPerfTest.class);
 		//clientSuite.addTestSuite(ConnectionTest.class);
 		clientSuite.addTestSuite(ConsistentHasherTest.class);
+		clientSuite.addTestSuite(HashRangeIteratorTest.class);
 		//clientSuite.addTestSuite(InteractionTest.class);
 		clientSuite.addTestSuite(IntraServerCommsTest.class);
 		clientSuite.addTestSuite(KVDBTests.class);
 		clientSuite.addTestSuite(KVMessageTest.class);
+		clientSuite.addTestSuite(KVServerBulkDataTransferAndConsistentHasherUpdateTest.class);
+		clientSuite.addTestSuite(LockWriteKVServerTest.class);
 		clientSuite.addTestSuite(MessageTest.class);
 		clientSuite.addTestSuite(SocketTest.class);
 		clientSuite.addTestSuite(StoreServerTests.class);		
 		clientSuite.addTestSuite(ZookeeperTest.class);
 		//clientSuite.addTestSuite(ZookeeperExtTest.class);
-		
-		clientSuite.addTestSuite(HashRangeIteratorTest.class);
-		clientSuite.addTestSuite(LockWriteKVServerTest.class);
-
-		clientSuite.addTestSuite(KVServerBulkDataTransferAndConsistentHasherUpdateTest.class);
-				
 	}
 	
 	public static Test suite() {

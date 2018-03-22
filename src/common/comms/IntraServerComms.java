@@ -19,8 +19,8 @@ import common.comms.IConsistentHasher.StringFormatException;
 
 public class IntraServerComms implements IIntraServerComms, Watcher {
 	protected ZooKeeper zk = null;
-	protected final String clusterGroup = "/cluster";
-	protected final String rpcGroup = "/rpc";	
+	protected static final String clusterGroup = "/cluster";
+	protected static final String rpcGroup = "/rpc";	
 	protected String me = null;
 	protected IIntraServerCommsListener listener = null;
 	protected IConsistentHasher hasher = null;

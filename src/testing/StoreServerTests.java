@@ -5,18 +5,15 @@ import junit.framework.TestCase;
 import app_kvServer.*;
 
 import client.*;
+import common.comms.IntraServerCommsHelper;
 import common.messages.KVMessage;
 import common.messages.Message.StatusType;
 
 public class StoreServerTests extends TestCase {
 	@Override
 	public void setUp() throws Exception {
-		// Make sure to clear the physical storage:
-		KVServer serv = new KVServer("localhost", 3000, "localhost", 2181, 10, "LFU"); //TODO fix when zookeeper implemented
-		serv.run();
-		serv.clearStorage();
-		serv.close();
-		serv = null;
+		// Reset zookeeper:
+		assertTrue(IntraServerCommsHelper.ResetZookeeper("localhost:2181"));
 	}
 	
 	@Test
@@ -24,8 +21,8 @@ public class StoreServerTests extends TestCase {
 		try {
 			System.out.println("HERE 0.1\n\n\n\n\n");
 			KVServer serv = new KVServer("localhost", 12343, "localhost", 2181, 10, "FIFO"); //TODO fix when zookeeper implemented
-			serv.run();
 			serv.clearStorage();
+			serv.run();
 			serv.start();
 			Thread.sleep(300);
 			KVStore store = new KVStore("localhost", 12343);
@@ -50,7 +47,7 @@ public class StoreServerTests extends TestCase {
 		KVServer serv = null;
 		try {
 			serv = new KVServer("localhost", port, "localhost", 2181, 10, "LFU"); //TODO fix when zookeeper implemented
-			
+			serv.clearStorage();
 			serv.run(); //TODO fix when zookeeper implemented
 			serv.start();
 			Thread.sleep(300);
@@ -127,9 +124,13 @@ public class StoreServerTests extends TestCase {
 		
 		// Generate a server:
 		KVServer server0 = new KVServer("localhost", port, "localhost", 2181, 10, "LFU"); //TODO fix when zookeeper implemented
+		server0.clearStorage();
 		server0.run(); // in new thread
 		server0.start();
 		Thread.sleep(300);
+		
+		assertFalse(server0.inCache("A"));
+		assertFalse(server0.inStorage("A"));
 
 		// Store writes to server:
 		KVStore store0 = new KVStore("localhost", port);
@@ -172,6 +173,7 @@ public class StoreServerTests extends TestCase {
 		
 		// Generate a server:
 		KVServer server0 = new KVServer("localhost", port, "localhost", 2181, 10, "LFU"); //TODO fix when zookeeper implemented
+		server0.clearStorage();
 		server0.run(); // in new thread
 		server0.start();
 		Thread.sleep(300);

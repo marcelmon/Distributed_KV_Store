@@ -169,6 +169,7 @@ public class CommMod implements ICommMod {
 		try {
 			this.client_ip = ip;
 			this.client_port = port;
+			System.out.println("***Connecting to " + ip + ":" + port);
 			clientSocket = new Socket(ip, port);
 		} catch (UnknownHostException e) {
 			throw e;
