@@ -91,6 +91,14 @@ public interface IConsistentHasher {
 	public ServerRecord mapKey(String key);
 	
 	/**
+	 * Returns an array of servers which the key should be redundantly stored at.
+	 * Used by KVServer when a PUT request is serviced to forward to redundant 
+	 * Doesn't include the "coordinator" server (i.e. the server indicated by
+	 * mapKey())
+	 */
+	public ServerRecord[] mapKeyRedundant(String key);
+	
+	/**
 	 * Prior to adding this server to the ring of hashes, we need to find a server to receive our share of
 	 * keys from. This method will not cause any changes to be communicated. It is intended that this call is 
 	 * followed by communication with the txServer to receive tuples, and then a call to 

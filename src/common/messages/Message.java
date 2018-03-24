@@ -29,6 +29,7 @@ public abstract class Message {
 		GET_ERROR, 		/* requested tuple (i.e. value) not found */
 		GET_SUCCESS, 	/* requested tuple (i.e. value) found */
 		PUT, 			/* Put - request */
+		FORCE_PUT,      /* Put - force to accept the put even if server isn't responsible */
 		PUT_SUCCESS, 	/* Put - request successful, tuple inserted */
 		PUT_UPDATE, 	/* Put - request successful, i.e. value updated */
 		PUT_ERROR, 		/* Put - request not successful */
