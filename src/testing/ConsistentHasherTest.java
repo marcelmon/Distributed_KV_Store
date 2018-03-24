@@ -134,6 +134,60 @@ public class ConsistentHasherTest extends TestCase {
 	}
 	
 	@Test
+	public void testMapKeyRedundant() throws Exception {
+		List<ServerRecord> serverList = new ArrayList<ServerRecord>();
+		serverList.add(new ServerRecord("0", 0));
+		serverList.add(new ServerRecord("1", 0));
+		serverList.add(new ServerRecord("2", 0));
+		serverList.add(new ServerRecord("3", 0));
+		serverList.add(new ServerRecord("4", 0));
+		// order: 1, 3, 4, 2, 0
+		
+		ConsistentHasher hasher = new ConsistentHasher();
+		hasher.fromServerList(serverList);
+		
+		String query = "mykey";
+		ServerRecord target = hasher.mapKey(query);
+		List<ServerRecord> redundant = hasher.mapKeyRedundant(query, 2);
+		
+//		System.out.println("Target: " + target.hostname);
+//		System.out.println("r0: " + redundant.get(0).hostname);
+//		System.out.println("r1: " + redundant.get(1).hostname);
+		
+		// Ensure we have exactly two redundant servers:
+		assertTrue(redundant.size() == 2);
+		
+		// Remove target and ensure we map to the first redundant server:
+		assertTrue(serverList.remove(target));
+		hasher.fromServerList(serverList);
+		assertTrue(hasher.mapKey(query).hostname.equals(redundant.get(0).hostname));
+		
+		// Remove first redundant and ensure we map to the second redundant server:
+		assertTrue(serverList.remove(redundant.get(0)));
+		hasher.fromServerList(serverList);
+		assertTrue(hasher.mapKey(query).hostname.equals(redundant.get(1).hostname));
+	}
+	
+	@Test
+	public void testMapKeyRedundantSmall() throws Exception {
+		List<ServerRecord> serverList = new ArrayList<ServerRecord>();
+		serverList.add(new ServerRecord("0", 0));
+		serverList.add(new ServerRecord("1", 0));
+		// order: 1, 0
+		
+		ConsistentHasher hasher = new ConsistentHasher();
+		hasher.fromServerList(serverList);
+		
+		String query = "mykey";
+		ServerRecord target = hasher.mapKey(query);
+		List<ServerRecord> redundant = hasher.mapKeyRedundant(query, 2);
+		
+		// Ensure we have exactly one redundant servers (as we don't want overlap in the
+		// target and redundant servers):
+		assertTrue(redundant.size() == 1);
+	}
+	
+	@Test
 	public void testMapKeyEquals() throws Exception {
 		List<ServerRecord> serverList = new ArrayList<ServerRecord>();
 		serverList.add(new ServerRecord("0", 0));

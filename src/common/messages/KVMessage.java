@@ -51,10 +51,10 @@ public class KVMessage extends Message {
 		this.status = status;
 		
 		// Format checks:
-		if (status != StatusType.PUT && status != StatusType.GET_SUCCESS && value != null) {
+		if (status != StatusType.PUT && status != StatusType.FORCE_PUT && status != StatusType.GET_SUCCESS && value != null) {
 			throw new FormatException("Value on non-PUT, non-GET_SUCCESS TLVMessage");
 		}
-		if ((status == StatusType.PUT || status == StatusType.GET_SUCCESS) && value == null) {
+		if ((status == StatusType.PUT || status == StatusType.FORCE_PUT || status == StatusType.GET_SUCCESS) && value == null) {
 			throw new FormatException("No value on PUT or GET_SUCCESS TLVMessage");
 		}
 	}
@@ -65,6 +65,7 @@ public class KVMessage extends Message {
 			case GET_ERROR:
 			case GET_SUCCESS:
 			case PUT:
+			case FORCE_PUT:
 			case PUT_SUCCESS:
 			case PUT_UPDATE:
 			case PUT_ERROR:

@@ -22,9 +22,11 @@ public interface IConsistentHasher {
 		public String hostname;
 		public Integer port;
 		public Byte[] hash;
+		
 		public String toString() {
 			return hostname + ":" + port.toString();
 		}
+		
 		public ServerRecord(String hostname, Integer port) {
 			this.hostname = hostname;
 			this.port = port;
@@ -40,11 +42,17 @@ public interface IConsistentHasher {
 				throw new RuntimeException(e.getMessage()); // fatal exception
 			}
 		}
+		
 		public void setEqualTo(ServerRecord in) {
 			hostname = in.hostname;
 			port = in.port;
 			hash = in.hash;
 		}
+		
+		public boolean equals(ServerRecord s) {
+			return s.hostname.equals(hostname) && s.port.equals(port);
+		}
+		
 		public ServerRecord(Byte[] hash) {
 			this.hash = hash;
 		}
@@ -96,7 +104,7 @@ public interface IConsistentHasher {
 	 * Doesn't include the "coordinator" server (i.e. the server indicated by
 	 * mapKey())
 	 */
-	public ServerRecord[] mapKeyRedundant(String key);
+	public List<ServerRecord> mapKeyRedundant(String key, int N);
 	
 	/**
 	 * Prior to adding this server to the ring of hashes, we need to find a server to receive our share of

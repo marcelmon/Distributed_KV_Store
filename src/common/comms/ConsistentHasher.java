@@ -189,6 +189,26 @@ public class ConsistentHasher implements IConsistentHasher {
 		return FindServer(keyRecord, true);
 		
 	}
+	
+	@Override
+	public List<ServerRecord> mapKeyRedundant(String key, int N) {
+		List<ServerRecord> output = new ArrayList<ServerRecord>();
+		
+		// If you mapKey on a particular server, you get the next server:
+		ServerRecord target = mapKey(key); // this is the primary server
+		ServerRecord prev = target;
+		for (int i = 0; i < N; i++) {
+			ServerRecord candidate = mapKey(prev.toString());
+			if (!candidate.equals(target)) {
+				output.add(candidate);
+				prev = candidate;
+			} else {
+				break; // we have too few servers in the ring and we've reached the start
+			}
+		}
+
+		return output;
+	}
 
 	@Override
 	public void preAddServer(ServerRecord me, ServerRecord txServer, List<Byte> newRangeLower, List<Byte> newRangeUpper) {
@@ -211,5 +231,4 @@ public class ConsistentHasher implements IConsistentHasher {
 		ServerRecord above = FindServer(me, true);
 		rxServer.setEqualTo(above);
 	}
-
 }
