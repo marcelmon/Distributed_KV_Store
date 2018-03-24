@@ -37,7 +37,7 @@ public interface IIntraServerComms {
 		MoveData
 	}
 	
-	public void init(String hostname, Integer port) throws ServerExistsException;
+	public void init(String hostname, Integer port) throws ServerExistsException, Exception;
 	
 	public void close() throws Exception;
 	

@@ -96,7 +96,7 @@ public class AdminClient  {
     			throw new Exception("Malformed server config");
     		}
     		System.out.println("Launching... " + s);
-		isc = new IntraServerComms(kvHost + ":" + kvPort, "ECS", 0);
+    		isc = new IntraServerComms(kvHost + ":" + kvPort, "ECS", 0);
     		launcher.launchSSH(tokens[0], tokens[1], Integer.parseInt(tokens[2]), 10, "LRU", kvHost, kvPort); //TODO magic values
     	}
 	}

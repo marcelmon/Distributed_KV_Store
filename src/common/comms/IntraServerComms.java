@@ -20,6 +20,7 @@ import common.comms.IConsistentHasher.StringFormatException;
 public class IntraServerComms implements IIntraServerComms, Watcher {
 	protected ZooKeeper zk = null;
 	protected static final String clusterGroup = "/cluster";
+	protected static final String waitingGroup = "/waiting";
 	protected static final String rpcGroup = "/rpc";	
 	protected String me = null;
 	protected IIntraServerCommsListener listener = null;
@@ -125,12 +126,8 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 	protected boolean zkConnected;
 
 	public IntraServerComms(String zkAddr, String hostname, Integer port) throws Exception {	
-		init(hostname, port);
 		zkConnected = false; // ADDED FOR ZK NOT CONNECTED BUG
-		zk = new ZooKeeper(zkAddr, 100, this);
-		
-		hasher = new ConsistentHasher();
-		
+		zk = new ZooKeeper(zkAddr, 100, this);		
 		Thread.sleep(300);
 		// // ADDED FOR ZK NOT CONNECTED BUG
 		// long startTimeMillis = System.currentTimeMillis();
@@ -148,11 +145,14 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 		// }
 		// // ADDED FOR ZK NOT CONNECTED BUG
 
-
-
 		// If cluster group doesn't exist, create it
 		if (zk.exists(clusterGroup, false) == null) {
 			zk.create(clusterGroup, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+		}
+		
+		// If waiting group doesn't exist, create it
+		if (zk.exists(waitingGroup, false) == null) {
+			zk.create(waitingGroup, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 		}
 		
 		// If rpc group doesn't exist, create it:
@@ -160,7 +160,10 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 			zk.create(rpcGroup, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 		}
 		
+		init(hostname, port);
+		
 		// Set up server watcher:
+		hasher = new ConsistentHasher();
 		List<String> servers = zk.getChildren(clusterGroup, true);		
 		hasher.fromServerListString(servers);
 		
@@ -169,11 +172,33 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 	}
 	
 	@Override
-	public void init(String hostname, Integer port) throws ServerExistsException {
+	public void init(String hostname, Integer port) throws ServerExistsException, Exception {
 		if (me != null) {
 			throw new ServerExistsException("Multiple calls to addServer() detected");
 		}
 		me = hostname + ":" + port;
+		
+		// Create waiting ephemeral node:
+		try {
+			String node = waitingGroup + "/" + me;
+			if (zk.exists(node, false) != null) {
+				System.out.println("C");
+				zk.delete(node, -1);
+			}
+			zk.create(
+					node,
+					"".getBytes(), 
+					ZooDefs.Ids.OPEN_ACL_UNSAFE, 
+					CreateMode.EPHEMERAL);
+		} catch (NodeExistsException e) {
+			throw new ServerExistsException("ZK waiting node already exists for: " + me);
+		} catch (InterruptedException e) {
+			throw e;
+		} catch (KeeperException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage());
+		}
 	}
 	
 	@Override
@@ -202,6 +227,7 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 	public void addServer() throws ServerExistsException, Exception {		
 		try {
 			String node = clusterGroup + "/" + me;
+			String waitingNode = waitingGroup + "/" + me;
 			System.out.println("Creating: " + node);
 			
 			// If it already exists this means a previous version of *this* server has crashed
@@ -211,6 +237,11 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 				zk.delete(node, -1);
 			}
 			
+			// Delete the waiting node for this server:
+			if (zk.exists(waitingNode, false) != null) {
+				zk.delete(waitingNode, -1);
+			}
+			
 			// Create an ephemeral node for this server:
 			zk.create(
 					node,
@@ -218,7 +249,7 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 					ZooDefs.Ids.OPEN_ACL_UNSAFE, 
 					CreateMode.EPHEMERAL);
 		} catch (NodeExistsException e) {
-			throw new ServerExistsException("ZK node already exists for: " + me);
+			throw new ServerExistsException("ZK cluster node already exists for: " + me);
 		} catch (InterruptedException e) {
 			throw e;
 		}
@@ -231,8 +262,18 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 			throw new NotYetRegisteredException("Attempted to call removeServer() on a server never registered in the cluster");
 		}
 		try {
-			System.out.println("Deleting: " + clusterGroup + "/" + me);
-			zk.delete(clusterGroup + "/" + me, -1); // any version
+			String node = clusterGroup + "/" + me;
+			String waitingNode = waitingGroup + "/" + me;
+			System.out.println("Deleting: " + node);
+			
+			// Delete the cluster node:
+			if (zk.exists(node, false) != null) {
+				zk.delete(node, -1); // any version
+			}
+			
+			// Add a waiting node:
+			zk.create(waitingNode, "".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+			
 		} catch (KeeperException e) {
 			throw e;
 		} catch (InterruptedException e) {
