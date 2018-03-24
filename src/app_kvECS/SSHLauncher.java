@@ -19,15 +19,16 @@ public class SSHLauncher implements ISSHLauncher {
         	// From SSH command:
         	String cmd = 
         			"ssh -n " + hostname + " " +
-        			"java -jar m2-server.jar " + 
+//        			"\"java -jar m2-server.jar " + 
+					"java -jar m2-server.jar " +
         			name + " " + 
         			port + " " +
         			zkHost + " " +
     				zkPort + " " +
         			cachesize + " " +
         			cachestrategy + 
-        			//" & echo \\$!\"";
-				" &";
+//        			" & echo \\$!\" &";
+        			" &";
         	System.out.println(cmd);
         	
         	// Execute command:
@@ -35,15 +36,23 @@ public class SSHLauncher implements ISSHLauncher {
             processes.add(proc);
             
             // Get the output from SSH:
-	    // Thread.sleep(1000);
+//            Thread.sleep(1000);
             proc.waitFor(1000, TimeUnit.MILLISECONDS);
             InputStreamReader isr = new InputStreamReader(proc.getInputStream());
             BufferedReader br = new BufferedReader(isr);
-            int c = br.read();
+            int c;
+            String output = "";
             while (br.ready()) {
-                System.out.print((char)c);
-		c = br.read();
+//                System.out.print((char)c);
+            	c = br.read();
+            	output += (char) c;
             }
+            
+            System.out.println(output);
+//            // The first word is the pid of the process:
+//            String pid = output.split(" ")[0];
+//            System.out.println("pid: " + pid);
+            
         } catch (IOException e) {
             proc = null;
             throw new Exception(e.getMessage());
