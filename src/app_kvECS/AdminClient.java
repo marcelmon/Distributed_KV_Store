@@ -7,6 +7,7 @@ import java.io.File;
 import java.util.Map;
 import java.util.Collection;
 import java.util.Scanner;
+import java.util.logging.Level;
 import java.util.ArrayList;
 
 import ecs.*;
@@ -20,20 +21,26 @@ public class AdminClient  {
 	private SSHLauncher launcher = new SSHLauncher();
 	private IntraServerComms isc;
 	
-	public AdminClient() throws Exception {
-		isc = new IntraServerComms("127.0.0.1:2181", "ECS", 0);
-	}
-
     public void handleCommand(String cmdLine) throws Exception {
 		String[] tokens = cmdLine.split("\\s+");
 		
 		if(tokens[0].equals("init")) {
-			init();
+			if (tokens.length != 3) {
+				printError("Incorrect number of args!");
+				printHelp();
+				return;
+			}
+			if (isc != null) {
+				printError("Already initialized!");
+				return;
+			}
+			init(tokens[1], Integer.parseInt(tokens[2]));
 			
 		} else if(tokens[0].equals("startone")) {
 			if (tokens.length != 2) {
 				printError("Incorrect number of args!");
 				printHelp();
+				return;
 			}
 			startone(tokens[1]);
 			
@@ -44,6 +51,7 @@ public class AdminClient  {
 			if (tokens.length != 2) {
 				printError("Incorrect number of args!");
 				printHelp();
+				return;
 			}
 			stopone(tokens[1]);
 		
@@ -53,6 +61,8 @@ public class AdminClient  {
 		} else if (tokens[0].equals("quit")) {
 			System.exit(0);
 		
+		} else if (tokens[0].equals("help")) {
+			printHelp();
 		} else {
 			printError("Unknown command");
 			printHelp();
@@ -65,7 +75,7 @@ public class AdminClient  {
 		sb.append(PROMPT);
 		sb.append("::::::::::::::::::::::::::::::::");
 		sb.append("::::::::::::::::::::::::::::::::\n");
-		sb.append(PROMPT).append("init\n");
+		sb.append(PROMPT).append("init <zkHost> <zkPort>\n");
 		sb.append(PROMPT).append("startone <host>:<port>\n");
 		sb.append(PROMPT).append("startall\n");
 		sb.append(PROMPT).append("stopone <host>:<port>\n");
@@ -78,7 +88,7 @@ public class AdminClient  {
 		System.out.println(PROMPT + "Error! " +  error);
     }
     
-	private void init() throws Exception {
+	private void init(String kvHost, int kvPort) throws Exception {
 		// Launch all the servers:    	
     	for (String s : ecs_config) {
     		String[] tokens = s.split(" ");
@@ -86,11 +96,16 @@ public class AdminClient  {
     			throw new Exception("Malformed server config");
     		}
     		System.out.println("Launching... " + s);
-    		launcher.launchSSH(tokens[0], tokens[1], Integer.parseInt(tokens[2]), 10, "LRU"); // TODO magic values
+		isc = new IntraServerComms(kvHost + ":" + kvPort, "ECS", 0);
+    		launcher.launchSSH(tokens[0], tokens[1], Integer.parseInt(tokens[2]), 10, "LRU", kvHost, kvPort); //TODO magic values
     	}
 	}
 	
 	private void startone(String server) throws Exception {
+		if (isc == null) {
+			printError("Need to init");
+			return;
+		}
 		isc.call(server, RPCMethod.Start);
 	}
 	
@@ -105,6 +120,10 @@ public class AdminClient  {
 	}
 	
 	private void stopone(String server) throws Exception {
+		if (isc == null) {
+			printError("Need to init");
+			return;
+		}
 		isc.call(server, RPCMethod.Stop);
 	}
 	

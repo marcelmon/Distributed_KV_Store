@@ -12,10 +12,8 @@ public class SSHLauncher implements ISSHLauncher {
 	protected List<Process> processes = new ArrayList<Process>();
 	
     // lauch a SSH connection
-    public boolean launchSSH(String name, String hostname, int port, int cachesize, String cachestrategy) throws Exception {
+    public boolean launchSSH(String name, String hostname, int port, int cachesize, String cachestrategy, String zkHost, int zkPort) throws Exception {
         Process proc;
-        // String script = "SSHScript.sh";
-        
         Runtime run = Runtime.getRuntime();
         try {
         	// From SSH command:
@@ -24,7 +22,8 @@ public class SSHLauncher implements ISSHLauncher {
         			"java -jar m2-server.jar " + 
         			name + " " + 
         			port + " " +
-        			"127.0.0.1 2181 " + // TODO zookeeper info should be managed better
+        			zkHost + " " +
+    				zkPort + " " +
         			cachesize + " " +
         			cachestrategy + 
         			//" & echo \\$!\"";

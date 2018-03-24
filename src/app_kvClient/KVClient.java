@@ -250,7 +250,6 @@ public class KVClient implements IKVClient {
     public void newConnection(String hostname, int port) throws Exception{
 		try {
 			client = new KVStore(hostname, port);
-			System.out.println(PROMPT + "Connection established to " + this.serverAddress + " on port " + this.serverPort);
 		} catch (Exception e) {
 			client = null;
 			throw new Exception(e.getMessage());
