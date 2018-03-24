@@ -408,4 +408,14 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 		}
 	}
 
+	@Override
+	public List<String> getStarted() throws Exception {
+		return zk.getChildren(clusterGroup, false);
+	}
+
+	@Override
+	public List<String> getStopped() throws Exception {
+		return zk.getChildren(waitingGroup, false);
+	}
+
 }

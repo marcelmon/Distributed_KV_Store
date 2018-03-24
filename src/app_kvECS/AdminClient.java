@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.File;
 import java.util.Map;
 import java.util.Collection;
+import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.ArrayList;
@@ -36,6 +37,9 @@ public class AdminClient  {
 			}
 			init(tokens[1], Integer.parseInt(tokens[2]));
 			
+		} else if(tokens[0].equals("list")) {
+			list();
+		
 		} else if(tokens[0].equals("startone")) {
 			if (tokens.length != 2) {
 				printError("Incorrect number of args!");
@@ -76,6 +80,7 @@ public class AdminClient  {
 		sb.append("::::::::::::::::::::::::::::::::");
 		sb.append("::::::::::::::::::::::::::::::::\n");
 		sb.append(PROMPT).append("init <zkHost> <zkPort>\n");
+		sb.append(PROMPT).append("list\n");
 		sb.append(PROMPT).append("startone <host>:<port>\n");
 		sb.append(PROMPT).append("startall\n");
 		sb.append(PROMPT).append("stopone <host>:<port>\n");
@@ -87,6 +92,32 @@ public class AdminClient  {
 	private static void printError(String error){
 		System.out.println(PROMPT + "Error! " +  error);
     }
+	
+	
+	private void list() {
+		if (isc == null) {
+			printError("Need to init");
+			return;
+		}
+		
+		try {
+			List<String> started = isc.getStarted();
+			for (String s : started) {
+				System.out.println(PROMPT + s + "\t\t" + "STARTED");
+			}
+		} catch (Exception e) {
+			printError("An error occurred getting started servers");
+		}
+		
+		try {
+			List<String> stopped = isc.getStopped();
+			for (String s : stopped) {
+				System.out.println(PROMPT + s + "\t\t" + "STOPPED");
+			}
+		} catch (Exception e) {
+			printError("An error occurred getting stopped servers");
+		}
+	}
     
 	private void init(String kvHost, int kvPort) throws Exception {
 		// Launch all the servers:    	

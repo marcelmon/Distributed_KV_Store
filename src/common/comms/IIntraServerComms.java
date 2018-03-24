@@ -67,4 +67,16 @@ public interface IIntraServerComms {
 	 * and then a call to sendTuples().
 	 */
 	public void removeServer() throws NotYetRegisteredException, Exception;
+	
+	/**
+	 * Gets a list of nodes which have registered as a part of the cluster. This will only
+	 * be KVServer instances.
+	 */
+	public List<String> getStarted() throws Exception;
+	
+	/**
+	 * Gets a list of nodes which have registered as waiting. This will be KVServer instances
+	 * and potentially other observers (e.g. ECSConsole).
+	 */
+	public List<String> getStopped() throws Exception;
 }
