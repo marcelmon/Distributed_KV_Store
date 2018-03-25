@@ -35,7 +35,8 @@ public class ConnectionTest extends TestCase {
 			ex = e;
 		}	
 		
-		assertNull(ex);
+		assertTrue(ex instanceof Exception);
+		assertTrue(ex.getMessage().equals("No servers"));
 	}
 	
 	
