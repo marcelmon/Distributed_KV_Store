@@ -300,10 +300,6 @@ public class KVServer implements IKVServer, ICommListener {
 			}
 			else if(!targetServer.hostname.equals(name) || targetServer.port != desired_port){
 				try {
-					System.out.println("Status: " + StatusType.SERVER_NOT_RESPONSIBLE);
-					System.out.println("Key: " + msg.getKey());
-					System.out.println("Value: " + hasher.toString());
-					// KVMessage resp = new KVMessage(StatusType.SERVER_NOT_RESPONSIBLE, msg.getKey(), hasher.toString());
 					KVMessage resp = new KVMessage(StatusType.SERVER_NOT_RESPONSIBLE, hasher.toString(), null);
 					try{
 						server.SendMessage(resp, client);
@@ -438,10 +434,8 @@ public class KVServer implements IKVServer, ICommListener {
 				throw new Exception("ERROR ALREADY STARTED!");
 			}
 			
-
 			isStarted = true;
 			isc.addServer();
-			
 
 			return;
 		}
@@ -480,9 +474,8 @@ public class KVServer implements IKVServer, ICommListener {
 	    if(useECSOnly){
 	    	isStarted = false;
 	    	try{
-	    		//
-	    		// TODO TEST THIS!!!
-	    		//
+	    		// Remove this server:
+	    		isc.removeServer();
 	    		
 	    		// Get destination server:
 	    		ServerRecord me = new ServerRecord(getHostname(), getPort());
@@ -490,23 +483,13 @@ public class KVServer implements IKVServer, ICommListener {
 	    		hasher.preRemoveServer(me, rxServer);
 	    		
 	    		// Populate a list of the tuples this server was responsible for:
-	    		List<Entry<String, String>> tuples = new ArrayList<Entry<String, String>>();
-	    		byte[] hashl = new byte[me.hash.length];
-	    		for (int i = 0; i < me.hash.length; i++) hashl[i] = me.hash[i];
-	    		byte[] hashr = new byte[rxServer.hash.length];
-	    		for (int i = 0; i < rxServer.hash.length; i++) hashr[i] = rxServer.hash[i];
-	    		Iterator<Entry<String, String>> it = cache.getHashRangeIterator(hashl, hashr);
-	    		while (it.hasNext()) {
-	    			tuples.add(it.next());
-	    		}
+	    		List<Entry<String, String>> tuples = cache.getTuples();
+//	    		List<Entry<String, String>> tuples = cache.getTuples(me.hash, rxServer.hash);
 	    		
 	    		// Send tuples:
 	    		CommMod comm = new CommMod();
 	    		comm.Connect(rxServer.hostname, rxServer.port);
 	    		comm.SendTuples(tuples.toArray(new Entry<?, ?>[0]));
-	    		
-	    		// Remove this server:
-	    		isc.removeServer();
 	    	} catch (IIntraServerComms.NotYetRegisteredException e){
 	    		System.out.println("ERRORR WITH NotYetRegisteredException");
 	    	} catch (Exception e){
@@ -911,24 +894,24 @@ public class KVServer implements IKVServer, ICommListener {
 
 
 		boolean isBetween = false;
-		if(comp.compare(oldBelow, newBelow) != 0){
+		if(comp.compare(oldBelow.hash, newBelow.hash) != 0){
 
 			System.out.println(logHeader + " comp not 0");
 			
 
 			// greater than previous below and less than me
-			if(comp.compare(newBelow, oldBelow) > 0){
+			if(comp.compare(newBelow.hash, oldBelow.hash) > 0){
 				System.out.println(logHeader + " new greater old");
-				if(comp.compare(newBelow, me) < 0){
+				if(comp.compare(newBelow.hash, me.hash) < 0){
 					System.out.println(logHeader + " new greater old0 and less than me");
 					isBetween = true;
 				}
 			}
 
-			else if(comp.compare(oldBelow, me) > 0){ // passes 0
+			else if(comp.compare(oldBelow.hash, me.hash) > 0){ // passes 0
 				System.out.println(logHeader + " old b greater me ");
 				// less than me or greater than old
-				if (comp.compare(newBelow, me) < 0 || comp.compare(newBelow, oldBelow) > 0) {
+				if (comp.compare(newBelow.hash, me.hash) < 0 || comp.compare(newBelow.hash, oldBelow.hash) > 0) {
 					System.out.println(logHeader + " old b greater me and or new blow less me or greater old");
 					isBetween = true;
 				}
@@ -981,28 +964,28 @@ public class KVServer implements IKVServer, ICommListener {
 	    	return false;
 	    }
 	    // both are non null and the same value - no change
-    	if(oldLowerHashBound != null && newLowerHashBound != null && comp.compare(oldLowerHashBound, newLowerHashBound) == 0){
+    	if(oldLowerHashBound != null && newLowerHashBound != null && comp.compare(oldLowerHashBound.hash, newLowerHashBound.hash) == 0){
 	    	return false;
     	}
     	// previously lowerHash == me, this server covered entire hash ring
-		if(comp.compare(oldLowerHashBound, me) == 0){
+		if(comp.compare(oldLowerHashBound.hash, me.hash) == 0){
 			
 			// a different node other than me is added
-			if(comp.compare(newLowerHashBound, me) != 0){
+			if(comp.compare(newLowerHashBound.hash, me.hash) != 0){
 				return true;
 			}
 		}
 		else{
 
 			// old below was between the center and me, need to see if the new one is greater than old and less than me
-			if(comp.compare(oldBelow, me) < 0){
-				if(comp.compare(newLowerHashBound, oldLowerHashBound) > 0 && comp.compare(newLowerHashBound, me) < 0){
+			if(comp.compare(oldBelow.hash, me.hash) < 0){
+				if(comp.compare(newLowerHashBound.hash, oldLowerHashBound.hash) > 0 && comp.compare(newLowerHashBound.hash, me.hash) < 0){
 					return true;
 				}
 			}
 			else{ // old below was greater than me, i was responsible for above and below the center
 				// see if the new is less than me or greater than olds
-				if(comp.compare(newLowerHashBound, oldLowerHashBound) > 0 || comp.compare(newLowerHashBound, me) < 0){
+				if(comp.compare(newLowerHashBound.hash, oldLowerHashBound.hash) > 0 || comp.compare(newLowerHashBound.hash, me.hash) < 0){
 					return true;
 				}
 			}
@@ -1040,7 +1023,7 @@ public class KVServer implements IKVServer, ICommListener {
 		int i = 0;
 
 		for(ConsistentHasher.ServerRecord rec : serverList){
-			if(comp.compare(rec, me) >= 0){
+			if(comp.compare(rec.hash, me.hash) >= 0){
 				break;
 			}
 			i++;
@@ -1097,7 +1080,7 @@ public class KVServer implements IKVServer, ICommListener {
 
 			boolean hasMe = false;
 			for(ConsistentHasher.ServerRecord rec : serverList){
-				if(comp.compare(rec, me) == 0){
+				if(comp.compare(rec.hash, me.hash) == 0){
 					hasMe = true;
 					break;
 				}
@@ -1135,7 +1118,7 @@ public class KVServer implements IKVServer, ICommListener {
 			}
 			if(hashDelete){
 
-				if(comp.compare(newBelow, me) == 0){ // don't delete
+				if(comp.compare(newBelow.hash, me.hash) == 0){ // don't delete
 					oldBelow = newBelow;
 					return;
 				}
@@ -1553,7 +1536,7 @@ public class KVServer implements IKVServer, ICommListener {
 			ConsistentHasher.ServerRecord min = new ConsistentHasher.ServerRecord(newMinHash);
 			ConsistentHasher.ServerRecord low = new ConsistentHasher.ServerRecord(lowerHash);
 
-			if(comp.compare(min, low) < 0){
+			if(comp.compare(min.hash, low.hash) < 0){
 				lowerHash = newMinHash;
 			}
 		}
@@ -1564,7 +1547,7 @@ public class KVServer implements IKVServer, ICommListener {
 			ConsistentHasher.ServerRecord max = new ConsistentHasher.ServerRecord(newMaxHash);
 			ConsistentHasher.ServerRecord upper = new ConsistentHasher.ServerRecord(upperHash);
 
-			if(comp.compare(max, upper) > 0){
+			if(comp.compare(max.hash, upper.hash) > 0){
 				upperHash = newMaxHash;
 			}
 		}

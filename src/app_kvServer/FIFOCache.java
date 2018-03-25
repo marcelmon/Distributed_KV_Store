@@ -2,11 +2,16 @@ package app_kvServer;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Iterator;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.time.Duration;
 import java.io.*;
 import java.lang.Exception;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
 import java.util.Map;
@@ -14,6 +19,8 @@ import java.util.Map;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+
+import common.comms.IConsistentHasher;
 
 
 public class FIFOCache implements ICache {
@@ -201,6 +208,44 @@ public class FIFOCache implements ICache {
     @Override 
     public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash) {
         return new HashRangeIterator(minHash, maxHash, this, kvdb);
+    }
+    
+    @Override
+    public List<Map.Entry<String, String>> getTuples() {   	
+    	ArrayList<Map.Entry<String, String>> output = new ArrayList<Map.Entry<String, String>>();
+    	for (String k : map.keySet()) {    		
+			output.add(new AbstractMap.SimpleEntry<String, String>(k, map.get(k)));
+    	}
+    	return output;
+    }
+    
+    @Override
+    public List<Map.Entry<String, String>> getTuples(Byte[] hashLower, Byte[] hashUpper) {
+    	try {
+	    	IConsistentHasher.HashComparator comp = new IConsistentHasher.HashComparator();
+	    	
+	    	ArrayList<Map.Entry<String, String>> output = new ArrayList<Map.Entry<String, String>>();
+	    	for (String k : map.keySet()) {    		
+	    		// Hash the key:
+	    		MessageDigest md = MessageDigest.getInstance("MD5");
+				byte[] keyhash = md.digest(k.getBytes());
+	    		
+	    		if (comp.compare(hashLower, hashUpper) < 0) {  // lower < upper 
+	    			// Key hash must be greater than lower *and* less than upper
+	    			if (comp.compare(keyhash, hashLower) > 0 && comp.compare(keyhash, hashUpper) < 0) {
+	    				output.add(new AbstractMap.SimpleEntry<String, String>(k, map.get(k)));
+	    			}
+	    		} else {									   // lower >= upper
+	    			// Key hash must be greater than lower *or* less than upper
+	    			if (comp.compare(keyhash, hashLower) > 0 || comp.compare(keyhash, hashUpper) < 0) {
+	    				output.add(new AbstractMap.SimpleEntry<String, String>(k, map.get(k)));
+	    			}
+	    		}
+	    	}
+	    	return output;
+    	} catch (NoSuchAlgorithmException e) {
+    		throw new RuntimeException("MD5 unimplemented");
+    	}
     }
 
 }

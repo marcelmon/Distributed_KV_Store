@@ -177,10 +177,6 @@ public class KVMessage extends Message {
 			throw new RuntimeException("Called fromTLV1Field() on a key-only message type");
 		}
 		
-		for (byte b : buffer) {
-			System.out.println(b);
-		}
-		
 		int keyLen = buffer[1];
 		int valueLen = buffer[2];
 		

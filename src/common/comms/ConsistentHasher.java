@@ -85,14 +85,14 @@ public class ConsistentHasher implements IConsistentHasher {
 		HashComparator comp = new HashComparator();
 		
 		// See if it is below the bottom or above the top:
-		if (comp.compare(query, servers.get(0)) < 0) {
+		if (comp.compare(query.hash, servers.get(0).hash) < 0) {
 			if (above) {
 				return servers.get(0);
 			} else {
 				return servers.get(servers.size()-1);
 			}
 		}
-		if (comp.compare(query, servers.get(servers.size()-1)) > 0) {
+		if (comp.compare(query.hash, servers.get(servers.size()-1).hash) > 0) {
 			if (above) {
 				return servers.get(0);
 			} else {
@@ -120,7 +120,7 @@ public class ConsistentHasher implements IConsistentHasher {
 			// ultimately, we will either have [l, l+1] or [l, l] with the latter being the case
 			// that the key hash equals one of the server hashes (e.g. the key is a server name:port)
 			
-			int comparison = comp.compare(query, servers.get(c)); 
+			int comparison = comp.compare(query.hash, servers.get(c).hash); 
 			if (comparison < 0) {			// key < c
 				if (r == c) {
 					throw new RuntimeException("Infintie loop detected in mapKey() search"); // fatal
@@ -147,7 +147,7 @@ public class ConsistentHasher implements IConsistentHasher {
 		//   key is strictly inside: we want r		   								[C]
 		//   key is equal to upper: we want r+1        								[D]
 	    
-		if (l == r || comp.compare(query,  servers.get(r)) == 0) {  // A or D
+		if (l == r || comp.compare(query.hash,  servers.get(r).hash) == 0) {  // A or D
 			nextHighest = r+1;
 		} else {  // B or C
 			nextHighest = r;

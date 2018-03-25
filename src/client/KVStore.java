@@ -103,12 +103,14 @@ public class KVStore implements KVCommInterface {
 				}
 				
 				ServerRecord toServ = hasher.mapKey(key);
-				
+				if (toServ == null) throw new Exception("No servers");
 				client.Connect(toServ.hostname, toServ.port);
 				
 				if (!client.isConnected()) {
 					// This server has failed, so remove it and try again:
-					List<ServerRecord> servList = Arrays.asList(hasher.getServerList());
+					ArrayList<ServerRecord> servList = new ArrayList<ServerRecord>();
+					for (ServerRecord rec : hasher.getServerList()) servList.add(rec);
+					if (servList.isEmpty()) throw new Exception("No servers");
 					servList.remove(toServ);
 					hasher.fromServerList(servList);
 					
@@ -128,7 +130,9 @@ public class KVStore implements KVCommInterface {
 					continue; // retry
 				} else if(rx_msg.getStatus().equals(StatusType.SERVER_STOPPED)){
 					// This server has stopped, so remove it and try again:
-					List<ServerRecord> servList = Arrays.asList(hasher.getServerList());
+					ArrayList<ServerRecord> servList = new ArrayList<ServerRecord>();
+					for (ServerRecord rec : hasher.getServerList()) servList.add(rec);
+					if (servList.isEmpty()) throw new Exception("No servers");
 					servList.remove(toServ);
 					hasher.fromServerList(servList);
 					
@@ -177,7 +181,9 @@ public class KVStore implements KVCommInterface {
 				
 				if (!client.isConnected()) {
 					// This server has failed, so remove it and try again:
-					List<ServerRecord> servList = Arrays.asList(hasher.getServerList());
+					ArrayList<ServerRecord> servList = new ArrayList<ServerRecord>();
+					for (ServerRecord rec : hasher.getServerList()) servList.add(rec);
+					if (servList.isEmpty()) throw new Exception("No servers");
 					servList.remove(toServ);
 					hasher.fromServerList(servList);
 					
@@ -192,7 +198,9 @@ public class KVStore implements KVCommInterface {
 				
 				if(rx_msg.getStatus().equals(StatusType.SERVER_STOPPED)){
 					// This server has stopped, so remove it and try again:
-					List<ServerRecord> servList = Arrays.asList(hasher.getServerList());
+					ArrayList<ServerRecord> servList = new ArrayList<ServerRecord>();
+					for (ServerRecord r : hasher.getServerList()) servList.add(r);
+					if (servList.isEmpty()) throw new Exception("No servers");
 					servList.remove(toServ);
 					hasher.fromServerList(servList);
 					
@@ -202,7 +210,7 @@ public class KVStore implements KVCommInterface {
 					// ring.
 					
 					// Update our hash ring with the response:
-					hasher.fromString(rx_msg.getValue());
+					hasher.fromString(rx_msg.getKey());
 					
 					continue; // retry
 				} else {

@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.AbstractMap.*;
 
@@ -147,5 +148,12 @@ public class ICacheDecorator implements ICache {
 		System.out.println("getHashRangeIterator  "+ cache.getClass() + ", getHashRangeIterator()");
 		return cache.getHashRangeIterator(minHash, maxHash);
 	}
+	
+	public List<Map.Entry<String, String>> getTuples() {
+		return cache.getTuples();
+	}
 
+	public List<Map.Entry<String, String>> getTuples(Byte[] hashLower, Byte[] hashUpper) {
+		return cache.getTuples(hashLower, hashUpper);
+	}
 }

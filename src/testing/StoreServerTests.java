@@ -217,4 +217,34 @@ public class StoreServerTests extends TestCase {
 		server1.close();
 		server1 = null;
 	}
+	
+	@Test
+	public void testMultiServer() throws Exception {
+		int p1 = 2213;
+		int p2 = 2214;
+		KVServer s1 = new KVServer("localhost", p1, "localhost", 2181, 10, "LFU");
+		KVServer s2 = new KVServer("localhost", p2, "localhost", 2181, 10, "LFU");
+		s1.run();
+		s2.run();
+		
+		KVStore store = new KVStore("localhost", p1);
+		
+		s1.start();
+		s2.start();
+		
+		// Place a tuple in each:
+		store.put("localhost:2214", "v1"); // we know that this key will map to the *other* server
+		store.put("localhost:2213", "v2");
+		
+		// Can we recover:
+		assertTrue(store.get("localhost:2214").getValue().equals("v1"));
+		assertTrue(store.get("localhost:2213").getValue().equals("v2"));
+		
+		// Stop one server. When it stops it should copy its data over:
+		s1.stop();
+		
+		// Can we still recover both?
+		assertTrue(store.get("localhost:2214").getValue().equals("v1"));
+		assertTrue(store.get("localhost:2213").getValue().equals("v2"));
+	}
 }

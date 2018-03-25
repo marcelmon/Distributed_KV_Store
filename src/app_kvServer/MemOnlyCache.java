@@ -6,6 +6,8 @@ import java.util.Map.Entry;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import common.comms.IConsistentHasher;
+
 public class MemOnlyCache implements ICache {
 	protected HashMap<String, String> map;
 	protected final int capacity;
@@ -103,5 +105,38 @@ public class MemOnlyCache implements ICache {
 	public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash) {
 		return new HashRangeIterator(minHash, maxHash, this, null);
 	}
+	
+	@Override
+    public List<Map.Entry<String, String>> getTuples() {   	
+    	ArrayList<Map.Entry<String, String>> output = new ArrayList<Map.Entry<String, String>>();
+    	for (String k : map.keySet()) {    		
+			output.add(new AbstractMap.SimpleEntry<String, String>(k, map.get(k)));
+    	}
+    	return output;
+    }
+	
+	@Override
+    public List<Map.Entry<String, String>> getTuples(Byte[] hashLower, Byte[] hashUpper) {
+    	IConsistentHasher.HashComparator comp = new IConsistentHasher.HashComparator();
+    	
+    	ArrayList<Map.Entry<String, String>> output = new ArrayList<Map.Entry<String, String>>();
+    	for (String k : map.keySet()) {    		
+    		// TODO Hash the key:
+    		Byte[] keyhash = null;
+    		
+    		if (comp.compare(hashLower, hashUpper) < 0) {  // lower < upper 
+    			// Key hash must be greater than lower *and* less than upper
+    			if (comp.compare(keyhash, hashLower) > 0 && comp.compare(keyhash, hashUpper) < 0) {
+    				output.add(new AbstractMap.SimpleEntry<String, String>(k, map.get(k)));
+    			}
+    		} else {									   // lower >= upper
+    			// Key hash must be greater than lower *or* less than upper
+    			if (comp.compare(keyhash, hashLower) > 0 || comp.compare(keyhash, hashUpper) < 0) {
+    				output.add(new AbstractMap.SimpleEntry<String, String>(k, map.get(k)));
+    			}
+    		}
+    	}
+    	return output;
+    }
 
 }

@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.AbstractMap.*;
 
@@ -109,5 +110,8 @@ public interface ICache {
 	*/
 	public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash);
 
-
+	public List<Map.Entry<String, String>> getTuples();
+	
+	public List<Map.Entry<String, String>> getTuples(Byte[] hashLower, Byte[] hashUpper);
+	
 }

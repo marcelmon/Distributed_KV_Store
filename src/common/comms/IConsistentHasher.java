@@ -59,23 +59,80 @@ public interface IConsistentHasher {
 	}
 	
 	public class HashComparator implements Comparator<ServerRecord> {
-		@Override
-		public int compare(ServerRecord arg0, ServerRecord arg1) {
-			if (arg0.hash.length < arg1.hash.length) {
+		public int compare(Byte[] arg0, Byte[] arg1) {
+			if (arg0.length < arg1.length) {
 				return -1;
-			} else if (arg0.hash.length > arg1.hash.length) {
+			} else if (arg0.length > arg1.length) {
 				return 1;
 			}
 			
 			// same length
-			for (int i = 0; i < arg0.hash.length; i++) {
-				if (arg0.hash[i] < arg1.hash[i]) {
+			for (int i = 0; i < arg0.length; i++) {
+				if (arg0[i] < arg1[i]) {
 					return -1;
-				} else if (arg0.hash[i] > arg1.hash[i]) {
+				} else if (arg0[i] > arg1[i]) {
 					return 1;
 				}
 			}
 			return 0;
+		}
+		
+		public int compare(byte[] arg0, byte[] arg1) {
+			if (arg0.length < arg1.length) {
+				return -1;
+			} else if (arg0.length > arg1.length) {
+				return 1;
+			}
+			
+			// same length
+			for (int i = 0; i < arg0.length; i++) {
+				if (arg0[i] < arg1[i]) {
+					return -1;
+				} else if (arg0[i] > arg1[i]) {
+					return 1;
+				}
+			}
+			return 0;
+		}
+		
+		public int compare(Byte[] arg0, byte[] arg1) {
+			if (arg0.length < arg1.length) {
+				return -1;
+			} else if (arg0.length > arg1.length) {
+				return 1;
+			}
+			
+			// same length
+			for (int i = 0; i < arg0.length; i++) {
+				if (arg0[i] < arg1[i]) {
+					return -1;
+				} else if (arg0[i] > arg1[i]) {
+					return 1;
+				}
+			}
+			return 0;
+		}
+		
+		public int compare(byte[] arg0, Byte[] arg1) {
+			if (arg0.length < arg1.length) {
+				return -1;
+			} else if (arg0.length > arg1.length) {
+				return 1;
+			}
+			
+			// same length
+			for (int i = 0; i < arg0.length; i++) {
+				if (arg0[i] < arg1[i]) {
+					return -1;
+				} else if (arg0[i] > arg1[i]) {
+					return 1;
+				}
+			}
+			return 0;
+		}
+		
+		public int compare(ServerRecord arg0, ServerRecord arg1) {
+			return compare(arg0.hash, arg1.hash);
 		}		
 	}
 	
