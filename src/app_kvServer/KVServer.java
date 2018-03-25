@@ -47,6 +47,18 @@ public class KVServer implements IKVServer, ICommListener {
 
 	protected ConsistentHasher.ServerRecord oldBelow;
 
+
+	protected int replicationFactor;
+
+
+	public int getReplicationFactor(){
+		return replicationFactor;
+	}
+
+	public void setReplicationFactor(int replicationFactor){
+		this.replicationFactor = replicationFactor;
+	}
+
 	public IConsistentHasher getConsistentHasher(){
 		return hasher;
 	}
@@ -119,6 +131,51 @@ public class KVServer implements IKVServer, ICommListener {
 	 */
 	public KVServer(String name, int port, String zkHostname, int zkPort, int cacheSize, String strategy) {
 
+		isStarted = false;
+        // TODO use name, zkHostname, zkPort
+		this.name = name;
+		this.desired_port = port;
+		this.zkHostname = zkHostname;
+		this.zkPort = zkPort;
+
+		// for non-mem-only use directory : name + ":" + port
+		switch (strategy) {
+		case "LRU":
+			cache = new LRUCache(cacheSize, name + ":" + port);
+			cacheStrategy = CacheStrategy.LRU;
+			break;
+		case "LFU":
+			cache = new LFUCache(cacheSize, name + ":" + port);
+			cacheStrategy = CacheStrategy.LFU;
+			break;
+		case "FIFO":
+			cache = new FIFOCache(cacheSize, name + ":" + port);
+			cacheStrategy = CacheStrategy.FIFO;
+			break;
+		case "NONE":
+			cache = new NoCache(name + ":" + port);
+			cacheStrategy = CacheStrategy.NONE;
+			break;
+		default:
+			System.out.println("Cache not recognized. Using dev mem-only cache!");
+			cache = new MemOnlyCache(cacheSize);
+			cacheStrategy = CacheStrategy.None;
+			break;
+		}
+		cache = new ICacheDecorator(cache);
+
+		replicationFactor = 0;
+	}
+
+
+
+	/*
+		SAME AS ABOVE BUT ACCESPTS REPLICATION_FACTOR
+	 */
+	public KVServer(String name, int port, String zkHostname, int zkPort, int cacheSize, String strategy, int replicationFactor) {
+
+		this.replicationFactor = replicationFactor;
+		
 		isStarted = false;
         // TODO use name, zkHostname, zkPort
 		this.name = name;
@@ -421,69 +478,140 @@ public class KVServer implements IKVServer, ICommListener {
 
 	public boolean isAddedToHashRing = false;
 
+
 	@Override
 	public void start() throws Exception {
-		String logHeader = name+":"+desired_port + " start()";
+		String logHeader = getHostname()+":"+getPort() + " start()";
 		System.out.println(logHeader + " - called");
 		
 		if(isStarted){
 			throw new Exception("ERROR ALREADY STARTED!");
 		}
+
+		
+		// NO SERVERS YET!! so no data to request
+		if(hasher.getServerList().length < 1){
+			
+			isStarted = true;
+			isc.addServer();
+			return;
+		}
+
+		// GET THE DATA FROM NEIGHBOR
+		// request data from neighbour above (clockwise)
+		IConsistentHasher.ServerRecord me = new IConsistentHasher.ServerRecord(getHostname(), getPort());
+
+		ServerRecord txServer = new ServerRecord(null);
+		List<Byte> clockwise = new ArrayList<Byte>();
+		List<Byte> counterclockwise = new ArrayList<Byte>();
+		hasher.preAddServer(me, txServer, clockwise, counterclockwise);
+
+		if(txServer.hostname != null){ // if null then there is no other server
+
+
+			// request some tuples
+			CommMod bulkClient = new CommMod();
+
+
+
+			bulkClient.Connect(txServer.hostname, txServer.port); 
+			Map.Entry<?, ?>[] receivedTuples = bulkClient.GetTuples(clockwise.toArray(new Byte[clockwise.size()]), counterclockwise.toArray(new Byte[counterclockwise.size()]));
+		
+			// put the tuples directly to the cache (can go directly to disk too)
+			if(receivedTuples.length > 0){
+
+				for (Map.Entry<?, ?> tuple : receivedTuples) {
+					cache.put((String) tuple.getKey(), (String) tuple.getValue());
+					// cache.kvdb.put((String) tuple.getKey(), (String) tuple.getValue());
+				}
+			}
+		}
+
 		isStarted = true;
-
-		//TODO test if this works
-//		// request data from neighbour above (clockwise)
-//		IConsistentHasher.ServerRecord me = new IConsistentHasher.ServerRecord(name, desired_port);
-//
-//		ServerRecord txServer = new ServerRecord(null);
-//		List<Byte> clockwise = new ArrayList<Byte>();
-//		List<Byte> counterclockwise = new ArrayList<Byte>();
-//		hasher.preAddServer(me, txServer, clockwise, counterclockwise);
-//
-//		if(txServer.hostname != null){
-//
-//			// request some tuples
-//			CommMod bulkClient = new CommMod();
-//			bulkClient.Connect(txServer.hostname, txServer.port); 
-//			Map.Entry<?, ?>[] receivedTuples = bulkClient.GetTuples(clockwise.toArray(new Byte[clockwise.size()]), counterclockwise.toArray(new Byte[counterclockwise.size()]));
-//	
-//			// put the tuples directly to the cache (can go directly to disk)
-//			if(receivedTuples.length > 0){
-//				for (Map.Entry<?, ?> tuple : receivedTuples) {
-//					cache.put((String) tuple.getKey(), (String) tuple.getValue());
-//					// cache.kvdb.put((String) tuple.getKey(), (String) tuple.getValue());
-//				}
-//			}
-//		}
-
 		isc.addServer();
 	}
 
 	@Override
 	public void stop() {
-    	isStarted = false;
+
+		if(isStarted == false){
+			// ERROR
+		}
+		// this will wait for any puts to finish, thus also pushing them to replicas
+		lockWrite.lockWrite();
+
+		if(getReplicationFactor() > 0){
+			// nothing to do because either our puts are already on a replica, or there are no other replicas
+			isStarted = false;
+			try{
+				isc.removeServer();
+			} catch(IIntraServerComms.NotYetRegisteredException e){
+				System.out.println("Zookeepr not yet registerd in kvserver.stop()");
+			} catch(Exception e){
+				System.out.println("isc.removeServer() exception in kvserver.stop()");
+			}
+				
+
+			lockWrite.unlockWrite();
+			return;
+		}
+
+
+		// else our data is not replicated, see if there's another server to send it to
+		ServerRecord[] servList = hasher.getServerList();
+
+		if(servList.length == 0){
+			// SERIOUS ERROR HERE
+		}
+		if(servList.length == 1 && (servList[0].hostname.equals(getHostname()) && servList[0].port == getPort())){
+			// we are the only server! no one to send our data to
+			// in fact checking servList.length == 1 should be enough
+			isStarted = false;
+			try{
+				isc.removeServer();
+			} catch(IIntraServerComms.NotYetRegisteredException e){
+				System.out.println("Zookeepr not yet registerd in kvserver.stop()");
+			} catch(Exception e){
+				System.out.println("isc.removeServer() exception in kvserver.stop()");
+			}
+			lockWrite.unlockWrite();
+			return;
+		}
+
+		// Get destination server:
+		ServerRecord me = new ServerRecord(getHostname(), getPort());
+		ServerRecord rxServer = new ServerRecord(new Byte[0]);
+		hasher.preRemoveServer(me, rxServer);
+
+		// passing nulls will return all data by the iterator
+		Iterator<Map.Entry<String, String>> iter = cache.getHashRangeIterator(null, null);
+		List<Entry<String, String>> tuples = cache.getTuples();
+		while(iter.hasNext()){
+			tuples.add(iter.next());
+		}
+
+
+		try{
+	    	CommMod comm = new CommMod();
+			comm.Connect(rxServer.hostname, rxServer.port);
+	    	comm.SendTuples(tuples.toArray(new Entry<?, ?>[0]));
+	    } catch (Exception e){
+	    	System.out.println("Move data kv server send tuples exception : " + e.getMessage());
+	    }
+
+
+	    isStarted = false;
     	try{
-    		// Remove this server:
-    		isc.removeServer();
-    		
-    		// Get destination server:
-    		ServerRecord me = new ServerRecord(getHostname(), getPort());
-    		ServerRecord rxServer = new ServerRecord(new Byte[0]);
-    		hasher.preRemoveServer(me, rxServer);
-    		
-    		// Populate a list of the tuples this server was responsible for:
-    		List<Entry<String, String>> tuples = cache.getTuples();
-//	    		List<Entry<String, String>> tuples = cache.getTuples(me.hash, rxServer.hash);
-    		
-    		// Send tuples:
-    		CommMod comm = new CommMod();
-    		comm.Connect(rxServer.hostname, rxServer.port);
-    		comm.SendTuples(tuples.toArray(new Entry<?, ?>[0]));
-    	} catch (IIntraServerComms.NotYetRegisteredException e){
-    		System.out.println("ERRORR WITH NotYetRegisteredException");
-    	} catch (Exception e){
-    		System.out.println("ERRORR WITH Exception");
-    	}
+			isc.removeServer();
+		} catch(IIntraServerComms.NotYetRegisteredException e){
+			System.out.println("Zookeepr not yet registerd in kvserver.stop()");
+		} catch(Exception e){
+			System.out.println("isc.removeServer() exception in kvserver.stop()");
+		}
+		lockWrite.unlockWrite();
+		return;
+
+
 	}
 
 
@@ -505,7 +633,50 @@ public class KVServer implements IKVServer, ICommListener {
 			totalLockWrites = 0;
 			pendingPutsLockObj = new Object();
 			lockWriteObj = new Object();
+			currentlyTesting = false;
 		}
+
+
+
+
+		/*
+			TESTING FUNCTIONS 
+			Used to check that pendingPuts is incremented
+		*/ 
+		private boolean currentlyTesting;
+
+		private int allPendingPuts;
+
+		private int maxPendingPuts;
+
+		public void setIsTesting(){
+			currentlyTesting = true;
+			maxPendingPuts = 0;
+		}
+
+		public boolean isTesting(){
+			return currentlyTesting;
+		}
+
+		public int stopTestingAndGetMaxPendingPuts(){
+			if(!currentlyTesting){
+				return -1;
+			}
+			currentlyTesting = false;
+			return maxPendingPuts;
+		}
+		
+		public void setMaxPendingPuts(){
+			if(pendingPuts > maxPendingPuts){
+				maxPendingPuts = pendingPuts;
+			}
+		}
+		/*
+			TESTING FUNCTIONS 
+		*/ 
+
+
+
 
 
 		// can be used by external service to check if the lock is currently active
@@ -518,6 +689,10 @@ public class KVServer implements IKVServer, ICommListener {
 		public void incrementPendingPuts(){
 			synchronized(pendingPutsLockObj){
 				pendingPuts++;
+
+				if(currentlyTesting){
+					setMaxPendingPuts();
+				}
 			}
 		}
 
@@ -971,165 +1146,153 @@ public class KVServer implements IKVServer, ICommListener {
     }
 
 
-    /**
-	 *
-	 * @param me : ConsistentHasher.ServerRecord using this servers params
-	 * @param serverList : Array of ServerRecord in the updated hasher
-	 *
-	 * @return SimpleEntry<true, ...> if this server's ServerRecord is found in serverList, false otherwise
-	 * @return SimpleEntry<...,  ServerRecord> The ServerRecord returned is the one representing the lower hash range. 
-	 *											Is == me if there is only 1 entry in serverList
-	 * 
-	 * @return null if serverList is empty 
-	*/
-	public ConsistentHasher.ServerRecord getNewBelow( 
-		ConsistentHasher.ServerRecord me, 
-		ConsistentHasher.ServerRecord[] serverList ) 
-	{
-
-		IConsistentHasher.HashComparator comp = new IConsistentHasher.HashComparator();
-		if(serverList.length < 1){
-			return null;
-		}
-
-		if(serverList.length == 1){
-			return serverList[0];
-		}
-
-		// at least 2, iterate through
-		int i = 0;
-
-		for(ConsistentHasher.ServerRecord rec : serverList){
-			if(comp.compare(rec.hash, me.hash) >= 0){
-				break;
-			}
-			i++;
-		}
-		if(i == serverList.length){
-			// reached the end, the newBelow == [0]
-			return serverList[0];
-		}
-		else if(i == 0){ // take the top array index (loop back around)
-			return serverList[serverList.length - 1];
-		}
-		// take the previous
-		return serverList[i - 1];
-	}
 
 
-    public boolean gettingNeighbourData = false;
 	@Override
 	public synchronized void consistentHasherUpdated(IConsistentHasher hasher) {
-		// TODO Auto-generated method stub
-		/*
-			Check if the update means we will be sending some data
-		*/
 		String logHeader = name+":"+desired_port +" consistentHasherUpdated () ";
 
-		System.out.println( logHeader + " - called");
+		System.out.println("THE HASHER : \n\n");
+		for (ConsistentHasher.ServerRecord servv : hasher.getServerList()) {
+			System.out.println("host:  " + servv.hostname + " port: "+ servv.port);
+		}
 
-		// run is called but start() has not been
-		if(isStarted == false){ // nothing going on, the server is just listening but has not registered to the hash ring
-			System.out.println(logHeader + " - isStarted==false");
+
+		System.out.println("BEFORE testRingShrunk\n\n\n\n\n");
+
+
+		ConsistentHasher.ServerRecord me = new ConsistentHasher.ServerRecord(getHostname(), getPort());
+
+		System.out.println("THE ME : " + me.hostname + " " + me.port);
+		if(!(((ConsistentHasher) hasher).contains(me))) {
+
+				System.out.println("DURRAN! testRingShrunk\n\n\n\n\n");
+			// nothing affects me in this, i'm out
 			this.hasher = hasher;
 			return;
 		}
 
-		ConsistentHasher.ServerRecord[] serverList = hasher.getServerList();
 
-		this.hasher = hasher;
+		System.out.println("AFTER testRingShrunk\n\n\n\n\n");
 
-		if(serverList.length < 1){ // there were no hashed values updated, perhaps this could be some error? might want to check before clearStorage
-			if(oldBelow != null){
-				oldBelow = null;
-				// clearStorage();
+		if(replicationFactor > 0){
+
+
+			// send all data this server is cooredinator for, to all replicas
+
+
+			ConsistentHasher.ServerRecord newRightBelow = null;
+			
+			try{
+				newRightBelow = ((ConsistentHasher) hasher).findBelow(me);
+			}
+			catch(Exception e){
+				System.out.println(logHeader + " " + e.getMessage());
 				return;
 			}
+
+
+			// GET DATA TO SEND
+			// convert to byte[] for getHashRangeIterator
+			byte[] lowerByte = new byte[newRightBelow.hash.length];
+			for (int i = 0; i < lowerByte.length; i++) lowerByte[i] = newRightBelow.hash[i];
+
+			byte[] upperByte = new byte[me.hash.length];
+			for (int i = 0; i < upperByte.length; i++) upperByte[i] = me.hash[i];
+
+			Iterator<Map.Entry<String, String>> iter = cache.getHashRangeIterator(lowerByte, upperByte);
+
+
+	        List<Entry<?, ?>> tuples = new ArrayList<Entry<?, ?>>();
+
+	    	while(iter.hasNext()){
+	        	tuples.add(iter.next());
+	        }
+
+
+
+	        // GET REPLICAS TO SEND TO
+	        List<ServerRecord> allReplicas = null;
+	        try{
+	        	allReplicas = ((ConsistentHasher) hasher).findReplicas(me, replicationFactor);	
+	        } catch(Exception e){
+	        	System.out.println(logHeader + " get replicas exception " + e.getMessage());
+	        	return;
+	        }
+	        
+	        for(ServerRecord replica : allReplicas){
+	        	
+	        	// BulkPackageMessage msg = new BulkPackageMessage((Entry<?, ?>[]) tuples.toArray(new Entry<?, ?>[tuples.size()]));
+	        	System.out.println("Listener writing response...");
+	        	CommMod bulkClient = new CommMod();
+	        	try{
+	        		bulkClient.Connect(replica.hostname, replica.port); 
+	        		bulkClient.SendTuples(tuples.toArray(new Entry<?, ?>[0]));
+	        	}
+	        	catch(Exception e){
+	        		System.err.println("Bulk client send tuples connect Exceptin"+e.getMessage());
+	        	}
+					
+				
+	        }
 		}
+
+
+
+
+
+		ConsistentHasher.ServerRecord oldBelowAll = null;
+		ConsistentHasher.ServerRecord newBelowAll = null;
+
+		// now delete any data due to shrunk constant hasher + replcations
+		// this happens when the old below is more ccw to new below
+		try{
+			oldBelowAll = ((ConsistentHasher)this.hasher).findBelow(me, replicationFactor);
+			newBelowAll = ((ConsistentHasher) hasher).findBelow(me, replicationFactor);
+		}catch(Exception e ){
+			System.err.println("find below err" + e.getMessage());
+
+		}
+		
+
 
 		IConsistentHasher.HashComparator comp = new IConsistentHasher.HashComparator();
 
-		ConsistentHasher.ServerRecord me = new ConsistentHasher.ServerRecord(name, desired_port);
 
-		boolean hashDelete = false;
 
-		boolean hasMe = false;
-		for(ConsistentHasher.ServerRecord rec : serverList){
-			if(comp.compare(rec.hash, me.hash) == 0){
-				hasMe = true;
-				break;
-			}
-		}
 
-		ConsistentHasher.ServerRecord newBelow = getNewBelow(me, serverList);
 
-		if(oldBelow == null){ // we will not have been registered to cache ring yet
-			
-			if(!hasMe){ // still not registered, do nothing
-				return;
-			}
-			if(serverList.length == 1){ // there is only 1 ServerRecord in new hasher and it is me, now registered to hash ring
-				oldBelow = me;
-				return;
-			}
-			// else length is > 1 and we are included for first time, check if we need to delete any overlapping hashed values (shouldn't though)
-			hashDelete = true;
-			oldBelow = me;
-		}
-		else{ // oldBelow != null, this mean we have previously been registered to the hash ring
-			
-			if(!hasMe){ // now unregistered from hash ring for some reason
-				oldBelow = null;
-				System.out.println(logHeader + " - unregistered from hash ring ");
-				return;
-			}
-			// CHECK IF THE RING SHRUNK
-			boolean ringShrunk = testRingShrunk(me, oldBelow, newBelow);
-		
-			if(ringShrunk){
-				System.out.println(logHeader + " ring has shrunk, must delete data");
-				hashDelete = true;
-			}
-		}
-		if(hashDelete){
+        System.out.println("GO FOR THE DELETE NAAAAT!!!!\n\n\n\n\n\n\n");
 
-			if(comp.compare(newBelow.hash, me.hash) == 0){ // don't delete
-				oldBelow = newBelow;
-				return;
-			}
 
-			System.out.println(logHeader + " - hash delete ");
-			byte[] oldBelowByte = new byte[oldBelow.hash.length];
-			for (int j = 0; j < oldBelow.hash.length; j++) oldBelowByte[j] = oldBelow.hash[j];
+		System.out.println("BEFORE testRingShrunk\n\n\n\n\n");
+		if(testRingShrunk(me, oldBelowAll, newBelowAll)){
+			System.out.println("IN testRingShrunk\n\n\n\n\n");
+			// convert to byte[] for getHashRangeIterator
+			byte[] lowerByte = new byte[oldBelowAll.hash.length];
+			for (int i = 0; i < lowerByte.length; i++) lowerByte[i] = oldBelowAll.hash[i];
 
-			byte[] newBelowByte = new byte[newBelow.hash.length];
-			for (int j = 0; j < newBelow.hash.length; j++) newBelowByte[j] = newBelow.hash[j];
+			byte[] upperByte = new byte[newBelowAll.hash.length];
+			for (int i = 0; i < upperByte.length; i++) upperByte[i] = newBelowAll.hash[i];
+
 
 			ArrayList<String> keysToDelete = new ArrayList<String>();
-			Iterator<Map.Entry<String, String>> iter = cache.getHashRangeIterator(oldBelowByte, newBelowByte);
-			Map.Entry<String,String> item = null;
-			while(iter.hasNext()){
-				keysToDelete.add(iter.next().getKey());
-			}
-			iter = null;
+            Iterator<Map.Entry<String, String>> iter = cache.getHashRangeIterator(lowerByte, upperByte);
+            Map.Entry<String,String> item = null;
 
-			for (String del_key : keysToDelete ) {
-				try{
-					cache.delete(del_key);	
-				} catch (ICache.KeyDoesntExistException e){
-					System.out.println(logHeader + " key doesnt exist");
-				} catch(Exception e){
-					System.out.println(logHeader + " exceptiom " + e.getMessage());
-				}
-			}
-		}
-		if(newBelow != null){
-			oldBelow = newBelow;
+            while(iter.hasNext()){
+            	try{
+	            	cache.delete(iter.next().getKey());
+            	} catch (ICache.KeyDoesntExistException e){
+                    System.out.println(logHeader + " key doesnt exist");
+            	} catch(Exception e){
+                    System.out.println(logHeader + " exceptiom " + e.getMessage());
+              	}
+            }
 		}
 
-		return;
-		
 	}
+
 
 	@Override
 	public void OnTuplesReceived(Entry<?, ?>[] tuples) {
@@ -1161,21 +1324,12 @@ public class KVServer implements IKVServer, ICommListener {
 
 	}
 
+
+
 	public DeleteTimeout deleteTimeoutRunnable = null;
 	public Thread deleteTimeoutThread = null;
 
-	public byte[] getHashedValue(byte[] bytes) throws RuntimeException {
-		try {
-			MessageDigest md = MessageDigest.getInstance("MD5");
-			byte[] keyhash = md.digest(bytes);
-			return keyhash;
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e.getMessage()); // fatal
-		} catch (Exception e){
-
-		}
-		return null;
-	}
+	
 
 	public UnlockTimeout unlockTimeoutRunnable = null;
 	public Thread unlockTimeoutThread = null;
@@ -1197,49 +1351,39 @@ public class KVServer implements IKVServer, ICommListener {
 	    
         Iterator<Map.Entry<String, String>> iter = cache.getHashRangeIterator(lowerByte, upperByte);
 
-        int maxPacketSize = 100000;
+        // int maxPacketSize = 100000;
         
-        while(iter.hasNext()){
-        	ArrayList<Entry<?, ?>> tuples = new ArrayList<Entry<?, ?>>();
-        	int count = 0;
 
-        	int currentPacketSize = 0;
+        List<Entry<?, ?>> tuples = new ArrayList<Entry<?, ?>>();
+    	// int count = 0;
 
-        	while(iter.hasNext() && currentPacketSize <= maxPacketSize){
-	        	Map.Entry<String, String> currentEntry = iter.next();
-	        	tuples.add(currentEntry);
-	        	currentPacketSize += currentEntry.getKey().length() + currentEntry.getValue().length();
-	        	count++;
-	        }
-	        try {
-	        	BulkPackageMessage msg = new BulkPackageMessage((Entry<?, ?>[]) tuples.toArray());
-	        	System.out.println("Listener writing response...");
-				client.write(msg.getBytes());
-	        } catch (Message.FormatException e){
-	        	System.out.println("format Exception sending bulk package : " + e.getMessage());
-	        } catch(IOException ee){
-	        	System.out.println("io Exception sending bulk package : " + ee.getMessage());
-	        }
+    	// int currentPacketSize = 0;
+
+    	while(iter.hasNext()){
+
+        	tuples.add(iter.next());
+        	// currentPacketSize += currentEntry.getKey().length() + currentEntry.getValue().length();
+        	// count++;
         }
-
         try {
-        	BulkPackageMessage finalMsg = new BulkPackageMessage(new Entry<?, ?>[0]);
-	        client.write(finalMsg.getBytes());
+        	BulkPackageMessage msg = new BulkPackageMessage((Entry<?, ?>[]) tuples.toArray(new Entry<?, ?>[tuples.size()]));
+        	System.out.println("Listener writing response...");
+			client.write(msg.getBytes());
         } catch (Message.FormatException e){
         	System.out.println("format Exception sending bulk package : " + e.getMessage());
         } catch(IOException ee){
         	System.out.println("io Exception sending bulk package : " + ee.getMessage());
         }
 
-        
+        // check if lock already had, otherwise get the lock
+		if(!lockWrite.testUnlockWrite()){
+			// there was already a write lock!!! should probably either wait or throw exception here
+		}
 
-        // need to make sure it was successfull, then can delete those entries
-        // this is where to add a timeout
-
-        long timeoutMillis = 30000;
-        unlockTimeoutRunnable = new UnlockTimeout(timeoutMillis, this.lockWrite);
-        Thread timeoutUnlockThread = new Thread(unlockTimeoutRunnable);
-        timeoutUnlockThread.start();
+        // long timeoutMillis = 30000;
+        // unlockTimeoutRunnable = new UnlockTimeout(timeoutMillis, this.lockWrite);
+        // Thread timeoutUnlockThread = new Thread(unlockTimeoutRunnable);
+        // timeoutUnlockThread.start();
 
 	}
 

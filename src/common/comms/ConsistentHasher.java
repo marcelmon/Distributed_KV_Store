@@ -12,6 +12,124 @@ import common.comms.IConsistentHasher.ServerRecord;
 public class ConsistentHasher implements IConsistentHasher {
 	protected List<ServerRecord> servers = new ArrayList<ServerRecord>();
 
+
+
+
+
+
+	// gets the servers that i will be replicating to
+	public List<ServerRecord> findReplicas(ServerRecord query, int replicationFactor) throws Exception {
+
+		int index = findIndex(query);
+		if(index < 0){ // our starting point was not foudn
+			throw new Exception("The server record was not found in the consisten hash.");
+		}
+		if(servers.size() <= replicationFactor + 1){// only enough servers to just replicate
+			return servers;
+		}
+		// start from me, work up until the top
+		int total = 0;
+
+		List<ServerRecord>  ret = new ArrayList<ServerRecord> ();
+		while(total < replicationFactor){
+			index++;
+			if(index >= servers.size()){
+				index = 0;
+			}
+			ret.add(servers.get(index));
+		}
+		return ret;
+	}
+
+	public boolean contains(ServerRecord query){
+
+		for (int i = 0 ; i < servers.size(); ++i) {
+
+			if(servers.get(i).hostname.equals(query.hostname) && servers.get(i).port.intValue() == query.port.intValue()){
+
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private int findIndex(ServerRecord me){
+		for (int i = 0 ; i < servers.size(); ++i) {
+			if(servers.get(i).hostname.equals(me.hostname) && servers.get(i).port == me.port){
+				return i;
+			}
+		}
+		return -1;
+	}
+
+
+	// returns the total range to request from
+	public List<ServerRecord> findAllBelow(ServerRecord upper, int amountBelow) throws Exception {
+		if(servers.size() == 0){
+			throw new Exception("No hashes in hasher.");
+		}
+		int index = findIndex(upper);
+		if(index < 0){
+			return null;
+		}
+
+		if(servers.size() <= amountBelow){
+			return null;
+		}
+		ArrayList<ServerRecord> ret = new ArrayList<ServerRecord>();
+		for (int i = 1; i <= amountBelow + 1; i++) {
+			index--;
+			if(index < 0){
+				index = servers.size() -1;
+			}	
+			ret.add(servers.get(index));
+		}
+		return ret;
+	}
+
+	public ServerRecord findBelow(ServerRecord upper) throws Exception {
+		if(servers.size() == 0){
+			throw new Exception("No hashes in hasher.");
+		}
+		int myIndex = findIndex(upper);
+		if(myIndex < 0){
+			return null;
+		}
+
+		if(servers.size() == 1){
+			return upper;
+		}
+
+		int indexBelow = -1;
+		if(myIndex == 0){
+			return servers.get(servers.size() -1);
+		}
+		return null;
+	}
+
+
+
+
+	public ServerRecord findBelow(ServerRecord upper, int amountBelow) throws Exception {
+
+		if(servers.size() == 0){
+			throw new Exception("No hashes in hasher.");
+		}
+
+		if(servers.size() < amountBelow){
+			throw new Exception("amountBelow too far away. Not enough items in hasher.");
+		}
+		
+
+		int belowIndex = findIndex(upper) - amountBelow;
+		if(belowIndex < 0){
+			belowIndex = servers.size() + belowIndex;
+		}
+		return servers.get(belowIndex);
+
+	}
+
+
 	@Override
 	public void fromString(String metadata) throws StringFormatException {
 		// string format is csv: "<ip/hostname>:<port>,..."

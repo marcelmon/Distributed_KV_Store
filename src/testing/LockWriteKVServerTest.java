@@ -417,9 +417,9 @@ public class LockWriteKVServerTest extends TestCase {
 		try {
 			server.clearStorage();
 
-			Thread getMaxPut;
-			GetMaxPendingPutsRunnable getMaxPendingPutsRunnable = new GetMaxPendingPutsRunnable(server.lockWrite);
-			getMaxPut = new Thread(getMaxPendingPutsRunnable);
+			// Thread getMaxPut;
+			// GetMaxPendingPutsRunnable getMaxPendingPutsRunnable = new GetMaxPendingPutsRunnable(server.lockWrite);
+			// getMaxPut = new Thread(getMaxPendingPutsRunnable);
 
 			Thread put1;
 			String key1 = "a";
@@ -446,11 +446,30 @@ public class LockWriteKVServerTest extends TestCase {
 			String val5 = "5";
 			put5 = new Thread(new RunPut(key5, val5, store));
 
-			getMaxPut.start();
+			// getMaxPut.start();
 
 			// show there are currently no pending puts and also the max (from thread) is 0
 			assertTrue(server.lockWrite.getPendingPuts() == 0);
-			assertTrue(getMaxPendingPutsRunnable.getMaxPendingPuts() == 0);
+			// assertTrue(getMaxPendingPutsRunnable.getMaxPendingPuts() == 0);
+
+
+			// returns -1 when not testing
+			assertTrue(server.lockWrite.stopTestingAndGetMaxPendingPuts() == -1);
+
+
+			// resets the testing stores, when isTesting then the lockWrite object will record the max amount of pending puts
+			// this value of max pending puts is retreived at the end of the test
+			server.lockWrite.setIsTesting();
+
+			assertTrue(server.lockWrite.stopTestingAndGetMaxPendingPuts() == 0); // testing stopped with 0 max puts
+
+			
+			// confirm the testing was turned off and reset
+			assertTrue(server.lockWrite.stopTestingAndGetMaxPendingPuts() == -1);
+
+			// start the test
+			server.lockWrite.setIsTesting();
+
 
 			// start the put threads and wait for them to finish
 			// use 5 different puts to give the getMaxPendingPutsRunnablea chance to detect at least 1 pending puts
@@ -463,13 +482,21 @@ public class LockWriteKVServerTest extends TestCase {
 				Thread.sleep(10);
 			}
 
-			// check that the max was in fact >= 1 but has since returned to 0 (the puts completed)
-			assertTrue(getMaxPendingPutsRunnable.getMaxPendingPuts() >= 1);
+			assertTrue(server.lockWrite.stopTestingAndGetMaxPendingPuts() >= 1);
 			assertTrue(server.lockWrite.getPendingPuts() == 0);
 
-			// interupt, thus stopping, the thread and join to it
-			getMaxPendingPutsRunnable.setInterupt();
-			getMaxPut.join();
+
+			// a last assert to guarentee the test was stopped
+			assertTrue(server.lockWrite.stopTestingAndGetMaxPendingPuts() == -1);
+
+
+			// // check that the max was in fact >= 1 but has since returned to 0 (the puts completed)
+			// assertTrue(getMaxPendingPutsRunnable.getMaxPendingPuts() >= 1);
+			// assertTrue(server.lockWrite.getPendingPuts() == 0);
+
+			// // interupt, thus stopping, the thread and join to it
+			// getMaxPendingPutsRunnable.setInterupt();
+			// getMaxPut.join();
 
 		} catch (Exception e){
 			System.out.println("Exception : " + e.getMessage());

@@ -106,6 +106,10 @@ class HashRangeIterator implements Iterator<Map.Entry<String, String>> {
     }
 
     public boolean keyInRange(String key) {
+        if(counterClockwiseBound == null || clockwiseBound == null){
+            // this allows returning all data
+            return true;
+        }
         byte[] fileNameHash = null;
         try{
             MessageDigest md = MessageDigest.getInstance("MD5");
