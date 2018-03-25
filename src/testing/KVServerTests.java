@@ -27,6 +27,8 @@ public class KVServerTests extends TestCase {
 		s1.start();
 		s2.start();
 		
+		Thread.sleep(200); // allow the zk hasher update to propogate to s1
+
 		CommMod comm = new CommMod();		
 		comm.Connect("localhost", port);
 		
