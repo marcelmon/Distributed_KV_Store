@@ -142,4 +142,17 @@ public class NoCache implements ICache {
 	public Iterator<Map.Entry<String, String>> getHashRangeIterator(byte[] minHash, byte[] maxHash) {
 		return new HashRangeIterator(minHash, maxHash, null, kvdb);
 	}
+
+
+
+	@Override
+    public List<Map.Entry<String, String>> getTuples() {   	
+    	return null;
+    }
+	
+	@Override
+    public List<Map.Entry<String, String>> getTuples(Byte[] hashLower, Byte[] hashUpper) {
+    	return null;
+    }
+
 }
