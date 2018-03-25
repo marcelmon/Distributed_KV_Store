@@ -31,7 +31,7 @@ public class LockWriteKVServerTest extends TestCase {
 	@Override
 	public void setUp() throws Exception {
 
-		int port = 5000;
+		int port = 6000;
 		server = new KVServer("localhost", port, "localhost", 2181, 10, "FIFO"); // TODO put proper args when zookeeper implemented
 		server.run();
 		server.clearStorage();
@@ -42,10 +42,13 @@ public class LockWriteKVServerTest extends TestCase {
 	}
 	
 	@Override
-	public void tearDown() {
+	public void tearDown() throws Exception{
 		store.disconnect();
+		server.stop();
+		server.clearStorage();
 		server.close();
 		server = null;
+		Thread.sleep(10); // giving the port a chance to be cleared
 	}
 
 
@@ -369,6 +372,7 @@ public class LockWriteKVServerTest extends TestCase {
 			Thread.sleep(100);
 			// check that key does not exist
 			KVMessage respGet = store.get("a");
+
 			assertTrue(respGet.getStatus().equals(StatusType.GET_ERROR));
 		
 
@@ -381,7 +385,7 @@ public class LockWriteKVServerTest extends TestCase {
 
 			server.unlockWrite();
 
-
+			// assert that is no longer write lock
 			KVMessage resp2 = store.put("a", "2");
 			assertTrue(resp2.getStatus().equals(StatusType.PUT_SUCCESS));
 	
@@ -432,6 +436,16 @@ public class LockWriteKVServerTest extends TestCase {
 			String val3 = "3";
 			put3 = new Thread(new RunPut(key3, val3, store));
 
+			Thread put4;
+			String key4 = "d";
+			String val4 = "4";
+			put4 = new Thread(new RunPut(key4, val4, store));
+
+			Thread put5;
+			String key5 = "e";
+			String val5 = "5";
+			put5 = new Thread(new RunPut(key5, val5, store));
+
 			getMaxPut.start();
 
 			// show there are currently no pending puts and also the max (from thread) is 0
@@ -439,14 +453,17 @@ public class LockWriteKVServerTest extends TestCase {
 			assertTrue(getMaxPendingPutsRunnable.getMaxPendingPuts() == 0);
 
 			// start the put threads and wait for them to finish
+			// use 5 different puts to give the getMaxPendingPutsRunnablea chance to detect at least 1 pending puts
 			put1.start();
 			put2.start();
 			put3.start();
-			while(put3.isAlive() || put2.isAlive() || put1.isAlive()){
+			put4.start();
+			put5.start();
+			while(put3.isAlive() || put2.isAlive() || put1.isAlive() || put4.isAlive() || put5.isAlive()){
 				Thread.sleep(10);
 			}
 
-			// check that the max was in fact >= 1 but has since returned to 0 (the put completed)
+			// check that the max was in fact >= 1 but has since returned to 0 (the puts completed)
 			assertTrue(getMaxPendingPutsRunnable.getMaxPendingPuts() >= 1);
 			assertTrue(server.lockWrite.getPendingPuts() == 0);
 
@@ -623,7 +640,6 @@ public class LockWriteKVServerTest extends TestCase {
 
 
 				KVMessage resp = store.put(key, value);
-				System.out.println("PUT STATUS : " + resp.getStatus()+"\n\n\n\n\n\n");
 				assertTrue(resp.getStatus().equals(StatusType.PUT_SUCCESS));
 			} catch (Exception e){
 				System.out.println("Exception : " + e.getMessage());
