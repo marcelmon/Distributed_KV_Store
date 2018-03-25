@@ -19,7 +19,6 @@ public class StoreServerTests extends TestCase {
 	@Test
 	public void testInsert() {
 		try {
-			System.out.println("HERE 0.1\n\n\n\n\n");
 			KVServer serv = new KVServer("localhost", 12343, "localhost", 2181, 10, "FIFO"); //TODO fix when zookeeper implemented
 			serv.clearStorage();
 			serv.run();
