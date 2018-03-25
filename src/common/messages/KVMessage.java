@@ -17,10 +17,6 @@ public class KVMessage extends Message {
 	public KVMessage() { }
 	
 	public boolean messageHasValue(StatusType status) {
-//		return  (status == StatusType.PUT) || 
-//				(status == StatusType.FORCE_PUT) || 
-//				(status == StatusType.SERVER_NOT_RESPONSIBLE )|| 
-//				(status == StatusType.GET_SUCCESS);
 		return  (status == StatusType.PUT) || 
 				(status == StatusType.FORCE_PUT) ||  
 				(status == StatusType.GET_SUCCESS);		
@@ -268,7 +264,7 @@ public class KVMessage extends Message {
 			// Calculate remaining length:
 			StatusType status = StatusType.values()[tag];
 			int msgLen = -1;
-			if (status == StatusType.PUT || status == StatusType.GET_SUCCESS) {
+			if (messageHasValue(status)) {
 				// Allow TIMEOUT ms for data to become available:
 				t0 = System.currentTimeMillis();
 				while (stream.available() < 2) {

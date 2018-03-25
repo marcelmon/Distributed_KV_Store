@@ -54,6 +54,7 @@ public abstract class Message {
 			case GET_ERROR:
 			case GET_SUCCESS:
 			case PUT:
+			case FORCE_PUT:
 			case PUT_SUCCESS:
 			case PUT_UPDATE:
 			case PUT_ERROR:

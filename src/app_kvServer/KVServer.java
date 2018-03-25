@@ -23,10 +23,6 @@ import java.security.*;
 
 
 public class KVServer implements IKVServer, ICommListener {
-
-	protected boolean useECSOnly = true;
-
-
 	protected static Logger logger = Logger.getRootLogger();
 	
 	
@@ -104,7 +100,7 @@ public class KVServer implements IKVServer, ICommListener {
 	    }
 	}
 
-	private boolean isStarted() {
+	public boolean isStarted() {
 		return isStarted;
 	}
 
@@ -294,11 +290,12 @@ public class KVServer implements IKVServer, ICommListener {
 		}
 
 		ConsistentHasher.ServerRecord targetServer = hasher.mapKey(msg.getKey());
+		System.out.println("Target port: " + targetServer.port);
 		if(msg.getStatus().equals(StatusType.GET) || msg.getStatus().equals(StatusType.PUT)){
 			if(targetServer == null){
 				throw new RuntimeException(logHeader + " - No servers registered.");
 			}
-			else if(!targetServer.hostname.equals(name) || targetServer.port != desired_port){
+			else if(!targetServer.hostname.equals(name) || targetServer.port != getPort()){
 				try {
 					KVMessage resp = new KVMessage(StatusType.SERVER_NOT_RESPONSIBLE, hasher.toString(), null);
 					try{
@@ -346,7 +343,7 @@ public class KVServer implements IKVServer, ICommListener {
 				}
 				break;
 			case PUT:
-				
+			case FORCE_PUT:
 				KVMessage resp = null;
 				boolean isLockWrite = lockWrite.testIncrementPuts();
 				try{
@@ -425,88 +422,67 @@ public class KVServer implements IKVServer, ICommListener {
 
 	@Override
 	public void start() throws Exception {
-
 		String logHeader = name+":"+desired_port + " start()";
 		System.out.println(logHeader + " - called");
-
-		if(useECSOnly){
-			if(isStarted){
-				throw new Exception("ERROR ALREADY STARTED!");
-			}
-			
-			isStarted = true;
-			isc.addServer();
-
-			return;
-		}
-		else{
-
-			// request data from neighbour above (clockwise)
-			IConsistentHasher.ServerRecord me = new IConsistentHasher.ServerRecord(name, desired_port);
-
-			ServerRecord txServer = new ServerRecord(null);
-			List<Byte> clockwise = new ArrayList<Byte>();
-			List<Byte> counterclockwise = new ArrayList<Byte>();
-			hasher.preAddServer(me, txServer, clockwise, counterclockwise);
-
-			if(txServer.hostname != null){
-
-				// request some tuples
-				CommMod bulkClient = new CommMod();
-				bulkClient.Connect(txServer.hostname, txServer.port); 
-				Map.Entry<?, ?>[] receivedTuples = bulkClient.GetTuples(clockwise.toArray(new Byte[clockwise.size()]), counterclockwise.toArray(new Byte[counterclockwise.size()]));
 		
-				// put the tuples directly to the cache (can go directly to disk)
-				if(receivedTuples.length > 0){
-					for (Map.Entry<?, ?> tuple : receivedTuples) {
-						cache.put((String) tuple.getKey(), (String) tuple.getValue());
-						// cache.kvdb.put((String) tuple.getKey(), (String) tuple.getValue());
-					}
-				}
-			}
+		if(isStarted){
+			throw new Exception("ERROR ALREADY STARTED!");
+		}
+		isStarted = true;
 
-			isc.addServer();
-		}	
+		//TODO test if this works
+//		// request data from neighbour above (clockwise)
+//		IConsistentHasher.ServerRecord me = new IConsistentHasher.ServerRecord(name, desired_port);
+//
+//		ServerRecord txServer = new ServerRecord(null);
+//		List<Byte> clockwise = new ArrayList<Byte>();
+//		List<Byte> counterclockwise = new ArrayList<Byte>();
+//		hasher.preAddServer(me, txServer, clockwise, counterclockwise);
+//
+//		if(txServer.hostname != null){
+//
+//			// request some tuples
+//			CommMod bulkClient = new CommMod();
+//			bulkClient.Connect(txServer.hostname, txServer.port); 
+//			Map.Entry<?, ?>[] receivedTuples = bulkClient.GetTuples(clockwise.toArray(new Byte[clockwise.size()]), counterclockwise.toArray(new Byte[counterclockwise.size()]));
+//	
+//			// put the tuples directly to the cache (can go directly to disk)
+//			if(receivedTuples.length > 0){
+//				for (Map.Entry<?, ?> tuple : receivedTuples) {
+//					cache.put((String) tuple.getKey(), (String) tuple.getValue());
+//					// cache.kvdb.put((String) tuple.getKey(), (String) tuple.getValue());
+//				}
+//			}
+//		}
+
+		isc.addServer();
 	}
 
 	@Override
 	public void stop() {
-	    if(useECSOnly){
-	    	isStarted = false;
-	    	try{
-	    		// Remove this server:
-	    		isc.removeServer();
-	    		
-	    		// Get destination server:
-	    		ServerRecord me = new ServerRecord(getHostname(), getPort());
-	    		ServerRecord rxServer = new ServerRecord(new Byte[0]);
-	    		hasher.preRemoveServer(me, rxServer);
-	    		
-	    		// Populate a list of the tuples this server was responsible for:
-	    		List<Entry<String, String>> tuples = cache.getTuples();
+    	isStarted = false;
+    	try{
+    		// Remove this server:
+    		isc.removeServer();
+    		
+    		// Get destination server:
+    		ServerRecord me = new ServerRecord(getHostname(), getPort());
+    		ServerRecord rxServer = new ServerRecord(new Byte[0]);
+    		hasher.preRemoveServer(me, rxServer);
+    		
+    		// Populate a list of the tuples this server was responsible for:
+    		List<Entry<String, String>> tuples = cache.getTuples();
 //	    		List<Entry<String, String>> tuples = cache.getTuples(me.hash, rxServer.hash);
-	    		
-	    		// Send tuples:
-	    		CommMod comm = new CommMod();
-	    		comm.Connect(rxServer.hostname, rxServer.port);
-	    		comm.SendTuples(tuples.toArray(new Entry<?, ?>[0]));
-	    	} catch (IIntraServerComms.NotYetRegisteredException e){
-	    		System.out.println("ERRORR WITH NotYetRegisteredException");
-	    	} catch (Exception e){
-	    		System.out.println("ERRORR WITH Exception");
-	    	}
-	    }
-	    else{
-	    	isStarted = false;
-	    	try{
-	    		isc.removeServer();
-		    	// clearStorage();
-	    	} catch (IIntraServerComms.NotYetRegisteredException e){
-	    		System.out.println("ERRORR WITH NotYetRegisteredException");
-	    	} catch (Exception e){
-	    		System.out.println("ERRORR WITH Exception");
-	    	}
-	    }
+    		
+    		// Send tuples:
+    		CommMod comm = new CommMod();
+    		comm.Connect(rxServer.hostname, rxServer.port);
+    		comm.SendTuples(tuples.toArray(new Entry<?, ?>[0]));
+    	} catch (IIntraServerComms.NotYetRegisteredException e){
+    		System.out.println("ERRORR WITH NotYetRegisteredException");
+    	} catch (Exception e){
+    		System.out.println("ERRORR WITH Exception");
+    	}
 	}
 
 
@@ -711,7 +687,7 @@ public class KVServer implements IKVServer, ICommListener {
 
         String[] targetHostPort = targetName.split(":");
 
-    	if(useECSOnly){
+    	if(true) {
 
     		Iterator<Map.Entry<String, String>> iter = null;
     		if(cache == null){
@@ -1058,147 +1034,99 @@ public class KVServer implements IKVServer, ICommListener {
 			return;
 		}
 
-		if(useECSOnly){
-
-			ConsistentHasher.ServerRecord[] serverList = hasher.getServerList();
-
-			this.hasher = hasher;
-
-			if(serverList.length < 1){ // there were no hashed values updated, perhaps this could be some error? might want to check before clearStorage
-				if(oldBelow != null){
-					oldBelow = null;
-					// clearStorage();
-					return;
-				}
-			}
-
-			IConsistentHasher.HashComparator comp = new IConsistentHasher.HashComparator();
-
-			ConsistentHasher.ServerRecord me = new ConsistentHasher.ServerRecord(name, desired_port);
-
-			boolean hashDelete = false;
-
-			boolean hasMe = false;
-			for(ConsistentHasher.ServerRecord rec : serverList){
-				if(comp.compare(rec.hash, me.hash) == 0){
-					hasMe = true;
-					break;
-				}
-			}
-
-			ConsistentHasher.ServerRecord newBelow = getNewBelow(me, serverList);
-
-			if(oldBelow == null){ // we will not have been registered to cache ring yet
-				
-				if(!hasMe){ // still not registered, do nothing
-					return;
-				}
-				if(serverList.length == 1){ // there is only 1 ServerRecord in new hasher and it is me, now registered to hash ring
-					oldBelow = me;
-					return;
-				}
-				// else length is > 1 and we are included for first time, check if we need to delete any overlapping hashed values (shouldn't though)
-				hashDelete = true;
-				oldBelow = me;
-			}
-			else{ // oldBelow != null, this mean we have previously been registered to the hash ring
-				
-				if(!hasMe){ // now unregistered from hash ring for some reason
-					oldBelow = null;
-					System.out.println(logHeader + " - unregistered from hash ring ");
-					return;
-				}
-				// CHECK IF THE RING SHRUNK
-				boolean ringShrunk = testRingShrunk(me, oldBelow, newBelow);
-			
-				if(ringShrunk){
-					System.out.println(logHeader + " ring has shrunk, must delete data");
-					hashDelete = true;
-				}
-			}
-			if(hashDelete){
-
-				if(comp.compare(newBelow.hash, me.hash) == 0){ // don't delete
-					oldBelow = newBelow;
-					return;
-				}
-
-				System.out.println(logHeader + " - hash delete ");
-				byte[] oldBelowByte = new byte[oldBelow.hash.length];
-				for (int j = 0; j < oldBelow.hash.length; j++) oldBelowByte[j] = oldBelow.hash[j];
-
-				byte[] newBelowByte = new byte[newBelow.hash.length];
-				for (int j = 0; j < newBelow.hash.length; j++) newBelowByte[j] = newBelow.hash[j];
-
-				ArrayList<String> keysToDelete = new ArrayList<String>();
-				Iterator<Map.Entry<String, String>> iter = cache.getHashRangeIterator(oldBelowByte, newBelowByte);
-				Map.Entry<String,String> item = null;
-				while(iter.hasNext()){
-					keysToDelete.add(iter.next().getKey());
-				}
-				iter = null;
-
-				for (String del_key : keysToDelete ) {
-					try{
-						cache.delete(del_key);	
-					} catch (ICache.KeyDoesntExistException e){
-						System.out.println(logHeader + " key doesnt exist");
-					} catch(Exception e){
-						System.out.println(logHeader + " exceptiom " + e.getMessage());
-					}
-				}
-			}
-			if(newBelow != null){
-				oldBelow = newBelow;
-			}
-
-			return;
-		}
-
-		/*
-			This case is when the start() function was just called but we have not yet registered to take requests
-			We are loading the hash ring and seeing if data needs to be requested from neighbour.
-		
-		*** Should be called directly in the start function *** this place handles when another update occurs during this time ***
-		*/
-		else if(isStarted == true && gettingNeighbourData == true){
-
-			this.hasher = hasher;
-			try{
-				if(getNeighourData()){
-					pendingRunning = true;
-				}
-			} catch (Exception e){
-				System.out.println("Exception in getNeighourData : " + e.getMessage());
-			}
-
-			return;
-		}
-		
-		if(gettingNeighbourData == true){
-			//..???
-		}
-
-		// pendingRunning == true and isStarted == false
-		// means we have already communicated our bulk request and loaded, and the other server did not time out
-		// now we are just waiting for zookeeper to confirm we are added to the hash ring
-		if(isAddedToHashRing == false){
-			// check if its our server, if it is then we are good to start taking calls
-
-			// see if this server was added
-			if(checkIfAdded(name, desired_port, hasher)){
-				isAddedToHashRing = true;
-				// ***** DELETE THE HASH RANGE ***** (can store the keys in cache memory or use the iterator func)
-			}
-		}
-		if(isAddedToHashRing == true){ // right now only check for new server range added if we are also added
-			if(checkNewServerHashRange(hasher)){ // this function will do the deleting
-				
-			}
-		}
-			
+		ConsistentHasher.ServerRecord[] serverList = hasher.getServerList();
 
 		this.hasher = hasher;
+
+		if(serverList.length < 1){ // there were no hashed values updated, perhaps this could be some error? might want to check before clearStorage
+			if(oldBelow != null){
+				oldBelow = null;
+				// clearStorage();
+				return;
+			}
+		}
+
+		IConsistentHasher.HashComparator comp = new IConsistentHasher.HashComparator();
+
+		ConsistentHasher.ServerRecord me = new ConsistentHasher.ServerRecord(name, desired_port);
+
+		boolean hashDelete = false;
+
+		boolean hasMe = false;
+		for(ConsistentHasher.ServerRecord rec : serverList){
+			if(comp.compare(rec.hash, me.hash) == 0){
+				hasMe = true;
+				break;
+			}
+		}
+
+		ConsistentHasher.ServerRecord newBelow = getNewBelow(me, serverList);
+
+		if(oldBelow == null){ // we will not have been registered to cache ring yet
+			
+			if(!hasMe){ // still not registered, do nothing
+				return;
+			}
+			if(serverList.length == 1){ // there is only 1 ServerRecord in new hasher and it is me, now registered to hash ring
+				oldBelow = me;
+				return;
+			}
+			// else length is > 1 and we are included for first time, check if we need to delete any overlapping hashed values (shouldn't though)
+			hashDelete = true;
+			oldBelow = me;
+		}
+		else{ // oldBelow != null, this mean we have previously been registered to the hash ring
+			
+			if(!hasMe){ // now unregistered from hash ring for some reason
+				oldBelow = null;
+				System.out.println(logHeader + " - unregistered from hash ring ");
+				return;
+			}
+			// CHECK IF THE RING SHRUNK
+			boolean ringShrunk = testRingShrunk(me, oldBelow, newBelow);
+		
+			if(ringShrunk){
+				System.out.println(logHeader + " ring has shrunk, must delete data");
+				hashDelete = true;
+			}
+		}
+		if(hashDelete){
+
+			if(comp.compare(newBelow.hash, me.hash) == 0){ // don't delete
+				oldBelow = newBelow;
+				return;
+			}
+
+			System.out.println(logHeader + " - hash delete ");
+			byte[] oldBelowByte = new byte[oldBelow.hash.length];
+			for (int j = 0; j < oldBelow.hash.length; j++) oldBelowByte[j] = oldBelow.hash[j];
+
+			byte[] newBelowByte = new byte[newBelow.hash.length];
+			for (int j = 0; j < newBelow.hash.length; j++) newBelowByte[j] = newBelow.hash[j];
+
+			ArrayList<String> keysToDelete = new ArrayList<String>();
+			Iterator<Map.Entry<String, String>> iter = cache.getHashRangeIterator(oldBelowByte, newBelowByte);
+			Map.Entry<String,String> item = null;
+			while(iter.hasNext()){
+				keysToDelete.add(iter.next().getKey());
+			}
+			iter = null;
+
+			for (String del_key : keysToDelete ) {
+				try{
+					cache.delete(del_key);	
+				} catch (ICache.KeyDoesntExistException e){
+					System.out.println(logHeader + " key doesnt exist");
+				} catch(Exception e){
+					System.out.println(logHeader + " exceptiom " + e.getMessage());
+				}
+			}
+		}
+		if(newBelow != null){
+			oldBelow = newBelow;
+		}
+
+		return;
 		
 	}
 
@@ -1247,114 +1175,6 @@ public class KVServer implements IKVServer, ICommListener {
 		}
 		return null;
 	}
-
-	/*
-		REMOVED FOR NOW WILL USE LATER MAYBE TO ALLOW COMMUNICATION WITH BACK TO SENDER
-	*/
-	// public synchronized void OnTuplesReceived(Entry<?, ?>[] tuples, OutputStream client) {
-
-	// 	System.out.println("OnTuplesReceived() " + name + ":" + desired_port + " And tuple size : " + tuples.length);
-			
-	// 	if(useECSOnly){
-
-	// 		for (int i = 0; i < tuples.length; ++i) {
-	// 			try{
-	// 				cache.put((String) tuples[i].getKey(), (String) tuples[i].getValue());
-	// 			} catch (Exception e){
-
-	// 			}
-	// 		}
-
-	// 		return;
-
-	// 	}
-
-	// 	if(deleteTimeoutThread != null && deleteTimeoutThread.isAlive()){
-	// 		deleteTimeoutRunnable.addMoreTime(10000);
-	// 	}
-
-	// 	Byte[] minHashValue = null;
-	// 	Byte[] maxHashValue = null;
-		
-	// 	HashComparator comp = new HashComparator();
-	// 	// if we get a transfer received ack then we keep the hashed values
-	// 	// if we get a transfer received nack at any point then we delete the data in hash range of client
-		
-	// 	for (int i = 0; i < tuples.length; ++i) {
-	// 		try{
-	// 			cache.put((String) tuples[i].getKey(), (String) tuples[i].getValue());
-	// 		} catch (Exception e){
-
-	// 		}
-			
-	// 		byte[] hashedKey = getHashedValue( ((String) tuples[i].getKey()).getBytes());
-	// 		Byte[] byteHashedKey = new Byte[hashedKey.length];
-	// 		for (int j = 0; j < hashedKey.length ; ++j ) byteHashedKey[j] = hashedKey[j];
-	// 		if(minHashValue == null){
-	// 			minHashValue = byteHashedKey;
-	// 			maxHashValue = byteHashedKey;
-	// 		}
-	// 		else{
-	// 			ConsistentHasher.ServerRecord hashedRecord = new ConsistentHasher.ServerRecord(byteHashedKey);
-	// 			ConsistentHasher.ServerRecord minHashedRecord = new ConsistentHasher.ServerRecord(minHashValue);
-	// 			ConsistentHasher.ServerRecord maxHashedRecord = new ConsistentHasher.ServerRecord(maxHashValue);
-				
-
-	// 			if(comp.compare(hashedRecord, minHashedRecord) < 0){
-	// 				minHashValue = byteHashedKey;
-	// 			}
-	// 			if(comp.compare(hashedRecord, maxHashedRecord) > 0){
-	// 				maxHashValue = byteHashedKey;
-	// 			}
-	// 		}
-	// 	}
-
-
-
-	// 	if(deleteTimeoutThread == null){
-	// 		long totalWaitMillis = 10000;
-	// 		deleteTimeoutRunnable = new DeleteTimeout(totalWaitMillis, this.lockWrite, maxHashValue, minHashValue, this.cache);
-	// 		deleteTimeoutThread = new Thread(deleteTimeoutRunnable);
-	// 		deleteTimeoutThread.start();
-	// 		// send a reply for each set of received tuples, the sender will count them or just run sequentially
-
-	// 		KVMessage transferComplete = null;
-	// 		try{
-	// 			transferComplete = new KVMessage(StatusType.TRANSFER_COMPLETE, "", null);
-	// 		} catch (Message.FormatException e){
-
-	// 		}
-	// 		try{
-	// 			client.write(transferComplete.getBytes());
-	// 		}catch(IOException e){
-				
-	// 		}
-			
-	// 	}
-	// 	else if(deleteTimeoutThread.isAlive()){
-	// 		deleteTimeoutRunnable.addMoreTime(10000);
-	// 		deleteTimeoutRunnable.updateMinHashVal(minHashValue);
-	// 		deleteTimeoutRunnable.updateMaxHashVal(maxHashValue);
-	// 		// send a reply for each set of received tuples, the sender will count them or just run sequentially
-	// 		KVMessage transferComplete = null;
-	// 		try{
-	// 			transferComplete = new KVMessage(StatusType.TRANSFER_COMPLETE, "", null);
-	// 		} catch (Message.FormatException e){
-				
-	// 		}
-	// 		try{
-	// 			client.write(transferComplete.getBytes());
-	// 		}catch(IOException e){
-
-	// 		}
-	// 	}
-	// 	else{
-	// 		// hash thing already deleted?? hmmmm
-	// 	}
-
-	// }
-
-
 
 	public UnlockTimeout unlockTimeoutRunnable = null;
 	public Thread unlockTimeoutThread = null;
@@ -1687,50 +1507,7 @@ public class KVServer implements IKVServer, ICommListener {
 	// THESE FUNCTIONS ARE ONLY CALLED AT SERVER END
 	// sent back to us after a new node has loaded all the data we sent for its hash
 	public void OnTransferCompleteReceived(KVMessage msg, OutputStream client) {
-
-		// if this returns true then we will have unlocked before the timeout did
-
-		if(useECSOnly){
-			return;
-		}
-
-		if(unlockTimeoutRunnable != null && unlockTimeoutRunnable.interrupt()){
-
-			if(lockWrite.isLockWrite()){ // redundancy, but necessary because the update will remove this lock
-
-
-				try{
-					KVMessage transferCompleteAck = new KVMessage(StatusType.TRANSFER_COMPLETE_ACK, "", null);
-					server.SendMessage(transferCompleteAck, client);
-				} catch (Message.FormatException e){
-					
-				} catch(Exception e){
-
-				}
-
-			}
-		}
-		else{
-			if(lockWrite.isLockWrite()){ // redundancy
-				lockWrite.testUnlockWrite(); // should already be unlocked
-			}
-
-			try{
-				KVMessage transferCompleteNack = new KVMessage(StatusType.TRANSFER_COMPLETE_NACK, "", null);
-				server.SendMessage(transferCompleteNack, client);
-
-
-			} catch (Message.FormatException e){
-				
-			} catch(Exception e){
-
-			}
-
-
-				
-		}
-
-
+		return;
 	}
 
 	// we have received a node going down's data, and have sent back TRANSFER_COMPLETE

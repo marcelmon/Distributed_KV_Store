@@ -34,6 +34,7 @@ public class AllTests {
 //		clientSuite.addTestSuite(KVDBTests.class);
 //		clientSuite.addTestSuite(KVMessageTest.class);
 //		clientSuite.addTestSuite(KVServerBulkDataTransferAndConsistentHasherUpdateTest.class);
+//		clientSuite.addTestSuite(KVServerTests.class);
 //		clientSuite.addTestSuite(LockWriteKVServerTest.class);
 //		clientSuite.addTestSuite(MessageTest.class);
 //		clientSuite.addTestSuite(SocketTest.class);
