@@ -9,12 +9,22 @@ public class KVMessage extends Message {
 	String key;
 	String value;
 	StatusType status;
-	final long timeout = 250;
+	final long timeout = (long) 1e3;
 	
 	/**
 	 * Default constructor.
 	 */
 	public KVMessage() { }
+	
+	public boolean messageHasValue(StatusType status) {
+//		return  (status == StatusType.PUT) || 
+//				(status == StatusType.FORCE_PUT) || 
+//				(status == StatusType.SERVER_NOT_RESPONSIBLE )|| 
+//				(status == StatusType.GET_SUCCESS);
+		return  (status == StatusType.PUT) || 
+				(status == StatusType.FORCE_PUT) ||  
+				(status == StatusType.GET_SUCCESS);		
+	}
 	
 	/**
 	 * Constructs the TLVMessage from it's byte encoding.
@@ -51,11 +61,14 @@ public class KVMessage extends Message {
 		this.status = status;
 		
 		// Format checks:
-		if (status != StatusType.PUT && status != StatusType.FORCE_PUT && status != StatusType.GET_SUCCESS && value != null) {
-			throw new FormatException("Value on non-PUT, non-GET_SUCCESS TLVMessage");
-		}
-		if ((status == StatusType.PUT || status == StatusType.FORCE_PUT || status == StatusType.GET_SUCCESS) && value == null) {
-			throw new FormatException("No value on PUT or GET_SUCCESS TLVMessage");
+		if (messageHasValue(status)) {
+			if (value == null) {
+				throw new FormatException("Improperly omitted value on KVMessage");
+			}
+		} else {
+			if (value != null) {
+				throw new FormatException("Improperly included value on KVMessage");
+			}
 		}
 	}
 	
@@ -142,8 +155,8 @@ public class KVMessage extends Message {
 			//TODO throw exception
 			//This is just a sanity check to ensure the formats are correct
 		}
-		if (status == StatusType.PUT) {
-			//TODO throw exception - not 1 field
+		if (messageHasValue(status)) {
+			throw new RuntimeException("Called fromTLV1Field() on a key+value message type");
 		}
 		
 		int keyLen = buffer[1];
@@ -160,8 +173,12 @@ public class KVMessage extends Message {
 			//TODO throw exception
 			//This is just a sanity check to ensure the formats are correct
 		}
-		if (status != StatusType.PUT) {
-			//TODO throw exception - not 2 field
+		if (!messageHasValue(status)) {
+			throw new RuntimeException("Called fromTLV1Field() on a key-only message type");
+		}
+		
+		for (byte b : buffer) {
+			System.out.println(b);
 		}
 		
 		int keyLen = buffer[1];
@@ -181,10 +198,10 @@ public class KVMessage extends Message {
 		byte[] output = null;
 		byte tag = (byte) status.ordinal();
 		
-		if (status == StatusType.PUT || status == StatusType.GET_SUCCESS) {
-			output = toTLV2Field(tag, key, value);
+		if (messageHasValue(status)) {
+				output = toTLV2Field(tag, key, value);
 		} else {
-			output = toTLV1Field(tag, key);
+				output = toTLV1Field(tag, key);
 		}				
 		
 		return output;
@@ -196,10 +213,10 @@ public class KVMessage extends Message {
 		
 		status = StatusType.values()[bytes[0]];
 		
-		if (status == StatusType.PUT || status == StatusType.GET_SUCCESS) {
-			fromTLV2Field(status, bytes);
+		if (messageHasValue(status)) {
+				fromTLV2Field(status, bytes);
 		} else {
-			fromTLV1Field(status, bytes);
+				fromTLV1Field(status, bytes);
 		}
 	}
 	

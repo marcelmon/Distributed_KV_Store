@@ -84,63 +84,69 @@ public class KVStore implements KVCommInterface {
 
 	@Override
 	public KVMessage put(String key, String value) throws Exception {
-		// TODO call client.connect on appropriate server (if not already connected to approriate server)
-		// TODO handle case whereby server responds that it is not correct (i.e. update metadata and retry)
-		// TODO fail after a certain number of failures 
-		
-		// String ip = hasher.getServerList()[0].hostname;
-		// Integer port = hasher.getServerList()[0].port;
-
 		if(hasher.getServerList().length < 1){
-			throw new Exception("Error in put. No servers in hasher.");
+			throw new Exception("Error in get. No servers in hasher.");
 		}
-
-		ServerRecord toServ = hasher.mapKey(key);
-		client.Connect(toServ.hostname, toServ.port);
 		
-		StatusType statusType = StatusType.PUT;
-		KVMessage tx_msg = new KVMessage(statusType,key,value);
-		KVMessage rx_msg = null;
 		int numTries = 0;
-		int maxTries = 3;
+		int maxTries = 5;
+		
+		KVMessage rx_msg = null;
+		
 		try {
-			while(numTries < maxTries){
-				rx_msg = client.SendMessage(tx_msg);
+	
+			client.Disconnect();
+			while (true) {
 				numTries++;
+				if (numTries > maxTries) {
+					throw new Exception("Failed to find a server");
+				}
+				
+				ServerRecord toServ = hasher.mapKey(key);
+				
+				client.Connect(toServ.hostname, toServ.port);
+				
+				if (!client.isConnected()) {
+					// This server has failed, so remove it and try again:
+					List<ServerRecord> servList = Arrays.asList(hasher.getServerList());
+					servList.remove(toServ);
+					hasher.fromServerList(servList);
+					
+					continue; // retry
+				}
+				numTries = 0;
+			
+				KVMessage tx_msg = new KVMessage(StatusType.PUT,key,value);
+				
+				rx_msg = client.SendMessage(tx_msg);
+				
 				if(rx_msg.getStatus().equals(StatusType.SERVER_WRITE_LOCK)){
-					Thread.sleep(250);
-				}
-				else if(rx_msg.getStatus().equals(StatusType.SERVER_NOT_RESPONSIBLE)){
-					String[] splitAddr = rx_msg.getKey().split(":");
-					if(splitAddr.length != 2){
-						throw new Exception("Serious error put: got SERVER_NOT_RESPONSIBLE but bad addr returned (" + rx_msg.getKey() + ")" );
+					Thread.sleep(250); // wait it out
+					if (numTries == maxTries) {
+						throw new Exception("Timed out waiting for a locked server");
 					}
-					String newHost = splitAddr[0];
-					int newPort = Integer.valueOf(splitAddr[1]);
-					ServerRecord newServ = new ServerRecord(newHost, newPort);
-					testAddServer(newServ);
-					client.Connect(newHost, newPort);
-				}
-				else if(rx_msg.getStatus().equals(StatusType.SERVER_STOPPED)){
-					if(testRemoveServer(toServ) == true){
-						if(hasher.getServerList().length < 1){
-							break;
-							// throw new Exception("Error in put retry. No servers in hasher.");
-						}
-						toServ = hasher.mapKey(key); // try again since it was removed
-						client.Connect(toServ.hostname, toServ.port);
-					}
-				}
-				else{
+					continue; // retry
+				} else if(rx_msg.getStatus().equals(StatusType.SERVER_STOPPED)){
+					// This server has stopped, so remove it and try again:
+					List<ServerRecord> servList = Arrays.asList(hasher.getServerList());
+					servList.remove(toServ);
+					hasher.fromServerList(servList);
+					
+					continue; // retry
+				} else if(rx_msg.getStatus().equals(StatusType.SERVER_NOT_RESPONSIBLE)){
+					// This server isn't responsible, so we don't have an up-to-date hash
+					// ring.
+					
+					// Update our hash ring with the response:
+					hasher.fromString(rx_msg.getKey());
+					
+					continue; // retry
+				} else {
 					break;
 				}
-			}
-			// if(numTries >= maxTries){
-			// 	if(isWriteLocked
-			// 	throw new Exception("Serious error : received SERVER_NOT_RESPONSIBLE too many times ("+numTries+")");
-			// }
-				
+			}	
 		} catch (KVMessage.StreamTimeoutException e) {
+			System.out.println("Stream timeout");
 			//TODO log error
 		}
 		return rx_msg;
@@ -148,59 +154,61 @@ public class KVStore implements KVCommInterface {
 
 	@Override
 	public KVMessage get(String key) throws Exception {
-		// TODO call client.connect on appropriate server (if not already connected to approriate server)
-		// TODO handle case whereby server responds that it is not correct (i.e. update metadata and retry)
-		// TODO fail after a certain number of failures
-		
-		// String ip = hasher.getServerList()[0].hostname;
-		// Integer port = hasher.getServerList()[0].port;
-		// client.Connect(ip, port);
-
 		if(hasher.getServerList().length < 1){
-			throw new Exception("Error in put. No servers in hasher.");
+			throw new Exception("Error in get. No servers in hasher.");
 		}
-
-		ServerRecord toServ = hasher.mapKey(key);
-		client.Connect(toServ.hostname, toServ.port);
-
 		
-		StatusType statusType = StatusType.GET;
-		KVMessage tx_msg = new KVMessage(statusType,key,null);
-		KVMessage rx_msg = null;
-
 		int numTries = 0;
-		int maxTries = 3;
-
+		int maxTries = 5;
+		
+		KVMessage rx_msg = null;
+		
 		try {
-			while(numTries < maxTries){
-				rx_msg = client.SendMessage(tx_msg);
+	
+			client.Disconnect();
+			while (true) {
 				numTries++;
-				if(rx_msg.getStatus().equals(StatusType.SERVER_NOT_RESPONSIBLE)){
-					String[] splitAddr = rx_msg.getKey().split(":");
-					if(splitAddr.length != 2){
-						throw new Exception("Serious error get: got SERVER_NOT_RESPONSIBLE but bad addr returned (" + rx_msg.getKey() + ")" );
-					}
-					String newHost = splitAddr[0];
-					int newPort = Integer.valueOf(splitAddr[1]);
-					ServerRecord newServ = new ServerRecord(newHost, newPort);
-					testAddServer(newServ);
-					client.Connect(newHost, newPort);
+				if (numTries > maxTries) {
+					throw new Exception("Failed to find a server");
 				}
-				else if(rx_msg.getStatus().equals(StatusType.SERVER_STOPPED)){
-					if(testRemoveServer(toServ) == true){
-						if(hasher.getServerList().length < 1){
-							break;
-							// throw new Exception("Error in get retry. No servers in hasher.");
-						}
-						toServ = hasher.mapKey(key); // try again since it was removed
-						client.Connect(toServ.hostname, toServ.port);
-					}
+				
+				ServerRecord toServ = hasher.mapKey(key);
+				client.Connect(toServ.hostname, toServ.port);
+				
+				if (!client.isConnected()) {
+					// This server has failed, so remove it and try again:
+					List<ServerRecord> servList = Arrays.asList(hasher.getServerList());
+					servList.remove(toServ);
+					hasher.fromServerList(servList);
+					
+					continue; // retry
 				}
-				else{
+				numTries = 0;
+				
+				StatusType statusType = StatusType.GET;
+				KVMessage tx_msg = new KVMessage(statusType,key,null);
+				
+				rx_msg = client.SendMessage(tx_msg);
+				
+				if(rx_msg.getStatus().equals(StatusType.SERVER_STOPPED)){
+					// This server has stopped, so remove it and try again:
+					List<ServerRecord> servList = Arrays.asList(hasher.getServerList());
+					servList.remove(toServ);
+					hasher.fromServerList(servList);
+					
+					continue; // retry
+				} else if(rx_msg.getStatus().equals(StatusType.SERVER_NOT_RESPONSIBLE)){
+					// This server isn't responsible, so we don't have an up-to-date hash
+					// ring.
+					
+					// Update our hash ring with the response:
+					hasher.fromString(rx_msg.getValue());
+					
+					continue; // retry
+				} else {
 					break;
 				}
-			}
-				
+			}	
 		} catch (KVMessage.StreamTimeoutException e) {
 			System.out.println("Stream timeout");
 			//TODO log error

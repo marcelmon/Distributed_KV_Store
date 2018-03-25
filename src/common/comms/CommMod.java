@@ -203,6 +203,7 @@ public class CommMod implements ICommMod {
 	@Override
 	public void SendMessage(KVMessage msg, OutputStream client) throws Exception {
 		client.write(msg.getBytes());
+		client.flush();
 	}
 	
 	@Override

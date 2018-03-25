@@ -127,8 +127,15 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 
 	public IntraServerComms(String zkAddr, String hostname, Integer port) throws Exception {	
 		zkConnected = false; // ADDED FOR ZK NOT CONNECTED BUG
-		zk = new ZooKeeper(zkAddr, 100, this);		
+		zk = new ZooKeeper(zkAddr, 100, this);			
 		Thread.sleep(300);
+		if (zk.getState() != ZooKeeper.States.CONNECTED) {
+			System.out.println("Failed to connect to zookeeper");
+			throw new RuntimeException("Failed to connect to zookeeper");
+		} else {
+			System.out.println("Connected to zookeeper");
+		}
+		
 		// // ADDED FOR ZK NOT CONNECTED BUG
 		// long startTimeMillis = System.currentTimeMillis();
 		// while(zkConnected == false){

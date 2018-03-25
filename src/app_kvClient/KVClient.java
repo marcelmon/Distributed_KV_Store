@@ -128,6 +128,7 @@ public class KVClient implements IKVClient {
 							printError("Nothing happened.");
 						}
 					} catch (Exception e) {
+						e.printStackTrace();
 						printError(e.getMessage());
 					}
 				} else {

@@ -121,13 +121,13 @@ public class AdminClient  {
     
 	private void init(String kvHost, int kvPort) throws Exception {
 		// Launch all the servers:    	
+		isc = new IntraServerComms(kvHost + ":" + kvPort, "ECS", 0);
     	for (String s : ecs_config) {
     		String[] tokens = s.split(" ");
     		if (tokens.length != 3) {
     			throw new Exception("Malformed server config");
     		}
     		System.out.println("Launching... " + s);
-    		isc = new IntraServerComms(kvHost + ":" + kvPort, "ECS", 0);
     		launcher.launchSSH(tokens[0], tokens[1], Integer.parseInt(tokens[2]), 10, "LRU", kvHost, kvPort); //TODO magic values
     	}
 	}

@@ -16,6 +16,7 @@ import common.comms.IConsistentHasher.HashComparator;
 import common.comms.IConsistentHasher.ServerRecord;
 
 import java.util.*;
+import java.util.AbstractMap.SimpleEntry;
 import java.security.*;
 
 
@@ -163,8 +164,7 @@ public class KVServer implements IKVServer, ICommListener {
 
 	@Override
     public String getHostname(){
-		//TODO what is the hostname supposed to be?
-		return null;
+		return name;
 	}
 
 	@Override
@@ -299,9 +299,12 @@ public class KVServer implements IKVServer, ICommListener {
 				throw new RuntimeException(logHeader + " - No servers registered.");
 			}
 			else if(!targetServer.hostname.equals(name) || targetServer.port != desired_port){
-				String targetString = targetServer.hostname + ":" + Integer.toString(targetServer.port);
 				try {
-					KVMessage resp = new KVMessage(StatusType.SERVER_NOT_RESPONSIBLE, targetString, null);
+					System.out.println("Status: " + StatusType.SERVER_NOT_RESPONSIBLE);
+					System.out.println("Key: " + msg.getKey());
+					System.out.println("Value: " + hasher.toString());
+					// KVMessage resp = new KVMessage(StatusType.SERVER_NOT_RESPONSIBLE, msg.getKey(), hasher.toString());
+					KVMessage resp = new KVMessage(StatusType.SERVER_NOT_RESPONSIBLE, hasher.toString(), null);
 					try{
 						server.SendMessage(resp, client);
 					} catch(Exception ee){
@@ -477,8 +480,33 @@ public class KVServer implements IKVServer, ICommListener {
 	    if(useECSOnly){
 	    	isStarted = false;
 	    	try{
+	    		//
+	    		// TODO TEST THIS!!!
+	    		//
+	    		
+	    		// Get destination server:
+	    		ServerRecord me = new ServerRecord(getHostname(), getPort());
+	    		ServerRecord rxServer = new ServerRecord(new Byte[0]);
+	    		hasher.preRemoveServer(me, rxServer);
+	    		
+	    		// Populate a list of the tuples this server was responsible for:
+	    		List<Entry<String, String>> tuples = new ArrayList<Entry<String, String>>();
+	    		byte[] hashl = new byte[me.hash.length];
+	    		for (int i = 0; i < me.hash.length; i++) hashl[i] = me.hash[i];
+	    		byte[] hashr = new byte[rxServer.hash.length];
+	    		for (int i = 0; i < rxServer.hash.length; i++) hashr[i] = rxServer.hash[i];
+	    		Iterator<Entry<String, String>> it = cache.getHashRangeIterator(hashl, hashr);
+	    		while (it.hasNext()) {
+	    			tuples.add(it.next());
+	    		}
+	    		
+	    		// Send tuples:
+	    		CommMod comm = new CommMod();
+	    		comm.Connect(rxServer.hostname, rxServer.port);
+	    		comm.SendTuples(tuples.toArray(new Entry<?, ?>[0]));
+	    		
+	    		// Remove this server:
 	    		isc.removeServer();
-		    	// clearStorage();
 	    	} catch (IIntraServerComms.NotYetRegisteredException e){
 	    		System.out.println("ERRORR WITH NotYetRegisteredException");
 	    	} catch (Exception e){
