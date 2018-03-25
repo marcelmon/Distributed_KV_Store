@@ -150,7 +150,7 @@ public class ECSClient implements IECSClient {
 			try {
 				SSHLauncher SSH_server = new SSHLauncher();
 				// SSH_server.launchSSH(tokens[1],Integer.parseInt(tokens[2]));
-				SSH_server.launchSSH(tokens[0], tokens[1], Integer.parseInt(tokens[2]), 10, "LRU");
+				SSH_server.launchSSH(tokens[0], tokens[1], Integer.parseInt(tokens[2]), 10, "LRU", "kvHost", 0);
 
 				IntraServerComms comm = new IntraServerComms(tokens[0],tokens[1],Integer.parseInt(tokens[2]));
 				comm.call(tokens[1] + ":" + tokens[2],RPCMethod.Start,"");
