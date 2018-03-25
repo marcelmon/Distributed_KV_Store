@@ -17,6 +17,10 @@ public class ConsistentHasher implements IConsistentHasher {
 		// string format is csv: "<ip/hostname>:<port>,..."
 		servers.clear();
 		
+		if(metadata == null || metadata.equals("")){
+			// there were no servers passed in metadata
+			return;
+		}
 		String[] inputServers = metadata.split(",");		
 		for (String server : inputServers) {
 			// Attempt to split into host:port

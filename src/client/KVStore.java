@@ -85,7 +85,7 @@ public class KVStore implements KVCommInterface {
 	@Override
 	public KVMessage put(String key, String value) throws Exception {
 		if(hasher.getServerList().length < 1){
-			throw new Exception("Error in get. No servers in hasher.");
+			throw new Exception("Error in put. No servers in hasher.");
 		}
 		
 		int numTries = 0;
@@ -97,9 +97,11 @@ public class KVStore implements KVCommInterface {
 	
 			client.Disconnect();
 			while (true) {
+
+
 				numTries++;
 				if (numTries > maxTries) {
-					throw new Exception("Failed to find a server");
+					throw new Exception("Failed to find a server"); // should we send a client error?
 				}
 				
 				ServerRecord toServ = hasher.mapKey(key);
@@ -107,6 +109,7 @@ public class KVStore implements KVCommInterface {
 				client.Connect(toServ.hostname, toServ.port);
 				
 				if (!client.isConnected()) {
+
 					// This server has failed, so remove it and try again:
 					ArrayList<ServerRecord> servList = new ArrayList<ServerRecord>();
 					for (ServerRecord rec : hasher.getServerList()) servList.add(rec);
@@ -116,26 +119,23 @@ public class KVStore implements KVCommInterface {
 					
 					continue; // retry
 				}
-				numTries = 0;
+
 			
 				KVMessage tx_msg = new KVMessage(StatusType.PUT,key,value);
 				
 				rx_msg = client.SendMessage(tx_msg);
 				
 				if(rx_msg.getStatus().equals(StatusType.SERVER_WRITE_LOCK)){
-					Thread.sleep(250); // wait it out
 					if (numTries == maxTries) {
 						throw new Exception("Timed out waiting for a locked server");
 					}
+					Thread.sleep(250); // wait it out
 					continue; // retry
 				} else if(rx_msg.getStatus().equals(StatusType.SERVER_STOPPED)){
 					// This server has stopped, so remove it and try again:
-					ArrayList<ServerRecord> servList = new ArrayList<ServerRecord>();
-					for (ServerRecord rec : hasher.getServerList()) servList.add(rec);
-					if (servList.isEmpty()) throw new Exception("No servers");
-					servList.remove(toServ);
-					hasher.fromServerList(servList);
-					
+					// the stopped server will return the string representation of the hash ring
+					hasher.fromString(rx_msg.getKey());
+					if (hasher.getServerList().length < 1) throw new Exception("No servers");
 					continue; // retry
 				} else if(rx_msg.getStatus().equals(StatusType.SERVER_NOT_RESPONSIBLE)){
 					// This server isn't responsible, so we don't have an up-to-date hash
@@ -189,7 +189,7 @@ public class KVStore implements KVCommInterface {
 					
 					continue; // retry
 				}
-				numTries = 0;
+				// numTries = 0;
 				
 				StatusType statusType = StatusType.GET;
 				KVMessage tx_msg = new KVMessage(statusType,key,null);
@@ -198,11 +198,10 @@ public class KVStore implements KVCommInterface {
 				
 				if(rx_msg.getStatus().equals(StatusType.SERVER_STOPPED)){
 					// This server has stopped, so remove it and try again:
-					ArrayList<ServerRecord> servList = new ArrayList<ServerRecord>();
-					for (ServerRecord r : hasher.getServerList()) servList.add(r);
-					if (servList.isEmpty()) throw new Exception("No servers");
-					servList.remove(toServ);
-					hasher.fromServerList(servList);
+					// the stopped server will return the string representation of the hash ring
+
+					hasher.fromString(rx_msg.getKey());
+					if (hasher.getServerList().length < 1) throw new Exception("No servers");
 					
 					continue; // retry
 				} else if(rx_msg.getStatus().equals(StatusType.SERVER_NOT_RESPONSIBLE)){

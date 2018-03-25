@@ -275,7 +275,8 @@ public class KVServer implements IKVServer, ICommListener {
 
 		if(isStarted == false){
 			try {
-				KVMessage resp = new KVMessage(StatusType.SERVER_STOPPED, "", null);
+				// a stopped server will still have a consistent hash ring, send it back to the client
+				KVMessage resp = new KVMessage(StatusType.SERVER_STOPPED, hasher.toString(), null);
 				try{
 					server.SendMessage(resp, client);
 				} catch(Exception ee){
