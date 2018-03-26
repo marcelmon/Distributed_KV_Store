@@ -15,6 +15,7 @@ import ecs.*;
 import app_kvECS.ISSHLauncher;
 import common.comms.IIntraServerComms.RPCMethod;
 import common.comms.*;
+import common.comms.IConsistentHasher.ServerRecord;
 
 public class AdminClient  {
 	private static final String PROMPT = "AdminClient> ";
@@ -37,6 +38,14 @@ public class AdminClient  {
 			}
 			init(tokens[1], Integer.parseInt(tokens[2]));
 			
+		} else if(tokens[0].equals("map")) {
+			if (tokens.length != 2) {
+				printError("Incorrect number of args!");
+				printHelp();
+				return;
+			}
+			map(tokens[1]);
+		
 		} else if(tokens[0].equals("list")) {
 			list();
 		
@@ -80,6 +89,7 @@ public class AdminClient  {
 		sb.append("::::::::::::::::::::::::::::::::");
 		sb.append("::::::::::::::::::::::::::::::::\n");
 		sb.append(PROMPT).append("init <zkHost> <zkPort>\n");
+		sb.append(PROMPT).append("map <key>\n");
 		sb.append(PROMPT).append("list\n");
 		sb.append(PROMPT).append("startone <host>:<port>\n");
 		sb.append(PROMPT).append("startall\n");
@@ -93,6 +103,15 @@ public class AdminClient  {
 		System.out.println(PROMPT + "Error! " +  error);
     }
 	
+	private void map(String key) {
+		IConsistentHasher hasher = isc.getHasher();
+		ServerRecord target = hasher.mapKey(key);
+		List<ServerRecord> redundant = hasher.mapKeyRedundant(key, 2);
+		System.out.println(PROMPT + "Coordinator: " + target.hostname + ":" + target.port);
+		for (ServerRecord r : redundant) {
+			System.out.println(PROMPT + "Redundant: " + r.hostname + ":" + r.port);
+		}
+	}
 	
 	private void list() {
 		if (isc == null) {

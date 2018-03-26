@@ -129,6 +129,7 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 		zkConnected = false; // ADDED FOR ZK NOT CONNECTED BUG
 		zk = new ZooKeeper(zkAddr, 100, this);			
 		Thread.sleep(300);
+//		while (zk.getState().equals(ZooKeeper.States.CONNECTING)) Thread.sleep(50);
 		if (zk.getState() != ZooKeeper.States.CONNECTED) {
 			System.out.println("Failed to connect to zookeeper");
 			throw new RuntimeException("Failed to connect to zookeeper");
@@ -373,45 +374,42 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 			throw new RuntimeException("An unknown error occurred with zookeeper - exception class :" + e.getClass()  + ", message: " + e.getMessage());
 		}
 		
-		if (listener != null) {
-			String[] splitPath = event.getPath().split("/");
-			
-			// ADDED and DELETED servers:
-			if (event.getPath().equals(clusterGroup)) {
-				if (event.getType() != Watcher.Event.EventType.NodeChildrenChanged) {
-					throw new RuntimeException("Unexpected change to cluster group node in zookeeper");
-				}
-				try {
-					// Something changed, so let's just read the entire current state:
-					List<String> nodes = zk.getChildren(clusterGroup, false);
-					hasher.fromServerListString(nodes);
-					System.out.println("Sent to listener " + event.getType().toString());
-					listener.consistentHasherUpdated(hasher);
-				} catch (StringFormatException e) {
-					System.out.println("ERROR: " + e.getMessage());
-					//TODO log this as an error - it's an external format error so life goes on					
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-					throw new RuntimeException("An unknown error occurred with zookeeper");
-				} catch (KeeperException e) {
-					e.printStackTrace();
-					throw new RuntimeException("An unknown error occurred with zookeeper");
-				}
-		    // Listen for RPCs:
-			} else if (event.getPath().equals(rpcGroup)) {
-				try {
-					processRPC();
-				} catch (Exception e) {
-					// This could probably be made non-fatal
-					System.out.println(me + " - Unknown error occurred processing RPCs: " + e.getMessage());
-					// throw new RuntimeException(me + " - Unknown error occurred processing RPCs: " + e.getMessage());
-				}
-			} else {
-				// TODO log error
-				System.out.println("Unknown zookeeper event occurred");
+		String[] splitPath = event.getPath().split("/");
+		
+		// ADDED and DELETED servers:
+		if (event.getPath().equals(clusterGroup)) {
+			if (event.getType() != Watcher.Event.EventType.NodeChildrenChanged) {
+				throw new RuntimeException("Unexpected change to cluster group node in zookeeper");
+			}
+			try {
+				// Something changed, so let's just read the entire current state:
+				List<String> nodes = zk.getChildren(clusterGroup, false);
+				hasher.fromServerListString(nodes);
+				System.out.println("Sent to listener " + event.getType().toString());
+				if (listener != null) listener.consistentHasherUpdated(hasher);
+				else System.out.println("Dropped zk event");
+			} catch (StringFormatException e) {
+				System.out.println("ERROR: " + e.getMessage());
+				//TODO log this as an error - it's an external format error so life goes on					
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+				throw new RuntimeException("An unknown error occurred with zookeeper");
+			} catch (KeeperException e) {
+				e.printStackTrace();
+				throw new RuntimeException("An unknown error occurred with zookeeper");
+			}
+	    // Listen for RPCs:
+		} else if (event.getPath().equals(rpcGroup)) {
+			try {
+				processRPC();
+			} catch (Exception e) {
+				// This could probably be made non-fatal
+				System.out.println(me + " - Unknown error occurred processing RPCs: " + e.getMessage());
+				// throw new RuntimeException(me + " - Unknown error occurred processing RPCs: " + e.getMessage());
 			}
 		} else {
-			System.out.println("Dropped zk event");
+			// TODO log error
+			System.out.println("Unknown zookeeper event occurred");
 		}
 	}
 
