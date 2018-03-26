@@ -75,7 +75,44 @@ import java.security.NoSuchAlgorithmException;
 
 import java.util.*;
 
+
+
+
+
+
 public class ReplicationSimpleTest extends TestCase implements Watcher {
+
+	public List<String> getServerMissingKeys(String[] keys, String[] values, KVServer server) {
+
+		ArrayList<String> missingKeys = new ArrayList<String>();
+
+		for (int i = 0; i < keys.length; ++i) {
+
+			String resp = null;
+
+			if(!server.inCache(keys[i])){
+				missingKeys.add(keys[i]);
+			}
+			else{
+
+				// check that it matches the value
+				System.out.println("IN a kvServer: " + keys[i]);
+				try{
+					resp = server.getKV(keys[i]);
+				}catch(ICache.KeyDoesntExistException e ){
+					System.out.println("ReplicationSimpleTest expection: "+e.getMessage());
+				} catch (ICache.StorageException e){
+					System.out.println("STORAGE EXCEPTION");
+				}
+				catch (Exception e){
+					System.out.println("1 EXCEPTION");
+				}
+				
+				assertTrue(resp.equals(values[i]));
+			}
+		}
+		return missingKeys;
+	}
 
 
 	public static Byte[] subtractOne(Byte[] A) {
@@ -248,7 +285,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 	public void testReplicateCanRecover() throws Exception {
 		ZooKeeper zk = new ZooKeeper(zkAddr, 1000, this);
 
-		int replication = 1;
+		int replication = 2;
 
 		int port1 = 10100;
 		KVServer server1 = new KVServer(thisHost, port1, "localhost", 2181, 10, "FIFO", replication);
@@ -260,24 +297,21 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 		assertTrue(zk.getChildren(clusterGroup, false).size() == 1);
 
 
-		int port2 = 10101;
-		KVServer server2 = new KVServer(thisHost, port2, "localhost", 2181, 10, "FIFO", replication);
-		server2.run();
-		server2.clearStorage();
-		server2.start();
 
-		Thread.sleep(200);
-		assertTrue(zk.getChildren(clusterGroup, false).size() == 2);
-		// add all these key values
 
-		String[] keys = {"a","b","c","d","e","f","g","h","i","j", "k" , "l", "m", "n", "o", "p", "q"};
-		String[] values={"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17"};
+		String[] keys = {"a","b","c","d","e","f","g","h","i","j", "k" , "l", "m", "n", "o", "p", "q", "r", "s", "t", "u"};
+		String[] values={"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17", "18","19","20","21"};
 
 
 		KVStore store1 = new KVStore(thisHost, port1);
 		for (int i =0; i < keys.length; ++i) {
 			store1.put(keys[i], values[i]);
 		}
+
+
+
+
+		
 
 		// check that the data was succesfully added
 		for (int i = 0; i < keys.length; ++i ) {
@@ -288,8 +322,125 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 
 
 
+		for (int i = 0; i < keys.length; ++i) {
 
 
+			String getRes = server1.getKV(keys[i]);
+			assertTrue(getRes.equals(values[i]));
+
+		}
+
+
+		int port2 = 10101;
+		KVServer server2 = new KVServer(thisHost, port2, "localhost", 2181, 10, "FIFO", replication);
+		server2.run();
+		server2.clearStorage();
+		server2.start();
+
+		Thread.sleep(1000);
+		assertTrue(zk.getChildren(clusterGroup, false).size() == 2);
+		// add all these key values
+
+
+		int totalMissingBoth = 0;
+		int totalNull1 = 0;
+		int totalNull2 = 0;
+
+
+
+		int getkv_no_key_1 = 0;
+		int getkv_no_key_2 = 0;
+		for (int i = 0; i < keys.length; ++i) {
+			boolean missingEither = false;
+
+
+			try{
+				String get1 = server1.getKV(keys[i]);
+				if(get1 == null){
+					totalNull1++;
+				}
+			} catch(ICache.KeyDoesntExistException e ){
+				getkv_no_key_1++;
+			}
+
+			try{
+				String get2 = server2.getKV(keys[i]);
+				if(get2 == null){
+					totalNull2++;
+				}
+			}catch(ICache.KeyDoesntExistException e){
+				System.out.println("keys[i]:::values[i]"+keys[i]+":::"+values[i]);
+				getkv_no_key_2++;
+			}
+
+		}
+
+
+		assertTrue(totalNull1 == 0);
+		assertTrue(totalNull2 == 0);
+
+		assertTrue(getkv_no_key_1 == 0);
+		assertTrue(getkv_no_key_2 == 0);
+
+		System.out.println("totalNull1:"+totalNull1);
+		System.out.println("totalNull2:"+totalNull2);
+
+		System.out.println("getkv_no_key_1:"+getkv_no_key_1);
+		System.out.println("getkv_no_key_2:"+getkv_no_key_2);
+
+
+
+
+
+		// start
+
+		// assertTrue(totalMissingBoth == 0);
+		// assertTrue(totalMissing2 == 0);
+		// assertTrue(totalMissing1 == 0);
+		// if(true){return;}
+
+
+		// check that both servers have a replica (factor = 1)
+
+		// int totalMissing1 = 0;
+		// int totalMissing2 = 0;
+		
+		// for (int i = 0; i < keys.length; ++i) {
+			
+		// 	boolean missingOne = false;
+		// 	boolean missingTwo = false;
+
+		// 	String getRes1 = server1.getKV(keys[i]);
+		// 	if(getRes1 == null){
+		// 		totalMissing1++;
+		// 		missingOne= true;
+		// 	}
+
+		// 	String getRes2 = server2.getKV(keys[i]);
+		// 	if(getRes2 == null){
+		// 		if(missingOne == true){
+		// 			assertTrue(false);
+		// 		}
+		// 		totalMissing2++;
+		// 		missingOne = true;
+		// 	}
+		// 	assertTrue(missingOne);
+		// }
+		// assertTrue(totalMissing1 == 0);
+		// assertTrue(totalMissing2 == 0);
+
+		// server1.stop();
+
+		// Thread.sleep(500);
+
+		// int i = 0;
+		// for(String key : keys){
+		// 	KVMessage respGet = store1.get(keys[i]);
+		// 	assertTrue(respGet.getStatus().equals(StatusType.GET_SUCCESS));
+		// 	assertTrue(respGet.getValue().equals(values[i]));
+
+		// 	i++;
+		// }
 
 		int port3 = 10102;
 		KVServer server3 = new KVServer(thisHost, port3, "localhost", 2181, 10, "FIFO", replication);
@@ -297,68 +448,117 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 		server3.clearStorage();
 		server3.start();
 
-		Thread.sleep(1000);
+		Thread.sleep(2000);
 		assertTrue(zk.getChildren(clusterGroup, false).size() == 3);
 
 
-		// check that not all data is on server1 and server2, but the keys that are found on them should have some missing
 
-		ArrayList<String> missingKeysFrom1 = new ArrayList<String>();
+		 totalMissingBoth = 0;
+		 totalNull1 = 0;
+		 totalNull2 = 0;
+
+
+
+		 getkv_no_key_1 = 0;
+		 getkv_no_key_2 = 0;
 		for (int i = 0; i < keys.length; ++i) {
-			
-			if(!server1.inCache(keys[i])){
-				missingKeysFrom1.add(keys[i]);
-			}
-			else{
-				String resp = server1.getKV(keys[i]);
-				assertTrue(resp.equals(values[i]));
-			}
-		}
-
-		assertTrue(missingKeysFrom1.size() > 0); 
+			boolean missingEither = false;
 
 
-
-		ArrayList<String> missingKeysFrom2 = new ArrayList<String>();
-		for (int i = 0; i < keys.length; ++i) {
-			
-			if(!server2.inCache(keys[i])){
-				missingKeysFrom2.add(keys[i]);
-			}
-			else{
-				String resp = server2.getKV(keys[i]);
-				assertTrue(resp.equals(values[i]));
-			}
-		}
-
-		assertTrue(missingKeysFrom2.size() > 0);
-
-
-
-
-
-		int total_missing = 0;
-
-		ArrayList<String> missingFromBoth = new ArrayList<String>();
-
-		for(String missingIn1 : missingKeysFrom1){
-
-			boolean isInTwo = false;
-			for(String missingIn2 : missingKeysFrom2) {
-				if(missingIn2.equals(missingIn2)){
-					isInTwo = true;
-					break;
+			try{
+				String get1 = server1.getKV(keys[i]);
+				if(get1 == null){
+					totalNull1++;
 				}
-				if(isInTwo == false){
-					missingFromBoth.add(missingIn1);
-				}
+			} catch(ICache.KeyDoesntExistException e ){
+				getkv_no_key_1++;
 			}
+
+			try{
+				String get2 = server2.getKV(keys[i]);
+				if(get2 == null){
+					totalNull2++;
+				}
+			}catch(ICache.KeyDoesntExistException e){
+				System.out.println("keys[i]:::values[i]"+keys[i]+":::"+values[i]);
+				getkv_no_key_2++;
+			}
+
 		}
 
-		assertTrue(missingFromBoth.size() > 0);
+
+		// assertTrue(totalNull1 >0);
+		// assertTrue(totalNull2 > 0);
+
+		// assertTrue(getkv_no_key_1 > 0);
+		// assertTrue(getkv_no_key_2 >  0);
+		
+		System.out.println("totalNull1:"+totalNull1);
+		System.out.println("totalNull2:"+totalNull2);
+
+		System.out.println("getkv_no_key_1:"+getkv_no_key_1);
+		System.out.println("aaagetkv_no_key_2:"+getkv_no_key_2);
+		// // check that not all data is on server1 and server2, but the keys that are found on them should have some missing
+
+
+
+		// List<String> missingKeysFrom1And2 = new ArrayList<String>();
+		// for (int i = 0; i < keys.length; ++i) {
+		// 	// check the key is missing from 1
+
+
+		// 	System.out.println("KEY : " + keys[i]);
+		// 	if(!server1.inCache(keys[i])){
+
+		// 		System.out.println("KEY not 1 : " + keys[i]);
+		// 		// check the key is missing from 2
+		// 		if(!server2.inCache(keys[i])) {
+
+		// 			System.out.println("KEY not both : " + keys[i]);
+		// 			missingKeysFrom1And2.add(keys[i]);
+		// 			continue;
+		// 		}
+		// 	}
+		// }
+
+		// assertTrue(missingKeysFrom1And2.size() > 0);
+
+
+
+		// // stop a server
+		// server3.stop();
+
+		// Thread.sleep(400);
+
+		// List<String> missingKeysFrom1And2_2 = new ArrayList<String>();
+		// for (int i = 0; i < keys.length; ++i) {
+		// 	// check the key is missing from 1
+
+
+		// 	System.out.println("KEY : " + keys[i]);
+		// 	if(!server1.inCache(keys[i])){
+
+		// 		System.out.println("KEY not 1 : " + keys[i]);
+		// 		// check the key is missing from 2
+		// 		if(!server2.inCache(keys[i])) {
+
+		// 			System.out.println("KEY not both : " + keys[i]);
+		// 			missingKeysFrom1And2_2.add(keys[i]);
+		// 			continue;
+		// 		}
+		// 	}
+		// }
+
+		// assertTrue(missingKeysFrom1And2_2.size() == 0);
+
+
+
+
+
 	}
 
 
 }
+
 
 

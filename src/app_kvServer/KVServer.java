@@ -501,10 +501,21 @@ public class KVServer implements IKVServer, ICommListener {
 		// request data from neighbour above (clockwise)
 		IConsistentHasher.ServerRecord me = new IConsistentHasher.ServerRecord(getHostname(), getPort());
 
+
+
+
 		ServerRecord txServer = new ServerRecord(null);
+
+		
+
+
 		List<Byte> clockwise = new ArrayList<Byte>();
 		List<Byte> counterclockwise = new ArrayList<Byte>();
 		hasher.preAddServer(me, txServer, clockwise, counterclockwise);
+
+
+		
+
 
 		if(txServer.hostname != null){ // if null then there is no other server
 
@@ -519,8 +530,10 @@ public class KVServer implements IKVServer, ICommListener {
 		
 			// put the tuples directly to the cache (can go directly to disk too)
 			if(receivedTuples.length > 0){
-
+				
 				for (Map.Entry<?, ?> tuple : receivedTuples) {
+
+					System.out.println(logHeader + " cache put " +(String) tuple.getKey() +":::"+ (String) tuple.getValue() );
 					cache.put((String) tuple.getKey(), (String) tuple.getValue());
 					// cache.kvdb.put((String) tuple.getKey(), (String) tuple.getValue());
 				}
@@ -912,9 +925,9 @@ public class KVServer implements IKVServer, ICommListener {
 	        return true;
     	}
 
-    	if(!lockWrite.testLockWrite()){
+    	// if(!lockWrite.testLockWrite()){
 
-    	}
+    	// }
 
         Iterator<Map.Entry<String, String>> iter = cache.getHashRangeIterator(hashRange[0].getBytes(), hashRange[1].getBytes());
 
@@ -1150,46 +1163,57 @@ public class KVServer implements IKVServer, ICommListener {
 
 	@Override
 	public synchronized void consistentHasherUpdated(IConsistentHasher hasher) {
-		String logHeader = name+":"+desired_port +" consistentHasherUpdated () ";
 
-		System.out.println("THE HASHER : \n\n");
-		for (ConsistentHasher.ServerRecord servv : hasher.getServerList()) {
-			System.out.println("host:  " + servv.hostname + " port: "+ servv.port);
+		if(!isStarted){
+			this.hasher = hasher;
+			return;
 		}
 
+		ConsistentHasher.ServerRecord[] allServs = hasher.getServerList();
 
-		System.out.println("BEFORE testRingShrunk\n\n\n\n\n");
 
-
-		ConsistentHasher.ServerRecord me = new ConsistentHasher.ServerRecord(getHostname(), getPort());
-
-		System.out.println("THE ME : " + me.hostname + " " + me.port);
-		if(!(((ConsistentHasher) hasher).contains(me))) {
-
-				System.out.println("DURRAN! testRingShrunk\n\n\n\n\n");
-			// nothing affects me in this, i'm out
+		if(allServs.length == 1){
 			this.hasher = hasher;
 			return;
 		}
 
 
-		System.out.println("AFTER testRingShrunk\n\n\n\n\n");
+		String logHeader = name+":"+desired_port +" consistentHasherUpdated () ";
+
+
+		ConsistentHasher.ServerRecord me = new ConsistentHasher.ServerRecord(getHostname(), getPort());
+
+
+		
 
 		if(replicationFactor > 0){
 
-
-			// send all data this server is cooredinator for, to all replicas
-
-
-			ConsistentHasher.ServerRecord newRightBelow = null;
 			
-			try{
-				newRightBelow = ((ConsistentHasher) hasher).findBelow(me);
+
+			int index = -1;
+			for (int i = 0; i < allServs.length; ++i) {
+				if(allServs[i].hostname.equals(getHostname()) && allServs[i].port == getPort()){
+					index = i;
+					break;
+				}
 			}
-			catch(Exception e){
-				System.out.println(logHeader + " " + e.getMessage());
-				return;
+			int myIndex = index;
+
+			int indexJustBefore = index - 1;
+			if(indexJustBefore < 0 ){
+				indexJustBefore = allServs.length - 1;
 			}
+
+
+
+
+			System.out.println(logHeader + " aaaaaaaaaaaaaaa");
+
+
+			ConsistentHasher.ServerRecord newRightBelow = allServs[indexJustBefore];
+	
+
+			System.out.println(logHeader+"newRightBelow.host"+newRightBelow.hostname+"port"+newRightBelow.port);
 
 
 			// GET DATA TO SEND
@@ -1197,29 +1221,44 @@ public class KVServer implements IKVServer, ICommListener {
 			byte[] lowerByte = new byte[newRightBelow.hash.length];
 			for (int i = 0; i < lowerByte.length; i++) lowerByte[i] = newRightBelow.hash[i];
 
+
+
 			byte[] upperByte = new byte[me.hash.length];
 			for (int i = 0; i < upperByte.length; i++) upperByte[i] = me.hash[i];
 
+
+
 			Iterator<Map.Entry<String, String>> iter = cache.getHashRangeIterator(lowerByte, upperByte);
+
 
 
 	        List<Entry<?, ?>> tuples = new ArrayList<Entry<?, ?>>();
 
 	    	while(iter.hasNext()){
+	    		
 	        	tuples.add(iter.next());
+
+
 	        }
 
 
-
+	        for (Entry<?,?> tup : tuples) {
+	        	System.out.println("LOG HEADER + "+logHeader+"OUTPUT TUPLE" + tup.getKey() +"::"+tup.getValue());
+	        }
+	      
 	        // GET REPLICAS TO SEND TO
-	        List<ServerRecord> allReplicas = null;
-	        try{
-	        	allReplicas = ((ConsistentHasher) hasher).findReplicas(me, replicationFactor);	
-	        } catch(Exception e){
-	        	System.out.println(logHeader + " get replicas exception " + e.getMessage());
-	        	return;
+	        ArrayList<ServerRecord> allReplicas = new ArrayList<ServerRecord>();
+
+	        for (int i = 1; i <= replicationFactor; i++) {
+	        	myIndex++;
+	        	if(myIndex >= allServs.length - 1){
+	        		myIndex = 0;
+	        	}
+	        	allReplicas.add(allServs[myIndex]);
 	        }
-	        
+
+
+
 	        for(ServerRecord replica : allReplicas){
 	        	
 	        	// BulkPackageMessage msg = new BulkPackageMessage((Entry<?, ?>[]) tuples.toArray(new Entry<?, ?>[tuples.size()]));
@@ -1250,7 +1289,7 @@ public class KVServer implements IKVServer, ICommListener {
 			oldBelowAll = ((ConsistentHasher)this.hasher).findBelow(me, replicationFactor);
 			newBelowAll = ((ConsistentHasher) hasher).findBelow(me, replicationFactor);
 		}catch(Exception e ){
-			System.err.println("find below err" + e.getMessage());
+			System.out.println("find below err" + e.getMessage());
 
 		}
 		
@@ -1262,10 +1301,10 @@ public class KVServer implements IKVServer, ICommListener {
 
 
 
-        System.out.println("GO FOR THE DELETE NAAAAT!!!!\n\n\n\n\n\n\n");
+        System.out.println(logHeader+"GO FOR THE DELETE NAAAAT!!!!\n\n\n\n\n\n\n");
 
 
-		System.out.println("BEFORE testRingShrunk\n\n\n\n\n");
+		System.out.println(logHeader+ "BEFORE testRingShrunk\n\n\n\n\n");
 		if(testRingShrunk(me, oldBelowAll, newBelowAll)){
 			System.out.println("IN testRingShrunk\n\n\n\n\n");
 			// convert to byte[] for getHashRangeIterator
@@ -1283,6 +1322,7 @@ public class KVServer implements IKVServer, ICommListener {
             while(iter.hasNext()){
             	try{
 	            	cache.delete(iter.next().getKey());
+	            	System.out.println(logHeader+"IN DELETE!!!!\n\n");
             	} catch (ICache.KeyDoesntExistException e){
                     System.out.println(logHeader + " key doesnt exist");
             	} catch(Exception e){
@@ -1338,9 +1378,9 @@ public class KVServer implements IKVServer, ICommListener {
 	public void OnTuplesRequest(Byte[] lower, Byte[] upper, OutputStream client) {
 
 		// check if lock already had, otherwise get the lock
-		if(!lockWrite.testLockWrite()){
-			// there was already a write lock!!! should probably either wait or throw exception here
-		}
+		// if(!lockWrite.testLockWrite()){
+		// 	// there was already a write lock!!! should probably either wait or throw exception here
+		// }
 		
 		// convert to byte[] for getHashRangeIterator
 		byte[] lowerByte = new byte[lower.length];

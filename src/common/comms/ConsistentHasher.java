@@ -119,9 +119,11 @@ public class ConsistentHasher implements IConsistentHasher {
 		if(servers.size() < amountBelow){
 			throw new Exception("amountBelow too far away. Not enough items in hasher.");
 		}
-		
+		System.out.println("FIND BELOOOOWWWW\n\n\n====\n\n");
 
 		int belowIndex = findIndex(upper) - amountBelow;
+
+		System.out.println("INDEX TO uper : " + findIndex(upper));
 		if(belowIndex < 0){
 			belowIndex = servers.size() + belowIndex;
 		}

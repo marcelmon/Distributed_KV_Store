@@ -40,7 +40,10 @@ public class UnitTests {
 		clientSuite.addTestSuite(SocketTest.class);
 		clientSuite.addTestSuite(StoreServerTests.class);		
 		clientSuite.addTestSuite(ZookeeperTest.class);
-		//clientSuite.addTestSuite(ZookeeperExtTest.class);
+		clientSuite.addTestSuite(ZookeeperExtTest.class);
+
+		clientSuite.addTestSuite(ReplicationSimpleTest.class);
+		
 	}
 	
 	public static Test suite() {
