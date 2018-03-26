@@ -155,7 +155,7 @@ public class KVMessage extends Message {
 			throw new RuntimeException("Called fromTLV1Field() on a key+value message type");
 		}
 		
-		int keyLen = buffer[1];
+		int keyLen = buffer[1] & 0xFF;
 		byte[] keyBytes = new byte[keyLen];
 		System.arraycopy(buffer, 2, keyBytes, 0, keyLen);
 		key = new String(keyBytes);
@@ -173,8 +173,8 @@ public class KVMessage extends Message {
 			throw new RuntimeException("Called fromTLV1Field() on a key-only message type");
 		}
 		
-		int keyLen = buffer[1];
-		int valueLen = buffer[2];
+		int keyLen = buffer[1] & 0xFF;
+		int valueLen = buffer[2] & 0xFF;
 		
 		byte[] keyBytes = new byte[keyLen];
 		System.arraycopy(buffer, 3, keyBytes, 0, keyLen);

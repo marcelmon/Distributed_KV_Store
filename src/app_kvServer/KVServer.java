@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 
 import common.comms.*;
 import common.messages.*;
+import common.messages.Message.FormatException;
 import common.messages.Message.StatusType;
 import common.comms.IConsistentHasher.HashComparator;
 import common.comms.IConsistentHasher.ServerRecord;
@@ -28,6 +29,8 @@ public class KVServer implements IKVServer, ICommListener {
 	
 	protected boolean isStarted;
 	protected boolean pendingRunning;
+	
+	protected final int REPLICATION_FACTOR = 2; 
 
 
 	protected final int desired_port;
@@ -411,6 +414,33 @@ public class KVServer implements IKVServer, ICommListener {
 				}
 					
 				lockWrite.decrementPendingPuts();
+				
+				// Forward to replicated servers:
+				// We don't want to forward a FORCE_PUT as this will create a cycle!
+				if (msg.getStatus().equals(StatusType.PUT)) {
+						List<ServerRecord> redundantDestinations = hasher.mapKeyRedundant(msg.getKey(), REPLICATION_FACTOR);
+						try {
+							KVMessage forcedMsg = new KVMessage(StatusType.FORCE_PUT, msg.getKey(), msg.getValue());
+							CommMod forwarder = new CommMod();
+							for (ServerRecord rec : redundantDestinations) {
+								try {
+									forwarder.Connect(rec.hostname, rec.port);
+									KVMessage forcedMsgResp = forwarder.SendMessage(forcedMsg);
+									if (forcedMsgResp.getStatus() != StatusType.PUT_SUCCESS &&
+										forcedMsgResp.getStatus() != StatusType.PUT_UPDATE &&
+										forcedMsgResp.getStatus() != StatusType.DELETE_SUCCESS) {
+											// TODO error
+											System.out.println("Error: FORCE_PUT response unexpected!");
+									}
+								} catch (Exception e) {
+									System.out.println("Unexpected error while forwarding put: " + e.getMessage());
+									//TODO error - non fatal globally but failed to forward
+								}
+							}
+						} catch (FormatException e) {
+							throw new RuntimeException(e.getMessage()); // fundamental flaw
+						}
+				}
 			
 					
 				break;

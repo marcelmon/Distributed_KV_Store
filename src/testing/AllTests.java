@@ -50,9 +50,6 @@ public class AllTests {
 		UnitTests.addUnitTests(clientSuite);
 		addExtendedTests(clientSuite);
 		
-
-		
-		
 		return clientSuite;
 	}
 	
