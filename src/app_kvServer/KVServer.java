@@ -388,6 +388,8 @@ public class KVServer implements IKVServer, ICommListener {
 				try {
 					try {
 						String value = cache.get(msg.getKey());
+						System.out.println("THE VALUE AT ENDDS! aaa"+logHeader+":::"+value+"aaaa\n\n\n\n\n");
+
 						KVMessage resp = new KVMessage(StatusType.GET_SUCCESS, msg.getKey(), value);
 						server.SendMessage(resp, client);
 					} catch (ICache.KeyDoesntExistException e) {
@@ -511,7 +513,7 @@ public class KVServer implements IKVServer, ICommListener {
 
 
 	@Override
-	public void start() throws Exception {
+	public synchronized void start() throws Exception {
 		String logHeader = getHostname()+":"+getPort() + " start()";
 		System.out.println(logHeader + " - called");
 		
@@ -547,7 +549,9 @@ public class KVServer implements IKVServer, ICommListener {
 
 		
 
+		// if(!lockWrite.testLockWrite()){
 
+  //   	}
 		if(txServer.hostname != null){ // if null then there is no other server
 
 
@@ -571,18 +575,24 @@ public class KVServer implements IKVServer, ICommListener {
 			}
 		}
 
+
+		// if(!lockWrite.testUnlockWrite()){
+
+  //   	}
 		isStarted = true;
 		isc.addServer();
 	}
 
 	@Override
-	public void stop() {
+	public synchronized void stop() {
 
 		if(isStarted == false){
 			// ERROR
 		}
+
+		isStarted = false;
 		// this will wait for any puts to finish, thus also pushing them to replicas
-		lockWrite.lockWrite();
+		// lockWrite.lockWrite();
 
 		if(getReplicationFactor() > 0){
 			// nothing to do because either our puts are already on a replica, or there are no other replicas
@@ -596,7 +606,7 @@ public class KVServer implements IKVServer, ICommListener {
 			}
 				
 
-			lockWrite.unlockWrite();
+			// lockWrite.unlockWrite();
 			return;
 		}
 
@@ -618,7 +628,7 @@ public class KVServer implements IKVServer, ICommListener {
 			} catch(Exception e){
 				System.out.println("isc.removeServer() exception in kvserver.stop()");
 			}
-			lockWrite.unlockWrite();
+			// lockWrite.unlockWrite();
 			return;
 		}
 
@@ -652,7 +662,7 @@ public class KVServer implements IKVServer, ICommListener {
 		} catch(Exception e){
 			System.out.println("isc.removeServer() exception in kvserver.stop()");
 		}
-		lockWrite.unlockWrite();
+		// lockWrite.unlockWrite();
 		return;
 
 
@@ -1217,8 +1227,14 @@ public class KVServer implements IKVServer, ICommListener {
 
 		
 
+		// if(!lockWrite.testLockWrite()){
+
+  //   	}
+
 		if(replicationFactor > 0){
 
+
+			// send our data to next hash range
 			
 
 			int index = -1;
@@ -1282,7 +1298,7 @@ public class KVServer implements IKVServer, ICommListener {
 
 	        for (int i = 1; i <= replicationFactor; i++) {
 	        	myIndex++;
-	        	if(myIndex >= allServs.length - 1){
+	        	if(myIndex >= allServs.length){
 	        		myIndex = 0;
 	        	}
 	        	allReplicas.add(allServs[myIndex]);
@@ -1293,7 +1309,8 @@ public class KVServer implements IKVServer, ICommListener {
 	        for(ServerRecord replica : allReplicas){
 	        	
 	        	// BulkPackageMessage msg = new BulkPackageMessage((Entry<?, ?>[]) tuples.toArray(new Entry<?, ?>[tuples.size()]));
-	        	System.out.println("Listener writing response...");
+	        	System.out.println(logHeader+"\n\n\n\n\n\n\nKKKKKKKKKKKKKKKKKKKKKKKListener writing response...");
+	        	System.out.println("TO : "+replica.hostname+":"+replica.port+"size:tuples"+tuples.size()	);
 	        	CommMod bulkClient = new CommMod();
 	        	try{
 	        		bulkClient.Connect(replica.hostname, replica.port); 
@@ -1307,9 +1324,13 @@ public class KVServer implements IKVServer, ICommListener {
 	        }
 		}
 
+		// if number of new servers is <= replication factor + 1, do nothing
+		if(allServs.length <= replicationFactor + 1){
+			this.hasher = hasher;
+			return;
+		}
 
-
-
+		System.out.println("AAADAKAKAKAKA\n\n\n\n\n\n\n00"+ "deleeeeeeeete");
 
 		ConsistentHasher.ServerRecord oldBelowAll = null;
 		ConsistentHasher.ServerRecord newBelowAll = null;
@@ -1362,21 +1383,36 @@ public class KVServer implements IKVServer, ICommListener {
             }
 		}
 
+		this.hasher = hasher;
+		// if(!lockWrite.testUnlockWrite()){
+
+  //   	}
+
 	}
 
 
 	@Override
-	public void OnTuplesReceived(Entry<?, ?>[] tuples) {
-	
+	public synchronized void OnTuplesReceived(Entry<?, ?>[] tuples) {
+		String logHeader = name+":"+desired_port +" OnTuplesReceived () ";
 
 		System.out.println("On Tuples Received Called in " + name + ":" + desired_port + " And tuple size : " + tuples.length);
 		for (int i = 0; i < tuples.length; ++i) {
 			try{
+				System.out.println(logHeader+" puting : "+ (String) tuples[i].getKey() + "::"+(String) tuples[i].getValue());
 				cache.put((String) tuples[i].getKey(), (String) tuples[i].getValue());
+
+
+				if(desired_port == 20100 && tuples.length > 10){ 
+					System.out.println("THE TUPE: "+cache.get((String) tuples[i].getKey())  + " + key " + (String) tuples[i].getKey());
+				}
 			} catch (Exception e){
 				System.out.println("OnTuplesReceived exception " + e.getMessage());
 			}
 		}
+
+		// if(desired_port == 20100 && tuples.length > 11){
+		// 	System.exit(1);
+		// }
 
 		return;
 
@@ -1406,8 +1442,12 @@ public class KVServer implements IKVServer, ICommListener {
 	public Thread unlockTimeoutThread = null;
 
 	@Override
-	public void OnTuplesRequest(Byte[] lower, Byte[] upper, OutputStream client) {
+	public synchronized void OnTuplesRequest(Byte[] lower, Byte[] upper, OutputStream client) {
 
+
+		// if(!lockWrite.testLockWrite()){
+
+  //   	}
 		// check if lock already had, otherwise get the lock
 		// if(!lockWrite.testLockWrite()){
 		// 	// there was already a write lock!!! should probably either wait or throw exception here
@@ -1447,9 +1487,9 @@ public class KVServer implements IKVServer, ICommListener {
         }
 
         // check if lock already had, otherwise get the lock
-		if(!lockWrite.testUnlockWrite()){
-			// there was already a write lock!!! should probably either wait or throw exception here
-		}
+		// if(!lockWrite.testUnlockWrite()){
+		// 	// there was already a write lock!!! should probably either wait or throw exception here
+		// }
 
         // long timeoutMillis = 30000;
         // unlockTimeoutRunnable = new UnlockTimeout(timeoutMillis, this.lockWrite);

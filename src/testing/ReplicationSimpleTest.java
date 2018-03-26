@@ -287,7 +287,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 
 		int replication = 2;
 
-		int port1 = 10100;
+		int port1 = 20100;
 		KVServer server1 = new KVServer(thisHost, port1, "localhost", 2181, 10, "FIFO", replication);
 		server1.run();
 		server1.clearStorage();
@@ -331,15 +331,16 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 		}
 
 
-		int port2 = 10101;
+		int port2 = 20101;
 		KVServer server2 = new KVServer(thisHost, port2, "localhost", 2181, 10, "FIFO", replication);
 		server2.run();
-		server2.clearStorage();
+		// server2.clearStorage();
 		server2.start();
 
-		Thread.sleep(1000);
+		Thread.sleep(2000);
 		assertTrue(zk.getChildren(clusterGroup, false).size() == 2);
 		// add all these key values
+
 
 
 		int totalMissingBoth = 0;
@@ -361,6 +362,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 				}
 			} catch(ICache.KeyDoesntExistException e ){
 				getkv_no_key_1++;
+				System.out.println(port1+"aaaaaaaaa\n\n\n=====keys[i]:::values[i]"+keys[i]+":::"+values[i]);
 			}
 
 			try{
@@ -369,7 +371,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 					totalNull2++;
 				}
 			}catch(ICache.KeyDoesntExistException e){
-				System.out.println("keys[i]:::values[i]"+keys[i]+":::"+values[i]);
+				System.out.println(port2+"aaaaaaaaa\n\n\n=====keys[i]:::values[i]"+keys[i]+":::"+values[i]);
 				getkv_no_key_2++;
 			}
 
@@ -386,7 +388,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 		System.out.println("totalNull2:"+totalNull2);
 
 		System.out.println("getkv_no_key_1:"+getkv_no_key_1);
-		System.out.println("getkv_no_key_2:"+getkv_no_key_2);
+		System.out.println("getkv_no_key_2aaaaaaaaaaaa\n\n\n\n\n\n\n:"+getkv_no_key_2);
 
 
 
@@ -442,7 +444,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 		// 	i++;
 		// }
 
-		int port3 = 10102;
+		int port3 = 20102;
 		KVServer server3 = new KVServer(thisHost, port3, "localhost", 2181, 10, "FIFO", replication);
 		server3.run();
 		server3.clearStorage();
@@ -502,6 +504,39 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 
 
 
+
+		int port4 = 20103;
+		KVServer server4 = new KVServer(thisHost, port4, "localhost", 2181, 10, "FIFO", replication);
+		server4.run();
+		server4.clearStorage();
+		server4.start();
+
+		Thread.sleep(2000);
+		assertTrue(zk.getChildren(clusterGroup, false).size() == 4);
+
+
+		server1.stop();
+		Thread.sleep(1000);
+		server2.stop();
+		Thread.sleep(1000);
+		server3.stop();
+		Thread.sleep(1000);
+
+
+		KVStore store4 = new KVStore(thisHost, port4);
+
+
+		for (int i =0; i < keys.length; ++i) {
+
+			KVMessage resp0 = store4.get(keys[i]);
+			assertTrue(resp0 != null);
+			System.out.println(resp0.getStatus());
+			System.out.println("THE GET : "+resp0.getStatus());
+			assertTrue(resp0.getStatus().equals(StatusType.GET_SUCCESS));
+			assertTrue(resp0.getValue().equals(values[i]));
+		}
+
+			
 		// List<String> missingKeysFrom1And2 = new ArrayList<String>();
 		// for (int i = 0; i < keys.length; ++i) {
 		// 	// check the key is missing from 1
