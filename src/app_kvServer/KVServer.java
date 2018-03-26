@@ -219,6 +219,7 @@ public class KVServer implements IKVServer, ICommListener {
 		try {
 			cache.writeThrough();
 			server.StopServer();
+			isc.close();
 		} catch (Exception e) {
 			//TODO do something with this
 			System.out.println("Failed to close cache cleanly");

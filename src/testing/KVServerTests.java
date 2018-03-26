@@ -17,7 +17,7 @@ import client.KVStore;
 public class KVServerTests extends TestCase {
 	@Test
 	public void setUp() throws Exception {
-//		IntraServerCommsHelper.ResetZookeeper("localhost:2181");
+		IntraServerCommsHelper.ResetZookeeper("localhost:2181");
 	}
 	
 	@Test
@@ -59,6 +59,9 @@ public class KVServerTests extends TestCase {
 		KVMessage resp1 = comm.SendMessage(new KVMessage(StatusType.FORCE_PUT, "localhost:" + port, "value"));
 		assertTrue(resp1.getStatus().equals(StatusType.PUT_SUCCESS));
 		assertTrue(s1.getKV("localhost:" + port).equals("value"));	
+		
+		s1.close();
+		s2.close();
 	}
 	
 	@Test
@@ -66,7 +69,7 @@ public class KVServerTests extends TestCase {
 		int port = 8225;
 		KVServer s1 = new KVServer("localhost", port, "localhost", 2181, 10, "LFU");
 		KVServer s2 = new KVServer("localhost", port+1, "localhost", 2181, 10, "LFU");
-
+		
 		s1.run();
 		s2.run();
 		
@@ -104,7 +107,7 @@ public class KVServerTests extends TestCase {
 		store.put(key, value);
 		
 		// Give it some time:
-		Thread.sleep(250);
+		Thread.sleep(1000);
 		
 		try {
 			assertTrue(s1.getKV(key).equals(value));
@@ -112,8 +115,11 @@ public class KVServerTests extends TestCase {
 		} catch (KeyDoesntExistException e) {
 			fail("Key doesn't exist");
 		}
+		
+		s1.close();
+		s2.close();
 	}
-	
+
 	@Test
 	public void testPutForwardingLimited() throws Exception {
 		int port = 8230;
@@ -124,6 +130,7 @@ public class KVServerTests extends TestCase {
 		List<KVServer> servers = new ArrayList<KVServer>();
 		for (int i = 0; i < N; i++) {
 			servers.add(new KVServer("localhost", port+i, "localhost", 2181, 10, "LFU"));
+			Thread.sleep(100);
 		}
 		
 		// Setup servers:
@@ -170,5 +177,10 @@ public class KVServerTests extends TestCase {
 		}
 		System.out.println("instances: " + instances);
 		assertTrue(instances == REPLICATION + 1);
+		
+		// Close:
+		for (KVServer s : servers) {
+			s.close();
+		}
 	}
 }
