@@ -4,6 +4,10 @@ import java.util.Set;
 
 public class Tree implements ITree {
 	protected Set<TreeElement> tree;
+	
+	public Tree(String value, String pName) {
+		collapse(value, pName);
+	}
 
 	@Override
 	public void prune() {
