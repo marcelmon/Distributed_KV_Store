@@ -50,8 +50,7 @@ public class UnitTests {
 	public static Test suite() {
 		TestSuite clientSuite = new TestSuite("Storage Server Unit Test-Suite");
 
-//		addUnitTests(clientSuite);
-		clientSuite.addTestSuite(TreeTests.class);
+		addUnitTests(clientSuite);
 		
 		return clientSuite;
 	}
