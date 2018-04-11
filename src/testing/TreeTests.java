@@ -52,6 +52,23 @@ public class TreeTests extends TestCase {
 	}
 	
 	@Test
+	public void testNext() throws Exception {
+		Tree tr = new Tree();
+		VectorClock c0 = new VectorClock();
+		c0.increment("p0");
+		VectorClock c1 = new VectorClock();
+		c1.increment("p1");
+		c1.increment("p1");
+		tr.getTree().add(new TreeElement(c0, "v0"));
+		tr.getTree().add(new TreeElement(c1, "v1"));
+		
+		IVectorClock c = tr.next("p1");
+		assertTrue(c.at("p0") == 1);
+		assertTrue(c.at("p1") == 3);
+		assertTrue(c.processes().size() == 2);
+	}
+	
+	@Test
 	public void testToString() throws Exception {
 		Tree tr = new Tree();
 		VectorClock c0 = new VectorClock();
@@ -66,7 +83,7 @@ public class TreeTests extends TestCase {
 		
 		System.out.println(s);
 		
-		assertTrue(s.equals("p0,1,v0;p1,2,v1"));
+		assertTrue(s.equals("p0,1,v0;p1,2,v1") || s.equals("p1,2,v1;p0,1,v0"));
 	}
 	
 	@Test
