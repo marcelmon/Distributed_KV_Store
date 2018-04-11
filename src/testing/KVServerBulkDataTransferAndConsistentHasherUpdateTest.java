@@ -461,7 +461,7 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 		for(int i = 0; i < keys.length; i++){
 
 			boolean notHasKey = false;
-			String kvGetResp = null;
+			ITree kvGetResp = null;
 			try{
 				kvGetResp = server2.getKV(keys[i]);
 			} catch(ICache.KeyDoesntExistException e){
@@ -492,14 +492,15 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 		for (int i =0; i < keys.length; ++i) {
 
 			boolean notHasKey = false;
-			String kvGetResp = null;
+			ITree kvGetResp = null;
 			try{
 				kvGetResp = server2.getKV(keys[i]);
 			} catch(ICache.KeyDoesntExistException e){
 				notHasKey = true;
 			}
 			assertFalse(notHasKey);
-			assertTrue(kvGetResp.equals(values[i]));
+			assertTrue(kvGetResp.unambiguous());
+			assertTrue(kvGetResp.getSingle().equals(values[i]));
 		}
 
 		// server1.unlockWrite();
@@ -567,7 +568,7 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 		// confirm no data is added in server2
 		for(int i = 0; i < keys.length; i++){
 			boolean notHasKey = false;
-			String kvGetResp = null;
+			ITree kvGetResp = null;
 			try{
 				kvGetResp = server2.getKV(keys[i]);
 			} catch(ICache.KeyDoesntExistException e){
@@ -624,7 +625,7 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 		for (int i = 0;  i < keys.length; ++i) {
 
 			boolean notHasKey = false;
-			String kvGetResp = null;
+			ITree kvGetResp = null;
 			try{
 				kvGetResp = server2.getKV(keys[i]);
 			} catch(ICache.KeyDoesntExistException e){
@@ -633,7 +634,8 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 
 			if(keysMovedToHash.containsKey(keys[i])){
 				assertFalse(notHasKey); // has key
-				assertTrue(kvGetResp.equals(values[i]));
+				assertTrue(kvGetResp.unambiguous());
+				assertTrue(kvGetResp.getSingle().equals(values[i]));
 			}
 			else{
 				assertTrue(notHasKey);
@@ -707,7 +709,7 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 		// confirm no data is added in server2
 		for(int i = 0; i < keys.length; i++){
 			boolean notHasKey = false;
-			String kvGetResp = null;
+			ITree kvGetResp = null;
 			try{
 				kvGetResp = server2.getKV(keys[i]);
 			} catch(ICache.KeyDoesntExistException e){
@@ -800,7 +802,7 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 		// check that the expected keys were moved
 		for (int i = 0;  i < keys.length; ++i) {
 			boolean notHasKey = false;
-			String kvGetResp = null;
+			ITree kvGetResp = null;
 			try{
 				kvGetResp = server2.getKV(keys[i]);
 			} catch(ICache.KeyDoesntExistException e){
@@ -809,7 +811,8 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 
 			if(keysMovedToHash.containsKey(keys[i])){
 				assertFalse(notHasKey); // has key
-				assertTrue(kvGetResp.equals(values[i]));
+				assertTrue(kvGetResp.unambiguous());
+				assertTrue(kvGetResp.getSingle().equals(values[i]));
 			}
 			else{
 				assertTrue(notHasKey);
@@ -1009,7 +1012,7 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 		// confirm no data is added in server2
 		for(int i = 0; i < keys.length; i++){
 			boolean notHasKey = false;
-			String kvGetResp = null;
+			ITree kvGetResp = null;
 			try{
 				kvGetResp = server2.getKV(keys[i]);
 			} catch(ICache.KeyDoesntExistException e){
@@ -1116,7 +1119,7 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 			
 			
 			boolean notHasKeyServer1 = false;
-			String kvGetResp1 = null;
+			ITree kvGetResp1 = null;
 			try{
 				kvGetResp1 = server1.getKV(keys[i]);
 			} catch(ICache.KeyDoesntExistException e){
@@ -1126,7 +1129,7 @@ public class KVServerBulkDataTransferAndConsistentHasherUpdateTest extends TestC
 
 
 			boolean notHasKeyServer2 = false;
-			String kvGetResp2 = null;
+			ITree kvGetResp2 = null;
 			try{
 				kvGetResp2 = server2.getKV(keys[i]);
 			} catch(ICache.KeyDoesntExistException e){
