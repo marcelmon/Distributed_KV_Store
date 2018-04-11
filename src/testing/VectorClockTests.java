@@ -63,4 +63,30 @@ public class VectorClockTests extends TestCase {
 		assertTrue(c3.at("p0") == 3);
 		assertTrue(c3.at("p1") == 2);
 	}
+	
+	@Test
+	public void testToString() throws Exception {
+		VectorClock c = new VectorClock();
+		c.increment("p0");
+		c.increment("p0");
+		c.increment("p0");
+		c.increment("p1");
+		c.increment("p1");
+		
+		String s = c.toString();
+		
+		assertTrue(s.equals("p0,3,p1,2"));
+	}
+	
+	@Test
+	public void testFromString() throws Exception {
+		VectorClock c = new VectorClock();
+		
+		String s = "p0,3,p1,2";
+		c.fromString(s);
+		
+		assertTrue(c.at("p0") == 3);
+		assertTrue(c.at("p1") == 2);
+		assertTrue(c.processes().size() == 2);
+	}
 }

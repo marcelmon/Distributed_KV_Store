@@ -29,7 +29,7 @@ public interface ITree {
 	/**
 	 * Produces a string representation of the tree to be presented to a user.
 	 */
-	public String toString();
+	public String display();
 	
 	/**
 	 * Returns true if there is only a single entry and thus we can consider the value to be
@@ -50,7 +50,16 @@ public interface ITree {
 	
 	/**
 	 * Returns the underlying set.
-	 * @return
 	 */
 	public Set<TreeElement> getTree();
+	
+	/**
+	 * Serializes the object as a string for storage on disk or transmission.
+	 */
+	public String toString();
+	
+	/**
+	 * Deserializes the object from a string constructed using toString().
+	 */
+	public void fromString(String s);
 }

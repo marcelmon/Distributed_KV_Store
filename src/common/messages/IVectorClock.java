@@ -38,4 +38,8 @@ public interface IVectorClock {
 	 * Sets all clock values to the max of this and c.
 	 */
 	public void max(IVectorClock c);
+		
+	public String toString();
+	
+	public void fromString(String s);
 }

@@ -78,4 +78,27 @@ public class Tree implements ITree {
 		}
 	}
 
+	@Override
+	public String display() {
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		String output = "";
+		for (TreeElement e : tree) {
+			output += e.toString() + "|";
+		}
+		return output.substring(0, output.length()-1); // remove final comma
+	}
+	
+	@Override
+	public void fromString(String s) {
+		String[] spl = s.split("|");
+		tree.clear();
+		for (String e : spl) {
+			tree.add(TreeElement.fromString(e));
+		}
+	}
+
 }

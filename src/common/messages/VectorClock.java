@@ -79,5 +79,38 @@ public class VectorClock implements IVectorClock {
 			map.put(p, Math.max(this.at(p), c.at(p)));
 		}
 	}
+	
+	@Override
+	public String toString() {
+		String output = "";
+		for (String k : map.keySet()) {
+			output += k + "," + map.get(k) + ",";
+		}
+		return output.substring(0, output.length()-1); // remove trailing comma
+	}
+	
+	@Override
+	public void fromString(String s) {
+		String[] spl = s.split(",");
+		if (spl.length == 0) {
+			System.out.println("ERROR! Invalid formatting of IVectorClock string. Length = 0");
+			return;
+		}
+		
+		if (spl.length % 2 != 0) {
+			System.out.println("ERROR! Invalid formatting of IVectorClock string. Uneven number of elements.");
+			return;
+		}
+		
+		map.clear();
+		try {
+			for (int i = 0; i < spl.length; i+=2) {
+				map.put(spl[i], Integer.parseInt(spl[i+1]));
+			}
+		} catch (NumberFormatException e) {
+			System.out.println("ERROR! Invalid formatting of IVectorClock string. Count not integer");
+			return;
+		}
+	}
 
 }

@@ -48,5 +48,21 @@ public class TreeTests extends TestCase {
 		assertTrue(tr.getTree().iterator().next().value.equals("v2"));
 	}
 	
+	@Test
+	public void testToString() throws Exception {
+		Tree tr = new Tree();
+		VectorClock c0 = new VectorClock();
+		c0.increment("p0");
+		VectorClock c1 = new VectorClock();
+		c1.increment("p1");
+		c1.increment("p1");
+		tr.getTree().add(new TreeElement(c0, "v0"));
+		tr.getTree().add(new TreeElement(c1, "v1"));
+		
+		String s = tr.toString();
+		
+		assertTrue(s.equals("p0,1,v0|p1,2,v1"));
+	}
+	
 	//TODO implement additional tests
 }

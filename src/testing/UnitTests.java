@@ -40,6 +40,7 @@ public class UnitTests {
 		clientSuite.addTestSuite(MessageTest.class);
 		clientSuite.addTestSuite(SocketTest.class);
 		clientSuite.addTestSuite(StoreServerTests.class);
+		clientSuite.addTestSuite(TreeElementTests.class);
 		clientSuite.addTestSuite(TreeTests.class);
 		clientSuite.addTestSuite(VectorClockTests.class);
 //		clientSuite.addTestSuite(ZookeeperTest.class);												// CAUSES OTHERS TO FAIL
@@ -49,9 +50,7 @@ public class UnitTests {
 	public static Test suite() {
 		TestSuite clientSuite = new TestSuite("Storage Server Unit Test-Suite");
 
-//		addUnitTests(clientSuite);
-		clientSuite.addTestSuite(TreeTests.class);
-		clientSuite.addTestSuite(VectorClockTests.class);
+		addUnitTests(clientSuite);
 		
 		return clientSuite;
 	}
