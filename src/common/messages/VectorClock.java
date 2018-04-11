@@ -71,4 +71,12 @@ public class VectorClock implements IVectorClock {
 		return map.keySet();
 	}
 
+	@Override
+	public void max(IVectorClock c) {
+		Set<String> processes = this.unionProcesses(c);
+		for (String p : processes) {
+			map.put(p, Math.max(this.at(p), c.at(p)));
+		}
+	}
+
 }

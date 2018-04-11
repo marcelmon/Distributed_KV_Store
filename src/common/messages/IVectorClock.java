@@ -33,4 +33,9 @@ public interface IVectorClock {
 	 * in c.
 	 */
 	public Set<String> unionProcesses(IVectorClock c);
+	
+	/**
+	 * Sets all clock values to the max of this and c.
+	 */
+	public void max(IVectorClock c);
 }

@@ -1,5 +1,7 @@
 package common.messages;
 
+import java.util.Set;
+
 public interface ITree {
 	/**
 	 * Removes all entries from the tree which happened before another entry in the tree.
@@ -34,4 +36,10 @@ public interface ITree {
 	 * unambiguous.
 	 */
 	public boolean unambiguous();
+	
+	/**
+	 * Returns the underlying set.
+	 * @return
+	 */
+	public Set<TreeElement> getTree();
 }
