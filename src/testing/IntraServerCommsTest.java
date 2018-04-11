@@ -75,6 +75,21 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 			moveDataTargets.add(targetName);
 			return false;
 		}
+
+		@Override
+		public void enableRejectIfNotResponsible() {
+			
+		}
+
+		@Override
+		public void disableRejectIfNotResponsible() {
+			
+		}
+
+		@Override
+		public void sync() {
+			
+		}
 		
 	}
 	
@@ -96,7 +111,13 @@ public class IntraServerCommsTest extends TestCase implements Watcher {
 		@Override
 		public void unlockWrite() {}
 		@Override
-		public boolean moveData(String[] hashRange, String targetName) throws Exception {return false; }		
+		public boolean moveData(String[] hashRange, String targetName) throws Exception {return false; }
+		@Override
+		public void enableRejectIfNotResponsible() {}
+		@Override
+		public void disableRejectIfNotResponsible() {}
+		@Override
+		public void sync() {}		
 	}
 	
 	@Override

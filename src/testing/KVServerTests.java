@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import common.comms.CommMod;
 import common.comms.IntraServerCommsHelper;
+import common.messages.ITree;
 import common.messages.KVMessage;
 import common.messages.Message.StatusType;
 import junit.framework.TestCase;
@@ -58,7 +59,9 @@ public class KVServerTests extends TestCase {
 		// Check that a force put works:
 		KVMessage resp1 = comm.SendMessage(new KVMessage(StatusType.FORCE_PUT, "localhost:" + port, "value"));
 		assertTrue(resp1.getStatus().equals(StatusType.PUT_SUCCESS));
-		assertTrue(s1.getKV("localhost:" + port).equals("value"));	
+		ITree kv1 = s1.getKV("localhost:" + port);
+		assertTrue(kv1.unambiguous());
+		assertTrue(kv1.getSingle().equals("value"));	
 		
 		s1.close();
 		s2.close();
@@ -110,8 +113,12 @@ public class KVServerTests extends TestCase {
 		Thread.sleep(1000);
 		
 		try {
-			assertTrue(s1.getKV(key).equals(value));
-			assertTrue(s2.getKV(key).equals(value));
+			ITree resp1 = s1.getKV(key);
+			ITree resp2 = s2.getKV(key);
+			assertTrue(resp1.unambiguous());
+			assertTrue(resp2.unambiguous());
+			assertTrue(resp1.getSingle().equals(value));
+			assertTrue(resp2.getSingle().equals(value));
 		} catch (KeyDoesntExistException e) {
 			fail("Key doesn't exist");
 		}

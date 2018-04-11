@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import common.comms.IIntraServerCommsListener;
+import common.messages.ITree;
 
 public interface IKVServer extends IIntraServerCommsListener {
     public enum CacheStrategy {
@@ -55,14 +56,14 @@ public interface IKVServer extends IIntraServerCommsListener {
      * @throws Exception
      *      when key not in the key range of the server
      */
-    public String getKV(String key) throws ICache.KeyDoesntExistException, ICache.StorageException, Exception;
+    public ITree getKV(String key) throws ICache.KeyDoesntExistException, ICache.StorageException, Exception;
 
     /**
      * Put the key-value pair into storage
      * @throws Exception
      *      when key not in the key range of the server
      */
-    public void putKV(String key, String value) throws Exception;
+    public void putKV(String key, ITree value) throws Exception;
 
     /**
      * Clear the local cache of the server

@@ -101,7 +101,7 @@ public class KVServer implements IKVServer, ICommListener {
 	    }
 	    try{
 
-			isc = new IntraServerComms(zkAddr, name, desired_port);
+			isc = new IntraServerComms(zkAddr, name, getPort());
 
 			// this will register this KVServer as a listener 
 			// the consistentHasherUpdated will be called
@@ -244,14 +244,15 @@ public class KVServer implements IKVServer, ICommListener {
 	}
 
 	@Override
-    public String getKV(String key) throws ICache.KeyDoesntExistException, ICache.StorageException, Exception {
-		return cache.get(key);
+    public ITree getKV(String key) throws ICache.KeyDoesntExistException, ICache.StorageException, Exception {
+		if (cache.get(key) == null) return null;
+		return new Tree(cache.get(key), getHostname() + ":" + getPort()); // FIXME implement proper caching
 	}
 
 	@Override
-    public void putKV(String key, String value) throws Exception{
+    public void putKV(String key, ITree value) throws Exception{
 	    System.out.println("Server put:" + key + "," + value);
-		cache.put(key, value);
+		cache.put(key, value.getTree().iterator().next().value); //FIXME implement proper caching
 	}
 
 	@Override
@@ -1788,6 +1789,21 @@ public class KVServer implements IKVServer, ICommListener {
 		else{
 			// was already interupted probably
 		}
+	}
+
+	@Override
+	public void enableRejectIfNotResponsible() {
+		// FIXME implement
+	}
+
+	@Override
+	public void disableRejectIfNotResponsible() {
+		// FIXME implement
+	}
+
+	@Override
+	public void sync() {
+		// FIXME implement
 	}
 
 }
