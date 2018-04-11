@@ -1,6 +1,7 @@
 package common.messages;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -60,8 +61,8 @@ public class VectorClock implements IVectorClock {
 
 	@Override
 	public Set<String> unionProcesses(IVectorClock c) {
-		Set<String> processesThis = map.keySet();
-		Set<String> processesThat = c.processes();
+		HashSet<String> processesThis = new HashSet<String>(map.keySet());
+		HashSet<String> processesThat = new HashSet<String>(c.processes());
 		processesThis.addAll(processesThat);
 		return processesThis;
 	}
@@ -77,6 +78,48 @@ public class VectorClock implements IVectorClock {
 		for (String p : processes) {
 			map.put(p, Math.max(this.at(p), c.at(p)));
 		}
+	}
+	
+	@Override
+	public String toString() {
+		String output = "";
+		for (String k : map.keySet()) {
+			output += k + "," + map.get(k) + ",";
+		}
+		return output.substring(0, output.length()-1); // remove trailing comma
+	}
+	
+	@Override
+	public void fromString(String s) {
+		String[] spl = s.split(",");
+		if (spl.length == 0) {
+			System.out.println("ERROR! Invalid formatting of IVectorClock string. Length = 0");
+			return;
+		}
+		
+		if (spl.length % 2 != 0) {
+			System.out.println("ERROR! Invalid formatting of IVectorClock string. Uneven number of elements.");
+			return;
+		}
+		
+		map.clear();
+		try {
+			for (int i = 0; i < spl.length; i+=2) {
+				map.put(spl[i], Integer.parseInt(spl[i+1]));
+			}
+		} catch (NumberFormatException e) {
+			System.out.println("ERROR! Invalid formatting of IVectorClock string. Count not integer");
+			return;
+		}
+	}
+	
+	@Override
+	public boolean equals(IVectorClock c) {
+		Set<String> proc = unionProcesses(c);
+		for (String p : proc) {
+			if (at(p) != c.at(p)) return false;
+		}
+		return true;
 	}
 
 }

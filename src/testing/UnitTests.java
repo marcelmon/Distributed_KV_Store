@@ -39,7 +39,10 @@ public class UnitTests {
 //		clientSuite.addTestSuite(LockWriteKVServerTest.class);										// FAILS (HANGS)
 		clientSuite.addTestSuite(MessageTest.class);
 		clientSuite.addTestSuite(SocketTest.class);
-		clientSuite.addTestSuite(StoreServerTests.class);		
+		clientSuite.addTestSuite(StoreServerTests.class);
+		clientSuite.addTestSuite(TreeElementTests.class);
+		clientSuite.addTestSuite(TreeTests.class);
+		clientSuite.addTestSuite(VectorClockTests.class);
 //		clientSuite.addTestSuite(ZookeeperTest.class);												// CAUSES OTHERS TO FAIL
 //		clientSuite.addTestSuite(ZookeeperExtTest.class);											// CAUSES OTHERS TO FAIL
 	}
@@ -47,7 +50,8 @@ public class UnitTests {
 	public static Test suite() {
 		TestSuite clientSuite = new TestSuite("Storage Server Unit Test-Suite");
 
-		addUnitTests(clientSuite);
+//		addUnitTests(clientSuite);
+		clientSuite.addTestSuite(TreeTests.class);
 		
 		return clientSuite;
 	}
