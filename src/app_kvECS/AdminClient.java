@@ -38,6 +38,30 @@ public class AdminClient  {
 			}
 			init(tokens[1], Integer.parseInt(tokens[2]));
 			
+		} else if(tokens[0].equals("sync")) {
+			if (tokens.length != 2) {
+				printError("Incorrect number of args!");
+				printHelp();
+				return;
+			}
+			sync(tokens[1]);
+			
+		} else if(tokens[0].equals("enableReject")) {
+			if (tokens.length != 2) {
+				printError("Incorrect number of args!");
+				printHelp();
+				return;
+			}
+			enableReject(tokens[1]);
+			
+		} else if(tokens[0].equals("disableReject")) {
+			if (tokens.length != 2) {
+				printError("Incorrect number of args!");
+				printHelp();
+				return;
+			}
+			disableReject(tokens[1]);
+			
 		} else if(tokens[0].equals("map")) {
 			if (tokens.length != 2) {
 				printError("Incorrect number of args!");
@@ -95,6 +119,9 @@ public class AdminClient  {
 		sb.append(PROMPT).append("startall\n");
 		sb.append(PROMPT).append("stopone <host>:<port>\n");
 		sb.append(PROMPT).append("stopall\n");
+		sb.append(PROMPT).append("sync <host>:<port>\n");
+		sb.append(PROMPT).append("enableReject <host>:<port>\n");
+		sb.append(PROMPT).append("disableReject <host>:<port>\n");
 		sb.append(PROMPT).append("quit\n");
 		System.out.println(sb.toString());
 	}
@@ -149,6 +176,30 @@ public class AdminClient  {
     		System.out.println("Launching... " + s);
     		launcher.launchSSH(tokens[0], tokens[1], Integer.parseInt(tokens[2]), 10, "LRU", kvHost, kvPort); //TODO magic values
     	}
+	}
+	
+	private void sync(String server) throws Exception {
+		if (isc == null) {
+			printError("Need to init");
+			return;
+		}
+		isc.call(server, RPCMethod.Sync);
+	}
+	
+	private void enableReject(String server) throws Exception {
+		if (isc == null) {
+			printError("Need to init");
+			return;
+		}
+		isc.call(server, RPCMethod.EnableRejectIfNotResponsible);
+	}
+	
+	private void disableReject(String server) throws Exception {
+		if (isc == null) {
+			printError("Need to init");
+			return;
+		}
+		isc.call(server, RPCMethod.DisableRejectIfNotResponsible);
 	}
 	
 	private void startone(String server) throws Exception {

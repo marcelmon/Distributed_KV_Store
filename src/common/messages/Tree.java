@@ -18,7 +18,6 @@ public class Tree implements ITree {
 				}
 			}
 		}
-
 	}
 
 	@Override
