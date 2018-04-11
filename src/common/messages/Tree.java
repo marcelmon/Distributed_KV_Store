@@ -58,4 +58,18 @@ public class Tree implements ITree {
 		return tree;
 	}
 
+	@Override
+	public boolean empty() {
+		return tree.isEmpty();
+	}
+
+	@Override
+	public String getSingle() {
+		if (unambiguous()) {
+			return tree.iterator().next().value;
+		} else {
+			return null;
+		}
+	}
+
 }

@@ -38,6 +38,17 @@ public interface ITree {
 	public boolean unambiguous();
 	
 	/**
+	 * Returns true if there are no entries in the tree.
+	 */
+	public boolean empty();
+	
+	/**
+	 * For an unambiguous ITree, getSingle() returns the single element's value. Otherwise,
+	 * returns null.
+	 */
+	public String getSingle();
+	
+	/**
 	 * Returns the underlying set.
 	 * @return
 	 */
