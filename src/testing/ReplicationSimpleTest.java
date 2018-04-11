@@ -50,6 +50,7 @@ import common.comms.IIntraServerComms.RPCMethod;
 import common.comms.IIntraServerCommsListener;
 import common.comms.IntraServerComms;
 import common.comms.IntraServerComms.RPCRecord;
+import common.comms.IntraServerCommsHelper;
 import junit.framework.TestCase;
 
 
@@ -204,46 +205,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 
 	@Override
 	public void setUp() throws Exception {
-
-		ZooKeeper zk = new ZooKeeper(zkAddr, 1000, this);
-		
-		// Create the cluster group if it doesn't exist:
-		try {
-			zk.create(clusterGroup, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-		} catch (NodeExistsException e) {
-			// don't care
-		}
-		
-		// Clear it out:
-		List<String> servernodes = zk.getChildren(clusterGroup, false);
-		for (String n : servernodes) {
-			try {
-				Stat stat = zk.exists(clusterGroup + "/" + n, false);
-				zk.delete(clusterGroup + "/" + n, stat.getVersion());
-			} catch (KeeperException e) {
-				if (e.code() != KeeperException.Code.NONODE) throw e;
-			}
-		}
-		
-		// Create the rpc group if it doesn't exist:
-		try {
-			zk.create(rpcGroup, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-		} catch (NodeExistsException e) {
-			// don't care
-		}
-		
-		// Clear it out:
-		List<String> rpcnode = zk.getChildren(rpcGroup, false);
-		for (String n : rpcnode) {
-			try {
-				Stat stat = zk.exists(rpcGroup + "/" + n, false);
-				if (stat != null)
-					zk.delete(rpcGroup + "/" + n, stat.getVersion());
-			} catch (KeeperException e) {
-				if (e.code() != KeeperException.Code.NONODE) throw e;
-			}
-		}
-		Thread.sleep(100); // give zookeeper time to execute
+		IntraServerCommsHelper.ResetZookeeper(zkAddr);
 	}
 
 

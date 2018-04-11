@@ -1,9 +1,10 @@
 package common.messages;
 
+import java.util.HashSet;
 import java.util.Set;
 
 public class Tree implements ITree {
-	protected Set<TreeElement> tree;
+	protected Set<TreeElement> tree = new HashSet<TreeElement>();
 	
 	public Tree(String value, String pName) {
 		collapse(value, pName);
