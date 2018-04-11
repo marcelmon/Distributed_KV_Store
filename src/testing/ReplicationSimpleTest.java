@@ -88,7 +88,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 
 		for (int i = 0; i < keys.length; ++i) {
 
-			String resp = null;
+			ITree resp = null;
 
 			if(!server.inCache(keys[i])){
 				missingKeys.add(keys[i]);
@@ -108,7 +108,8 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 					System.out.println("1 EXCEPTION");
 				}
 				
-				assertTrue(resp.equals(values[i]));
+				assertTrue(resp.unambiguous());
+				assertTrue(resp.getTree().iterator().next().equals(values[i]));
 			}
 		}
 		return missingKeys;
@@ -323,10 +324,10 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 
 
 		for (int i = 0; i < keys.length; ++i) {
-
-
-			String getRes = server1.getKV(keys[i]);
-			assertTrue(getRes.equals(values[i]));
+			ITree resp = server1.getKV(keys[i]);
+			
+			assertTrue(resp.unambiguous());
+			assertTrue(resp.getTree().iterator().next().equals(values[i]));
 
 		}
 
@@ -356,7 +357,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 
 
 			try{
-				String get1 = server1.getKV(keys[i]);
+				ITree get1 = server1.getKV(keys[i]);
 				if(get1 == null){
 					totalNull1++;
 				}
@@ -366,7 +367,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 			}
 
 			try{
-				String get2 = server2.getKV(keys[i]);
+				ITree get2 = server2.getKV(keys[i]);
 				if(get2 == null){
 					totalNull2++;
 				}
@@ -468,7 +469,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 
 
 			try{
-				String get1 = server1.getKV(keys[i]);
+				ITree get1 = server1.getKV(keys[i]);
 				if(get1 == null){
 					totalNull1++;
 				}
@@ -477,7 +478,7 @@ public class ReplicationSimpleTest extends TestCase implements Watcher {
 			}
 
 			try{
-				String get2 = server2.getKV(keys[i]);
+				ITree get2 = server2.getKV(keys[i]);
 				if(get2 == null){
 					totalNull2++;
 				}
