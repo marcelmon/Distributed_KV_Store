@@ -87,17 +87,17 @@ public class Tree implements ITree {
 	public String toString() {
 		String output = "";
 		for (TreeElement e : tree) {
-			output += e.toString() + "|";
+			output += e.toString() + ";";
 		}
 		return output.substring(0, output.length()-1); // remove final comma
 	}
 	
 	@Override
 	public void fromString(String s) {
-		String[] spl = s.split("|");
+		String[] spl = s.split(";");
 		tree.clear();
-		for (String e : spl) {
-			tree.add(TreeElement.fromString(e));
+		for (String elem : spl) {
+			tree.add(TreeElement.fromString(elem));
 		}
 	}
 

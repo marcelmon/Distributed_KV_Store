@@ -1,5 +1,8 @@
 package testing;
 
+import java.util.Iterator;
+import java.util.Set;
+
 import org.junit.Test;
 
 import common.messages.IVectorClock;
@@ -61,7 +64,32 @@ public class TreeTests extends TestCase {
 		
 		String s = tr.toString();
 		
-		assertTrue(s.equals("p0,1,v0|p1,2,v1"));
+		System.out.println(s);
+		
+		assertTrue(s.equals("p0,1,v0;p1,2,v1"));
+	}
+	
+	@Test
+	public void testFromString() throws Exception {
+		String s = "procA,4,procB,5,myvalue;pX,2,another";
+		Tree tr = new Tree();
+		tr.fromString(s);
+		
+		Set<TreeElement> elems = tr.getTree();
+		Iterator<TreeElement> it = elems.iterator();
+		TreeElement e0 = it.next();
+		TreeElement e1 = it.next();
+		assertFalse(it.hasNext());
+		
+		System.out.println(e0.clock.at("procA"));
+		
+	    assertTrue(e0.clock.at("procA") == 4);
+	    assertTrue(e0.clock.at("procB") == 5);
+	    assertTrue(e0.clock.processes().size() == 2);
+	    assertTrue(e0.value.equals("myvalue"));
+	    assertTrue(e1.clock.at("pX") == 2);
+	    assertTrue(e1.clock.processes().size() == 1);
+	    assertTrue(e1.value.equals("another"));
 	}
 	
 	//TODO implement additional tests
