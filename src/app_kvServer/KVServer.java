@@ -31,6 +31,8 @@ public class KVServer implements IKVServer, ICommListener {
 	protected boolean pendingRunning;
 	
 	protected final int REPLICATION_FACTOR = 2; 
+	
+	protected boolean rejectIfNotResponsible = true;
 
 
 	protected final int desired_port;
@@ -358,7 +360,7 @@ public class KVServer implements IKVServer, ICommListener {
 			if(targetServer == null){
 				throw new RuntimeException(logHeader + " - No servers registered.");
 			}
-			else if(!targetServer.hostname.equals(name) || targetServer.port != getPort()){
+			else if(rejectIfNotResponsible && (!targetServer.hostname.equals(name) || targetServer.port != getPort())){
 				try {
 					KVMessage resp = new KVMessage(StatusType.SERVER_NOT_RESPONSIBLE, hasher.toString(), null);
 					try{
@@ -1793,12 +1795,12 @@ public class KVServer implements IKVServer, ICommListener {
 
 	@Override
 	public void enableRejectIfNotResponsible() {
-		// FIXME implement
+		rejectIfNotResponsible = true;
 	}
 
 	@Override
 	public void disableRejectIfNotResponsible() {
-		// FIXME implement
+		rejectIfNotResponsible = false;
 	}
 
 	@Override
