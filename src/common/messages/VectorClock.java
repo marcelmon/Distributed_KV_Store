@@ -112,5 +112,14 @@ public class VectorClock implements IVectorClock {
 			return;
 		}
 	}
+	
+	@Override
+	public boolean equals(IVectorClock c) {
+		Set<String> proc = unionProcesses(c);
+		for (String p : proc) {
+			if (at(p) != c.at(p)) return false;
+		}
+		return true;
+	}
 
 }

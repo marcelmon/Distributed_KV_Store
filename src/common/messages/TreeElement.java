@@ -23,4 +23,7 @@ public class TreeElement {
 		c.fromString(s.substring(0, s.length() - spl[spl.length-1].length() - 1));
 		return new TreeElement(c, spl[spl.length - 1]);
 	}
+	public boolean equals(TreeElement e) {
+		return clock.equals(e.clock) && value.equals(e.value);
+	}
 }

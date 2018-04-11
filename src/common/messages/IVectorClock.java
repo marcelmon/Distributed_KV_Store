@@ -42,4 +42,6 @@ public interface IVectorClock {
 	public String toString();
 	
 	public void fromString(String s);
+	
+	public boolean equals(IVectorClock c);
 }

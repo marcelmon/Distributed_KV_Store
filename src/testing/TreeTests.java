@@ -81,8 +81,6 @@ public class TreeTests extends TestCase {
 		
 		String s = tr.toString();
 		
-		System.out.println(s);
-		
 		assertTrue(s.equals("p0,1,v0;p1,2,v1") || s.equals("p1,2,v1;p0,1,v0"));
 	}
 	
@@ -98,8 +96,6 @@ public class TreeTests extends TestCase {
 		TreeElement e1 = it.next();
 		assertFalse(it.hasNext());
 		
-		System.out.println(e0.clock.at("procA"));
-		
 	    assertTrue(e0.clock.at("procA") == 4);
 	    assertTrue(e0.clock.at("procB") == 5);
 	    assertTrue(e0.clock.processes().size() == 2);
@@ -109,5 +105,21 @@ public class TreeTests extends TestCase {
 	    assertTrue(e1.value.equals("another"));
 	}
 	
-	//TODO implement additional tests
+	@Test
+	public void testEquals() throws Exception {
+		String s0 = "procA,4,procB,5,myvalue;pX,2,another";
+		String s1 = "procA,4,procB,5,myvalue;pX,2,another;pY,5,yetanother";
+		
+		Tree t0 = new Tree();
+		t0.fromString(s0);
+		
+		Tree t1 = new Tree();
+		t1.fromString(s0);
+		
+		Tree t2 = new Tree();
+		t2.fromString(s1);
+		
+		assertTrue(t0.equals(t1));
+		assertFalse(t0.equals(t2));
+	}
 }

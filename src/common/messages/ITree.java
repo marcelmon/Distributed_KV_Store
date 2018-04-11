@@ -62,4 +62,6 @@ public interface ITree {
 	 * Deserializes the object from a string constructed using toString().
 	 */
 	public void fromString(String s);
+	
+	public boolean equals(Tree t);
 }

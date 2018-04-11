@@ -101,4 +101,26 @@ public class Tree implements ITree {
 		}
 	}
 
+	@Override
+	public boolean equals(Tree t) {
+		for (TreeElement x : tree) {
+			boolean found = false;
+			for (TreeElement y : t.getTree()) {
+				found |= x.equals(y);
+				continue;
+			}
+			if (!found) return false;
+		}
+		
+		for (TreeElement x : t.getTree()) {
+			boolean found = false;
+			for (TreeElement y : tree) {
+				found |= x.equals(y);
+				continue;
+			}
+			if (!found) return false;
+		}
+		
+		return true;
+	}
 }
