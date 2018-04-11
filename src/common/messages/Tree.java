@@ -1,10 +1,13 @@
 package common.messages;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
 public class Tree implements ITree {
 	protected Set<TreeElement> tree = new HashSet<TreeElement>();
+	
+	public Tree() { }
 	
 	public Tree(String value, String pName) {
 		collapse(value, pName);
@@ -12,20 +15,22 @@ public class Tree implements ITree {
 
 	@Override
 	public void prune() {
+		ArrayList<TreeElement> removals = new ArrayList<TreeElement>();
 		for (TreeElement x : tree) {
 			for (TreeElement y : tree) {
 				if (x.clock.happened(y.clock) == IVectorClock.HAPPENED_BEFORE) {
-					tree.remove(x);
+					removals.add(x);
 				}
 			}
+		}
+		for (TreeElement x : removals) {
+			tree.remove(x);
 		}
 	}
 
 	@Override
 	public void collapse(String value, String pName) {
-		TreeElement next = new TreeElement();
-		next.clock = next(pName);
-		next.value = value;
+		TreeElement next = new TreeElement(next(pName), value);
 		tree.clear();
 		tree.add(next);
 	}

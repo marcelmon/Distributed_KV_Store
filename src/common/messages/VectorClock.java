@@ -1,6 +1,7 @@
 package common.messages;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -60,8 +61,8 @@ public class VectorClock implements IVectorClock {
 
 	@Override
 	public Set<String> unionProcesses(IVectorClock c) {
-		Set<String> processesThis = map.keySet();
-		Set<String> processesThat = c.processes();
+		HashSet<String> processesThis = new HashSet<String>(map.keySet());
+		HashSet<String> processesThat = new HashSet<String>(c.processes());
 		processesThis.addAll(processesThat);
 		return processesThis;
 	}
