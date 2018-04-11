@@ -34,7 +34,10 @@ public interface IIntraServerComms {
 		Stop,
 		LockWrite,
 		UnlockWrite,
-		MoveData
+		MoveData,
+		EnableRejectIfNotResponsible,
+		DisableRejectIfNotResponsible,
+		Sync
 	}
 	
 	public void init(String hostname, Integer port) throws ServerExistsException, Exception;

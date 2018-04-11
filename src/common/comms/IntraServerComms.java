@@ -68,6 +68,9 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 				case Stop:
 				case LockWrite:
 				case UnlockWrite:
+				case EnableRejectIfNotResponsible:
+				case DisableRejectIfNotResponsible:
+				case Sync:
 					return args.length == 0;
 				case MoveData:
 					return args.length == 3;
@@ -336,6 +339,15 @@ public class IntraServerComms implements IIntraServerComms, Watcher {
 								throw new Exception("Invalid number of args for RPCMethod.MoveData");
 							}
 							listener.moveData(new String[] {rec.args[0], rec.args[1]}, rec.args[2]);
+							break;
+						case EnableRejectIfNotResponsible:
+							listener.enableRejectIfNotResponsible();
+							break;
+						case DisableRejectIfNotResponsible:
+							listener.disableRejectIfNotResponsible();
+							break;
+						case Sync:
+							listener.sync();
 							break;
 						default:
 							throw new Exception("Unknown RPC method encountered: " + rec.method);

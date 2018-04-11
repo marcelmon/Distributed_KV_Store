@@ -19,15 +19,13 @@ public class SSHLauncher implements ISSHLauncher {
         	// From SSH command:
         	String cmd = 
         			"ssh -n " + hostname + " " +
-//        			"\"java -jar m2-server.jar " + 
-					"java -jar m2-server.jar " +
+					"java -jar m4-server.jar " +
         			name + " " + 
         			port + " " +
         			zkHost + " " +
     				zkPort + " " +
         			cachesize + " " +
         			cachestrategy + 
-//        			" & echo \\$!\" &";
         			" &";
         	System.out.println(cmd);
         	
