@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.UUID;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -22,13 +24,18 @@ public class KVClient implements IKVClient {
 	private BufferedReader stdin;
 	private KVCommInterface client = null;
 	private boolean stop = false;
+	private HashMap<String, ITree> prevGet = new HashMap<String, ITree>();
+	private String pid = UUID.randomUUID().toString();
 	
 	private String serverAddress;
 	private int serverPort;
 	
 	public void run() {
+		stdin = new BufferedReader(new InputStreamReader(System.in));
+		
+		System.out.println(PROMPT + "pid=" + pid);
+		
 		while(!stop) {
-			stdin = new BufferedReader(new InputStreamReader(System.in));
 			System.out.print(PROMPT);
 			
 			try {
@@ -94,7 +101,7 @@ public class KVClient implements IKVClient {
 		} else if(tokens[0].equals("put")) {
 			if(tokens.length >= 2) {
 				if(client != null){
-					try {
+					try {					
 						String key = tokens[1];
 						StringBuilder msg = new StringBuilder();
 						for(int i = 2; i < tokens.length; i++) {
@@ -103,7 +110,16 @@ public class KVClient implements IKVClient {
 								msg.append(" ");
 							}
 						}
-						KVMessage kvmsg = client.put(key, msg.toString());
+						
+						if (!prevGet.containsKey(key)) {
+							System.out.println(PROMPT + "You must get before you're allowed to put");
+							return;
+						}
+						
+						// We have previous get'd this key, so we can assume that this put overrides
+						prevGet.get(key).collapse(msg.toString(), pid);
+						
+						KVMessage kvmsg = client.put(key, prevGet.get(key).toString());
 						StatusType statusType = kvmsg.getStatus();
 						
 						if(statusType == StatusType.PUT_SUCCESS) {
@@ -146,8 +162,13 @@ public class KVClient implements IKVClient {
 						StatusType statusType = kvmsg.getStatus();
 
 						if(statusType == StatusType.GET_SUCCESS) {
+							// Save the tree:
+							ITree tr = new Tree();
+							tr.fromString(kvmsg.getValue());
+							prevGet.put(key, tr);
+							
 							System.out.println(PROMPT + "Get " + key + " succeeded.");
-							System.out.println(PROMPT + "Value: " + kvmsg.getValue());
+							System.out.println(PROMPT + "Value: " + tr.display());
 						} else if(statusType == StatusType.GET_ERROR) {
 							printError("Get failed.");
 						} else if(statusType == StatusType.SERVER_STOPPED){

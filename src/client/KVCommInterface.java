@@ -2,6 +2,7 @@ package client;
 
 import java.net.UnknownHostException;
 
+import common.messages.ITree;
 import common.messages.KVMessage;
 
 public interface KVCommInterface {
