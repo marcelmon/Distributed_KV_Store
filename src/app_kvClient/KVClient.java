@@ -118,20 +118,24 @@ public class KVClient implements IKVClient {
 						
 						// We have previous get'd this key, so we can assume that this put overrides
 						prevGet.get(key).collapse(msg.toString(), pid);
+						String putTree = prevGet.get(key).toString();
 						
-						KVMessage kvmsg = client.put(key, prevGet.get(key).toString());
+						KVMessage kvmsg = client.put(key, putTree);
 						StatusType statusType = kvmsg.getStatus();
 						
 						if(statusType == StatusType.PUT_SUCCESS) {
 							System.out.println(PROMPT + "Put " + key + " succeeded.");
 							System.out.println(PROMPT + "Value: " + msg.toString());
+							System.out.println(PROMPT + "Tree: " + putTree);
 						} else if(statusType == StatusType.PUT_ERROR) {
 							printError("Put failed.");
 						} else if(statusType == StatusType.PUT_UPDATE) {
 							System.out.println(PROMPT + "Update " + key + " succeeded.");
 							System.out.println(PROMPT + "Value: " + msg.toString());
+							System.out.println(PROMPT + "Tree: " + putTree);
 						} else if(statusType == StatusType.DELETE_SUCCESS) {
 							System.out.println(PROMPT + "Delete " + key + " succeeded.");
+							System.out.println(PROMPT + "Tree: " + putTree);
 						} else if(statusType == StatusType.DELETE_ERROR) {
 							printError("Delete failed.");
 						} else if(statusType == StatusType.SERVER_STOPPED){
@@ -169,8 +173,13 @@ public class KVClient implements IKVClient {
 							
 							System.out.println(PROMPT + "Get " + key + " succeeded.");
 							System.out.println(PROMPT + "Value: " + tr.display());
+							System.out.println(PROMPT + "Tree: " + kvmsg.getValue());
 						} else if(statusType == StatusType.GET_ERROR) {
-							printError("Get failed.");
+							// Save the tree:
+							ITree tr = new Tree();
+							prevGet.put(key, tr);
+							
+							printError("Doesn't exist. Saving tree.");
 						} else if(statusType == StatusType.SERVER_STOPPED){
 							printError("Get failed - Server stopped.");
 						} else if(statusType == StatusType.SERVER_NOT_RESPONSIBLE){
@@ -180,7 +189,8 @@ public class KVClient implements IKVClient {
 						}
 					} catch (Exception e) {
 							printError("Get failed.");
-							// printError(e.getMessage());
+							printError(e.getMessage());
+							e.printStackTrace();
 					}
 				} else {
 					printError("Not connected!");

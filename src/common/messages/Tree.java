@@ -80,7 +80,7 @@ public class Tree implements ITree {
 
 	@Override
 	public String display() {
-		return null;
+		return toString(); // TODO display more nicely!
 	}
 
 	@Override
