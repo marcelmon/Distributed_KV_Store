@@ -121,7 +121,7 @@ public class KVStore implements KVCommInterface {
 				}
 
 			
-				KVMessage tx_msg = new KVMessage(StatusType.PUT,key,value);
+				KVMessage tx_msg = new KVMessage(StatusType.PUT,key,value.toString());
 				
 				rx_msg = client.SendMessage(tx_msg);
 				

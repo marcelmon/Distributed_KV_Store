@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.UUID;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -22,13 +24,18 @@ public class KVClient implements IKVClient {
 	private BufferedReader stdin;
 	private KVCommInterface client = null;
 	private boolean stop = false;
+	private HashMap<String, ITree> prevGet = new HashMap<String, ITree>();
+	private String pid = UUID.randomUUID().toString();
 	
 	private String serverAddress;
 	private int serverPort;
 	
 	public void run() {
+		stdin = new BufferedReader(new InputStreamReader(System.in));
+		
+		System.out.println(PROMPT + "pid=" + pid);
+		
 		while(!stop) {
-			stdin = new BufferedReader(new InputStreamReader(System.in));
 			System.out.print(PROMPT);
 			
 			try {
@@ -94,7 +101,7 @@ public class KVClient implements IKVClient {
 		} else if(tokens[0].equals("put")) {
 			if(tokens.length >= 2) {
 				if(client != null){
-					try {
+					try {					
 						String key = tokens[1];
 						StringBuilder msg = new StringBuilder();
 						for(int i = 2; i < tokens.length; i++) {
@@ -103,19 +110,32 @@ public class KVClient implements IKVClient {
 								msg.append(" ");
 							}
 						}
-						KVMessage kvmsg = client.put(key, msg.toString());
+						
+						if (!prevGet.containsKey(key)) {
+							System.out.println(PROMPT + "You must get before you're allowed to put");
+							return;
+						}
+						
+						// We have previous get'd this key, so we can assume that this put overrides
+						prevGet.get(key).collapse(msg.toString(), pid);
+						String putTree = prevGet.get(key).toString();
+						
+						KVMessage kvmsg = client.put(key, putTree);
 						StatusType statusType = kvmsg.getStatus();
 						
 						if(statusType == StatusType.PUT_SUCCESS) {
 							System.out.println(PROMPT + "Put " + key + " succeeded.");
 							System.out.println(PROMPT + "Value: " + msg.toString());
+							System.out.println(PROMPT + "Tree: " + putTree);
 						} else if(statusType == StatusType.PUT_ERROR) {
 							printError("Put failed.");
 						} else if(statusType == StatusType.PUT_UPDATE) {
 							System.out.println(PROMPT + "Update " + key + " succeeded.");
 							System.out.println(PROMPT + "Value: " + msg.toString());
+							System.out.println(PROMPT + "Tree: " + putTree);
 						} else if(statusType == StatusType.DELETE_SUCCESS) {
 							System.out.println(PROMPT + "Delete " + key + " succeeded.");
+							System.out.println(PROMPT + "Tree: " + putTree);
 						} else if(statusType == StatusType.DELETE_ERROR) {
 							printError("Delete failed.");
 						} else if(statusType == StatusType.SERVER_STOPPED){
@@ -146,10 +166,20 @@ public class KVClient implements IKVClient {
 						StatusType statusType = kvmsg.getStatus();
 
 						if(statusType == StatusType.GET_SUCCESS) {
+							// Save the tree:
+							ITree tr = new Tree();
+							tr.fromString(kvmsg.getValue());
+							prevGet.put(key, tr);
+							
 							System.out.println(PROMPT + "Get " + key + " succeeded.");
-							System.out.println(PROMPT + "Value: " + kvmsg.getValue());
+							System.out.println(PROMPT + "Value: " + tr.display());
+							System.out.println(PROMPT + "Tree: " + kvmsg.getValue());
 						} else if(statusType == StatusType.GET_ERROR) {
-							printError("Get failed.");
+							// Save the tree:
+							ITree tr = new Tree();
+							prevGet.put(key, tr);
+							
+							printError("Doesn't exist. Saving tree.");
 						} else if(statusType == StatusType.SERVER_STOPPED){
 							printError("Get failed - Server stopped.");
 						} else if(statusType == StatusType.SERVER_NOT_RESPONSIBLE){
@@ -159,7 +189,8 @@ public class KVClient implements IKVClient {
 						}
 					} catch (Exception e) {
 							printError("Get failed.");
-							// printError(e.getMessage());
+							printError(e.getMessage());
+							e.printStackTrace();
 					}
 				} else {
 					printError("Not connected!");
